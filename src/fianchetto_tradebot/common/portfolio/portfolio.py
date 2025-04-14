@@ -6,7 +6,7 @@ from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.finance.option import Option
 from fianchetto_tradebot.common.finance.option_type import OptionType
 from fianchetto_tradebot.common.finance.tradable import Tradable
-
+from fianchetto_tradebot.common.order.tradable_type import TradableType
 
 logger = logging.getLogger(__name__)
 
@@ -52,19 +52,19 @@ class Portfolio:
             self.equities[tradable.ticker] = 0
 
     def get_quantity(self, tradable) -> int:
-        if isinstance(tradable, Option):
+        if tradable.get_type() == TradableType.Option:
             if self._option_value_present(tradable):
                 return int(self.options[tradable.equity.ticker][tradable.expiry][tradable.strike][tradable.type])
             else:
                 return 0
 
-        elif isinstance(tradable, Equity):
+        elif tradable.get_type() == TradableType.Equity:
             if tradable.ticker in self.equities:
                 return float(self.equities[tradable.ticker])
             else:
                 return 0
         else:
-            logger.warning(f"Type not recognized {tradable.type}")
+            logger.warning(f"Type not recognized {tradable.get_type()}")
             return 0
 
     def _option_value_present(self, tradable):
