@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from src.fianchetto_tradebot.common.finance.amount import Amount
-from src.fianchetto_tradebot.common.order.order import Order
+from fianchetto_tradebot.common.finance.amount import Amount
+from fianchetto_tradebot.common.order.order import Order
 
 
 class OrderPreview(BaseModel):

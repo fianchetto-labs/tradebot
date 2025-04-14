@@ -1,10 +1,10 @@
 import csv
 import os
 
-from src.fianchetto_tradebot.common.finance.equity import Equity
-from src.fianchetto_tradebot.common.finance.option import Option
-from src.fianchetto_tradebot.common.portfolio.portfolio import Portfolio
-from src.fianchetto_tradebot.common.utils import parsing
+from fianchetto_tradebot.common.finance.equity import Equity
+from fianchetto_tradebot.common.finance.option import Option
+from fianchetto_tradebot.common.portfolio.portfolio import Portfolio
+from fianchetto_tradebot.common.utils import parsing
 
 mara = Equity(ticker="MARA", company_name="Marathon Digital")
 sfix = Equity(ticker="SFIX", company_name="StitchFix")

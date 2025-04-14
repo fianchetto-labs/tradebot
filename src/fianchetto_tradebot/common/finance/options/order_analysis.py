@@ -1,7 +1,7 @@
 from abc import ABC
 
-from src.fianchetto_tradebot.common.finance.amount import Amount
-from src.fianchetto_tradebot.common.order.order_type import OrderType
+from fianchetto_tradebot.common.finance.amount import Amount
+from fianchetto_tradebot.common.order.order_type import OrderType
 
 
 class OrderAnalysis(ABC):

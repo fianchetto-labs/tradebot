@@ -1,5 +1,5 @@
-from src.fianchetto_tradebot.common.api.response import Response
-from src.fianchetto_tradebot.common.order.placed_order import PlacedOrder
+from fianchetto_tradebot.common.api.response import Response
+from fianchetto_tradebot.common.order.placed_order import PlacedOrder
 
 
 class ListOrdersResponse(Response):

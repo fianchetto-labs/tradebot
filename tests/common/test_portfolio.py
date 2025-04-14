@@ -1,8 +1,6 @@
-from locale import currency
-
-from src.fianchetto_tradebot.common.finance.amount import Amount
-from src.fianchetto_tradebot.common.finance.currency import Currency
-from src.fianchetto_tradebot.common.portfolio.portfolio import Portfolio
+from fianchetto_tradebot.common.finance.amount import Amount
+from fianchetto_tradebot.common.finance.currency import Currency
+from fianchetto_tradebot.common.portfolio.portfolio import Portfolio
 from tests.common import test_option
 from tests.common.util.test_object_util import get_sample_option, get_sample_equity
 

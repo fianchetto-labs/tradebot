@@ -8,7 +8,7 @@ from rauth import OAuth1Service, OAuth1Session
 import pickle
 import webbrowser
 
-from src.fianchetto_tradebot.common.exchange.connector import Connector
+from fianchetto_tradebot.common.exchange.connector import Connector
 
 config = configparser.ConfigParser()
 
