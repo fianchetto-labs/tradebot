@@ -62,8 +62,8 @@ class ETradeOrderService(OrderService):
         url = self.base_url + path
         response = self.session.get(url, params=params)
 
-        parsed_order_list: list[Order] = ETradeOrderService._parse_order_list_response(response, account_id)
-        return ListOrdersResponse(parsed_order_list)
+        parsed_order_list: list[PlacedOrder] = ETradeOrderService._parse_order_list_response(response, account_id)
+        return ListOrdersResponse(order_list=parsed_order_list)
 
     def get_order(self, get_order_request: GetOrderRequest) -> GetOrderResponse:
         account_id = get_order_request.account_id

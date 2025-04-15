@@ -1,9 +1,12 @@
+from typing import Union
+
 from fianchetto_tradebot.common.api.response import Response
+from fianchetto_tradebot.common.order.executed_order import ExecutedOrder
 from fianchetto_tradebot.common.order.placed_order import PlacedOrder
 
 
 class ListOrdersResponse(Response):
-    order_list: list[PlacedOrder]
+    order_list: list[Union[PlacedOrder, ExecutedOrder]]
 
     def get_order_list(self):
         return self.order_list
