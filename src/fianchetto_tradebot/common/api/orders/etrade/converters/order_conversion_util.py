@@ -30,8 +30,8 @@ from fianchetto_tradebot.common.order.tradable_type import TradableType
 class OrderConversionUtil:
 
     @staticmethod
-    def to_executed_order_from_json(input_order: dict):
-        placed_order: PlacedOrder = OrderConversionUtil.to_placed_order_from_json(input_order)
+    def to_executed_order_from_json(input_order: dict, account_id):
+        placed_order: PlacedOrder = OrderConversionUtil.to_placed_order_from_json(input_order, query_account_id=account_id)
 
         order_detail = input_order["OrderDetail"][0]
         execution_order_details: ExecutionOrderDetails = ExecutionOrderDetails(

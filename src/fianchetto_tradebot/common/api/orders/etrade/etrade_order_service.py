@@ -266,7 +266,7 @@ class ETradeOrderService(OrderService):
             error = data['Error']
             code = error['code']
             message = error['message']
-            return CancelOrderResponse(order_id, None, [OrderCancellationMessage(code, message)], request_status=RequestStatus.OPERATION_FAILED_BUT_NO_LONGER_REQUIRED)
+            return CancelOrderResponse(order_id=order_id, cancel_time=None, messages=[OrderCancellationMessage(code, message)], request_status=RequestStatus.OPERATION_FAILED_BUT_NO_LONGER_REQUIRED)
         cancel_order_response = data["CancelOrderResponse"]
 
         order_id = cancel_order_response["orderId"]
@@ -279,7 +279,7 @@ class ETradeOrderService(OrderService):
             message_type = message['type']
             messages.append(ETradeOrderResponseMessage(code, description, message_type))
 
-        return CancelOrderResponse(order_id, cancel_time, messages)
+        return CancelOrderResponse(order_id=order_id, cancel_time=cancel_time, messages=messages)
 
     @staticmethod
     def _parse_preview_order_response(response, order_metadata: OrderMetadata, previous_order_id=None)-> PreviewOrderResponse:
@@ -300,7 +300,7 @@ class ETradeOrderService(OrderService):
                 if previous_order_id:
                     return PreviewModifyOrderResponse(order_metadata, None, previous_order_id, None, request_status=request_status, order_message=order_placement_message)
                 else:
-                    return PreviewOrderResponse(order_metadata, None, None, request_status=request_status, order_message=order_placement_message)
+                    return PreviewOrderResponse(order_metadata=order_metadata, preview_id=None, preview_order_info=None, request_status=request_status, order_message=order_placement_message)
             else:
                 request_status = RequestStatus.FAILURE_DO_NOT_RETRY
 
@@ -344,7 +344,7 @@ class ETradeOrderService(OrderService):
             placed_order: PlacedOrder = OrderConversionUtil.to_placed_order_from_json(order, account_id, order_id)
 
             if status == OrderStatus.EXECUTED:
-                executed_order = OrderConversionUtil.to_executed_order_from_json(order)
+                executed_order = OrderConversionUtil.to_executed_order_from_json(order, account_id=account_id)
                 return_order_list.append(executed_order)
             else:
                 return_order_list.append(placed_order)
@@ -362,7 +362,7 @@ class ETradeOrderService(OrderService):
         placed_order: PlacedOrder = OrderConversionUtil.to_placed_order_from_json(order, account_id, order_id)
 
         if order["OrderDetail"][0]["status"] == OrderStatus.EXECUTED:
-            executed_order = OrderConversionUtil.to_executed_order_from_json(order)
+            executed_order = OrderConversionUtil.to_executed_order_from_json(order, account_id)
             return GetOrderResponse(placed_order=executed_order)
         else:
             return GetOrderResponse(placed_order=placed_order)

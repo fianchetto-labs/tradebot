@@ -103,7 +103,7 @@ def adjust_order_until_executed(account_id: str, order_id: str, order_service: O
 
         while placed_order.placed_order_details.status == OrderStatus.OPEN:
             print("Cancelling old order")
-            cancel_order_request: CancelOrderRequest = CancelOrderRequest(account_id, order_id)
+            cancel_order_request: CancelOrderRequest = CancelOrderRequest(account_id=account_id, order_id=order_id)
             response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
             if response.request_status.is_permanent_failure():
                 if response.messages:
@@ -120,8 +120,8 @@ def adjust_order_until_executed(account_id: str, order_id: str, order_service: O
             new_price, wait_period = IncrementalPriceDeltaExecutionTactic.new_price(placed_order, quote_service)
             order.order_price.price = new_price.price
 
-            order_metadata: OrderMetadata = OrderMetadata(order_type, account_id, OrderUtil.generate_random_client_order_id())
-            preview_order_request: PreviewOrderRequest = PreviewOrderRequest(order_metadata, order)
+            order_metadata: OrderMetadata = OrderMetadata(order_type=order_type, account_id=account_id, order_id=OrderUtil.generate_random_client_order_id())
+            preview_order_request: PreviewOrderRequest = PreviewOrderRequest(order_metadata=order_metadata, order=order)
 
             # place the order
             print("Submitted new order")
@@ -131,7 +131,7 @@ def adjust_order_until_executed(account_id: str, order_id: str, order_service: O
             order_id = response.order_id
 
             order_status = order_service.get_order(
-                GetOrderRequest(account_id, order_id)).placed_order.placed_order_details.status
+                GetOrderRequest(account_id=account_id, order_id=order_id)).placed_order.placed_order_details.status
             print(f"Order status {response.order_id}: {order_status}")
             if order_status == OrderStatus.EXECUTED:
                 print("Awesome, it executed!")

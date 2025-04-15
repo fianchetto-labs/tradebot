@@ -31,12 +31,7 @@ def order_service():
 def test_cancel_orders(order_service: OrderService, account_id: str):
     for order_id in ORDER_IDS_TO_CANCEL:
         try:
-            cancel_order_response = order_service.cancel_order(CancelOrderRequest(account_id, str(order_id)))
+            cancel_order_response = order_service.cancel_order(CancelOrderRequest(account_id=account_id, order_id=str(order_id)))
             print(f"Successfully cancelled: {cancel_order_response.order_id}")
         except KeyError:
             print(f"failed to delete for {order_id}")
-
-
-    cancel_order_request: CancelOrderRequest = CancelOrderRequest(account_id, order_id)
-    cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
-    print(cancel_order_response)

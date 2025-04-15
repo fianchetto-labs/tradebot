@@ -8,7 +8,7 @@ from fianchetto_tradebot.common.api.response import Response
 
 class PreviewOrderResponse(Response):
     order_metadata: OrderMetadata
-    preview_id: str
-    preview_order_info: OrderPreview
+    preview_id: Optional[str]
+    preview_order_info: Optional[OrderPreview]
     request_status: RequestStatus = RequestStatus.SUCCESS
     order_message: Optional[OrderPlacementMessage] = None

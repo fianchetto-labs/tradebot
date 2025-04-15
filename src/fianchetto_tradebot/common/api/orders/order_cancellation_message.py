@@ -1,4 +1,6 @@
-class OrderCancellationMessage():
-    def __init__(self, code: str, message: str):
-        self.code = code
-        self.message = message
+from pydantic import BaseModel
+
+
+class OrderCancellationMessage(BaseModel):
+    code: str
+    message: str
