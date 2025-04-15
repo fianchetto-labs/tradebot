@@ -3,8 +3,7 @@ from fianchetto_tradebot.common.order.placed_order import PlacedOrder
 
 
 class ListOrdersResponse(Response):
-    def __init__(self, order_list: list[PlacedOrder]):
-        self.order_list: list[PlacedOrder] = order_list
+    order_list: list[PlacedOrder]
 
     def get_order_list(self):
         return self.order_list

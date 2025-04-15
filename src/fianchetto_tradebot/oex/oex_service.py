@@ -37,7 +37,6 @@ DEFAULT_EXCHANGE_CONFIGS: Final[dict[ExchangeName, str]] = {
 
 
 class OexService:
-
     def __init__(self, credential_config_files: dict[ExchangeName, str]=DEFAULT_EXCHANGE_CONFIGS):
         self._app = Flask(OexService.__name__)
         self._app.json_provider_class = CustomJSONProvider(self._app)  # Tell Flask to use the custom encoder
@@ -124,7 +123,7 @@ class OexService:
         count = args.get('count') if 'count' in args else DEFAULT_COUNT
 
         order_service: OrderService = self.order_services[ExchangeName[exchange.upper()]]
-        list_order_request = ListOrdersRequest(account_id, status, from_date, to_date, count)
+        list_order_request = ListOrdersRequest(account_id=account_id, status=status, from_date=from_date, to_date=to_date, count=count)
 
         resp: ListOrdersResponse = order_service.list_orders(list_order_request)
 

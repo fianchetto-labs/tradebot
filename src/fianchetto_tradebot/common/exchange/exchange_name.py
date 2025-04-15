@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class ExchangeName(Enum):
-    ETRADE = "etrade",
-    IKBR = "ikbr",
+class ExchangeName(str, Enum):
+    ETRADE = "etrade"
+    IKBR = "ikbr"
     SCHWAB = "schwab"
