@@ -142,7 +142,7 @@ class CustomJSONProvider(DefaultJSONProvider):
                 "current_market_price": o.current_market_price,
                 "order_placed_time": o.order_placed_time,
                 "market_session": str(o.market_session),
-                "replaces_order_id": o.replaces_order_id
+                "replaces_order_id": str(o.replaces_order_id)
             }
 
         if isinstance(o, (Price)):
