@@ -5,7 +5,7 @@ setup(
     version='0.1.5',
     author='Fianchetto Labs',
     author_email='aleks@fianchettolabs.com',
-    description='Library for implementing API trading integrations with brokerages',
+    description='Library for implementing API trading integrations with popular brokerages like ETrade, Schwab, and Interactive Brokers',
     url='https://github.com/fianchetto-labs/tradebot',
     packages=find_packages(where="src"),
     package_dir={"": "src"},
