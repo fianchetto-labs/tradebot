@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Use this library to execute trading strategies across various exchanges, including E*Trade, Schwab, and Robinhood.
+Use this library to execute trading strategies across various exchanges, including E*Trade, Schwab, and Interactive Brokers (IKBR).
 
 ## Get Started!
 - Pull down the package
