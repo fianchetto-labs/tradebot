@@ -5,8 +5,13 @@
 Use this library to execute trading strategies across various exchanges, including E*Trade, Schwab, and Interactive Brokers (IKBR).
 
 ## Get Started!
-- Pull down the package
-`pip install fianchetto-tradebot`
+### Pull down the package
+`$> pip install fianchetto-tradebot`
+
+`from fianchetto_tradebot.oex.oex_service import OexService`
+
+### Pull down the quickstart package
+`$> pip install fianchetto-tradebot-quickstart`
 
 ## Components
 
