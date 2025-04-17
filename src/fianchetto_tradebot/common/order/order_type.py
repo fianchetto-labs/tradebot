@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class OrderType(Enum):
+class OrderType(str, Enum):
     EQ = "EQ"
     OPTN = "OPTN"
     SPREADS = "SPREADS"

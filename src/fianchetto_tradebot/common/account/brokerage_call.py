@@ -3,12 +3,12 @@ from enum import Enum
 from fianchetto_tradebot.common.finance.amount import Amount
 
 
-class BrokerageCallType(Enum):
-    CASH = 0,
-    FED = 1,
-    HOUSE = 2,
-    MIN_EQUITY = 3,
-    UNKNOWN = 4
+class BrokerageCallType(str, Enum):
+    CASH = "CASH"
+    FED = "FED"
+    HOUSE = "HOUSE"
+    MIN_EQUITY = "MIN_EQUITY"
+    UNKNOWN = "UNKNOWN"
 
     @staticmethod
     def from_string(input: str):

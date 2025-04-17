@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class MarketSession(Enum):
-    REGULAR = 0,
-    EXTENDED = 1,
-    BOTH = 2
+class MarketSession(str, Enum):
+    REGULAR = "REGULAR"
+    EXTENDED = "EXTENDED"
+    BOTH = "BOTH"
