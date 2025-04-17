@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class TradableType(Enum):
+class TradableType(str, Enum):
     Equity = "EQ"
     Option = "OPTN"
 

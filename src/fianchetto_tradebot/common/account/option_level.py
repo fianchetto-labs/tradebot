@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class OptionLevel(Enum):
+class OptionLevel(int, Enum):
     NO_OPTIONS = 0
     LEVEL_1 = 1
     LEVEL_2 = 2

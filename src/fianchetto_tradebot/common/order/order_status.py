@@ -1,14 +1,14 @@
 from enum import Enum
 
 
-class OrderStatus(Enum):
-    OPEN = 0
-    PARTIAL = 1
-    EXECUTED = 2
-    CANCELLED = 3
-    INDIVIDUAL_FILLS = 4
-    CANCEL_REQUESTED = 5
-    EXPIRED = 6
-    REJECTED = 7
-    PRE_SUBMISSION = 8
-    ANY = 9
+class OrderStatus(str, Enum):
+    OPEN = "OPEN"
+    PARTIAL = "PARTIAL"
+    EXECUTED = "EXECUTED"
+    CANCELLED = "CANCELLED"
+    INDIVIDUAL_FILLS = "INDIVIDUAL_FILLS"
+    CANCEL_REQUESTED = "CANCEL_REQUESTED"
+    EXPIRED = "EXPIRED"
+    REJECTED = "REJECTED"
+    PRE_SUBMISSION = "PRE_SUBMISSION"
+    ANY = "ANY"
