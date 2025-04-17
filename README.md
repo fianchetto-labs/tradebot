@@ -8,6 +8,7 @@ Use this library to execute trading strategies across various exchanges, includi
 ### Pull down the package
 `$> pip install fianchetto-tradebot`
 
+### Using the package
 `from fianchetto_tradebot.oex.oex_service import OexService`
 
 ### Pull down the quickstart package
