@@ -1,5 +1,6 @@
 from abc import ABC
 
+from fianchetto_tradebot.common.api.api_service import ApiService
 from fianchetto_tradebot.common.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common.api.orders.get_order_request import GetOrderRequest
@@ -17,9 +18,9 @@ from fianchetto_tradebot.common.api.orders.preview_order_response import Preview
 from fianchetto_tradebot.common.exchange.connector import Connector
 
 
-class OrderService(ABC):
+class OrderService(ApiService):
     def __init__(self, connector: Connector):
-        self.connector = connector
+        super().__init__(connector)
 
     def list_orders(self, list_orders_request: ListOrdersRequest, exchange_specific_opts: dict[str, str]=None) -> ListOrdersResponse:
         pass

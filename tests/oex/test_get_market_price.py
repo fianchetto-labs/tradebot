@@ -17,7 +17,7 @@ from fianchetto_tradebot.common.order.order_price import OrderPrice
 from fianchetto_tradebot.common.order.order_price_type import OrderPriceType
 from fianchetto_tradebot.quotes.api.get_tradable_request import GetTradableRequest
 from fianchetto_tradebot.quotes.api.get_tradable_response import GetTradableResponse
-from fianchetto_tradebot.quotes.quote_service import QuoteService
+from fianchetto_tradebot.quotes.quotes_service import QuotesService
 from fianchetto_tradebot.oex.trade_execution_util import TradeExecutionUtil
 
 equity = Equity(ticker="GE", company_name="General Electric")
@@ -46,7 +46,7 @@ call_credit_spread_orderlines = [sell_call_order_line, buy_call_order_line]
 def quote_service():
     # return a mock quote service
     c: Connector = Connector()
-    qs: QuoteService = QuoteService(c)
+    qs: QuotesService = QuotesService(c)
 
     qs.get_tradable_quote = MagicMock(side_effect=return_market_prices)
     return qs

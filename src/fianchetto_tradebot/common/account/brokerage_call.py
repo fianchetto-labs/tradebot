@@ -1,5 +1,7 @@
 from enum import Enum
 
+from pydantic import BaseModel
+
 from fianchetto_tradebot.common.finance.amount import Amount
 
 
@@ -22,7 +24,6 @@ class BrokerageCallType(str, Enum):
             return BrokerageCallType.MIN_EQUITY
         return BrokerageCallType.UNKNOWN
 
-class BrokerageCall:
-    def __init__(self, call_type: BrokerageCallType, call_amount: Amount):
-        self.call_type: BrokerageCallType = call_type
-        self.call_amount: Amount = call_amount
+class BrokerageCall(BaseModel):
+    call_type: BrokerageCallType
+    call_amount: Amount

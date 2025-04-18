@@ -28,6 +28,7 @@ class ETradeConnector(Connector):
         self.config_file = config_file
         self.session_file = session_file
         self.base_url_file = base_url_file
+        self.session, self.base_url = self.load_connection()
 
     def load_base_url(self) -> str:
         persisted_file = self.base_url_file

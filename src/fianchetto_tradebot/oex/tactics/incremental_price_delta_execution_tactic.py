@@ -6,7 +6,7 @@ from fianchetto_tradebot.common.order.order_price import OrderPrice
 from fianchetto_tradebot.common.order.order_price_type import OrderPriceType
 from fianchetto_tradebot.common.order.order_type import OrderType
 from fianchetto_tradebot.common.order.placed_order import PlacedOrder
-from fianchetto_tradebot.quotes.quote_service import QuoteService
+from fianchetto_tradebot.quotes.quotes_service import QuotesService
 from fianchetto_tradebot.oex.tactics.execution_tactic import ExecutionTactic
 from fianchetto_tradebot.oex.trade_execution_util import TradeExecutionUtil
 
@@ -16,7 +16,7 @@ VERY_CLOSE_TO_MARKET_PRICE_WAIT = 30
 
 class IncrementalPriceDeltaExecutionTactic(ExecutionTactic):
     @staticmethod
-    def new_price(placed_order: PlacedOrder, quote_service: QuoteService=None)->(OrderPrice, int):
+    def new_price(placed_order: PlacedOrder, quotes_service: QuotesService=None)->(OrderPrice, int):
         current_market_price: Price = placed_order.placed_order_details.current_market_price
         current_market_mark_to_market_price: float = current_market_price.mark
 
@@ -25,9 +25,9 @@ class IncrementalPriceDeltaExecutionTactic(ExecutionTactic):
         if placed_order.order.order_price.order_price_type == OrderPriceType.NET_DEBIT:
             current_order_price *= -1
 
-        if not current_market_mark_to_market_price and quote_service:
+        if not current_market_mark_to_market_price and quotes_service:
             # After-hours it doesn't seem to provide this data in the E*Trade response. No matter, we can pull it from the exchange
-            current_market_mark_to_market_price: float = TradeExecutionUtil.get_market_price(placed_order.order, quote_service).mark
+            current_market_mark_to_market_price: float = TradeExecutionUtil.get_market_price(placed_order.order, quotes_service).mark
 
         delta = current_order_price - current_market_mark_to_market_price
 

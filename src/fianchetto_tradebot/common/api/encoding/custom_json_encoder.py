@@ -25,7 +25,6 @@ from fianchetto_tradebot.common.order.placed_order import PlacedOrder
 from fianchetto_tradebot.common.order.placed_order_details import PlacedOrderDetails
 
 
-
 class CustomJSONEncoder(JSONEncoder):
     def default(self, o):
         if isinstance(o, date):

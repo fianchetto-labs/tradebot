@@ -11,8 +11,8 @@ from fianchetto_tradebot.quotes.api.get_option_expire_dates_request import GetOp
 from fianchetto_tradebot.quotes.api.get_options_chain_request import GetOptionsChainRequest
 from fianchetto_tradebot.quotes.api.get_options_chain_response import GetOptionsChainResponse
 from fianchetto_tradebot.quotes.api.get_tradable_request import GetTradableRequest
-from fianchetto_tradebot.quotes.etrade.etrade_quote_service import ETradeQuoteService
-from fianchetto_tradebot.quotes.quote_service import QuoteService
+from fianchetto_tradebot.quotes.etrade.etrade_quotes_service import ETradeQuotesService
+from fianchetto_tradebot.quotes.quotes_service import QuotesService
 
 from sortedcontainers import SortedDict
 
@@ -41,9 +41,9 @@ class CalendarSpreadCell:
         return self.atm_spread_value - self.otm_spread_value
 
 class CalendarSpreadConstructor:
-    def __init__(self, qs: QuoteService, equity: Equity, num_strikes: int = DEFAULT_NUM_STRIKES):
+    def __init__(self, qs: QuotesService, equity: Equity, num_strikes: int = DEFAULT_NUM_STRIKES):
         # The number of strikes into the future
-        self.qs:QuoteService = qs
+        self.qs:QuotesService = qs
         self.num_strikes: int = num_strikes
 
         # The security in question
@@ -127,7 +127,7 @@ class CalendarSpreadConstructor:
 
 if __name__ == "__main__":
     connector: ETradeConnector = ETradeConnector()
-    q: QuoteService = ETradeQuoteService(connector)
+    q: QuotesService = ETradeQuotesService(connector)
 
     ticker = "SPY"
     equity_name = "SPDR S&P 500 ETF TRUST"
