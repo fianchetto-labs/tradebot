@@ -3,8 +3,7 @@ from fianchetto_tradebot.common.api.response import Response
 
 
 class AccountListResponse(Response):
-    def __init__(self, account_list: list[Account]):
-        self.account_list = account_list
+    account_list: list[Account]
 
     def get_account_list(self):
         return self.account_list

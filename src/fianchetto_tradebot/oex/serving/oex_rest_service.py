@@ -72,10 +72,8 @@ class OexRestService(RestService):
 
         # TODO: Add for IKBR and Schwab
 
-
     def run(self, *args, **kwargs):
         self.app.run(*args, **kwargs)
-
 
     def list_orders(self, exchange: str, account_id: str):
         args = request.args
@@ -153,7 +151,6 @@ class OexRestService(RestService):
 
         order_metadata: OrderMetadata = preview_order_request.order_metadata
         order: Order = preview_order_request.order
-
         place_order_request: PlaceOrderRequest = PlaceOrderRequest(order_metadata=order_metadata, preview_id=preview_id,
                                                                    order=order)
         place_order_response: PlaceOrderResponse = order_service.place_order(place_order_request)
@@ -165,9 +162,7 @@ class OexRestService(RestService):
             return 'Content-Type not supported!'
 
         cancel_order_request = CancelOrderRequest(account_id=account_id, order_id=order_id)
-
         order_service: OrderService = self.order_services[ExchangeName[exchange.upper()]]
-
         cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
 
         return jsonify(cancel_order_response)

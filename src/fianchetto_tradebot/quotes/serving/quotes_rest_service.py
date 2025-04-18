@@ -48,14 +48,14 @@ class QuotesRestService(RestService):
 
     def get_account(self, exchange:str, account_id: str):
         account_service: AccountService = self.account_services[ExchangeName[exchange.upper()]]
-        get_account_info_request: GetAccountInfoRequest = GetAccountInfoRequest(account_id)
+        get_account_info_request: GetAccountInfoRequest = GetAccountInfoRequest(account_id=account_id)
         get_account_response: GetAccountInfoResponse = account_service.get_account_info(get_account_info_request)
 
         return jsonify(get_account_response)
 
     def get_account_balance(self, exchange:str, account_id: str):
         account_service: AccountService = self.account_services[ExchangeName[exchange.upper()]]
-        get_account_balance_request: GetAccountBalanceRequest = GetAccountBalanceRequest(account_id)
+        get_account_balance_request: GetAccountBalanceRequest = GetAccountBalanceRequest(account_id=account_id)
         get_account_balance_response: GetAccountBalanceResponse = account_service.get_account_balance(get_account_balance_request)
 
         return jsonify(get_account_balance_response)

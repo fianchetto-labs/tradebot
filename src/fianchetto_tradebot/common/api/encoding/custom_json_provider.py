@@ -8,6 +8,9 @@ from flask.json.provider import DefaultJSONProvider
 from werkzeug.http import http_date
 import typing as t
 
+from fianchetto_tradebot.common.api.accounts.account_list_response import AccountListResponse
+from fianchetto_tradebot.common.api.accounts.get_account_balance_response import GetAccountBalanceResponse
+from fianchetto_tradebot.common.api.accounts.get_account_info_response import GetAccountInfoResponse
 from fianchetto_tradebot.common.api.orders.get_order_response import GetOrderResponse
 from fianchetto_tradebot.common.api.orders.order_list_response import ListOrdersResponse
 from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
@@ -54,6 +57,15 @@ class CustomJSONProvider(DefaultJSONProvider):
             return o.model_dump()
 
         if isinstance(o, (PreviewOrderResponse)):
+            return o.model_dump()
+
+        if isinstance(o, (AccountListResponse)):
+            return o.model_dump()
+
+        if isinstance(o, (GetAccountInfoResponse)):
+            return o.model_dump()
+
+        if isinstance(o, (GetAccountBalanceResponse)):
             return o.model_dump()
 
         if isinstance(o, (ExecutedOrder)):
