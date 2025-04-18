@@ -2,9 +2,11 @@ import dataclasses
 import decimal
 
 import uuid
-from datetime import date
+from datetime import date, datetime
+from enum import Enum
 
 from flask.json.provider import DefaultJSONProvider
+from pydantic import BaseModel
 from werkzeug.http import http_date
 import typing as t
 
@@ -15,6 +17,7 @@ from fianchetto_tradebot.common.api.orders.get_order_response import GetOrderRes
 from fianchetto_tradebot.common.api.orders.order_list_response import ListOrdersResponse
 from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common.api.orders.preview_order_response import PreviewOrderResponse
+from fianchetto_tradebot.common.api.portfolio.get_portfolio_response import GetPortfolioResponse
 from fianchetto_tradebot.common.api.request_status import RequestStatus
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.currency import Currency
@@ -51,6 +54,13 @@ class CustomJSONProvider(DefaultJSONProvider):
         if isinstance(o, (GetOrderResponse)):
             return {
                 "placed_order": o.placed_order
+            }
+
+        if isinstance(o, (GetPortfolioResponse)):
+            portfolio = o.portfolio
+            return {
+                "equities": portfolio.equities,
+                "options": portfolio.options
             }
 
         if isinstance(o, (PlaceOrderResponse)):
@@ -173,3 +183,20 @@ class CustomJSONProvider(DefaultJSONProvider):
 
         raise TypeError(f"Object of type {type(o).__name__} is not JSON serializable")
 
+    @staticmethod
+    def stringify_keys(obj: dict):
+        if isinstance(obj, dict):
+            return {
+                str(k): CustomJSONProvider.stringify_keys(v)
+                for k, v in obj.items()
+            }
+        elif isinstance(obj, list):
+            return [CustomJSONProvider.stringify_keys(i) for i in obj]
+        elif isinstance(obj, BaseModel):
+            return CustomJSONProvider.stringify_keys(obj.model_dump())
+        elif isinstance(obj, Enum):
+            return obj.value
+        elif isinstance(obj, datetime):
+            return obj.isoformat()
+        else:
+            return obj

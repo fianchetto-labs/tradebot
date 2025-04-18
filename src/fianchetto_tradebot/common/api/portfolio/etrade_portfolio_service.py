@@ -11,8 +11,7 @@ from fianchetto_tradebot.common.finance.option import Option
 from fianchetto_tradebot.common.finance.exercise_style import ExerciseStyle
 from fianchetto_tradebot.common.finance.option_type import OptionType
 from fianchetto_tradebot.common.finance.tradable import Tradable
-from fianchetto_tradebot.common.portfolio.portfolio import Portfolio
-from oex.test_get_market_price import equity
+from fianchetto_tradebot.common.portfolio.portfolio_builder import PortfolioBuilder
 
 DEFAULT_SORT_BY = "DAYS_EXPIRATION"
 DEFAULT_SORT_ORDER = "ASC"
@@ -46,12 +45,12 @@ class ETradePortfolioService(PortfolioService):
                 params[k]=v
 
         url = self.base_url + path
-        # approach 1
+
         response = self.session.get(url, params=params)
         print(response.request.headers)
         print(response.url)
 
-        portfolio_list_response = ETradePortfolioService._parse_portfolio_response(response)
+        portfolio_list_response: GetPortfolioResponse = ETradePortfolioService._parse_portfolio_response(response)
         return portfolio_list_response
 
     @staticmethod
@@ -66,7 +65,7 @@ class ETradePortfolioService(PortfolioService):
         portfolio_response = data["PortfolioResponse"]
         account_portfolios = portfolio_response["AccountPortfolio"]
 
-        return_portfolio = Portfolio()
+        return_portfolio = PortfolioBuilder()
         for account_portfolio in account_portfolios:
             positions = account_portfolio["Position"]
 
@@ -74,8 +73,8 @@ class ETradePortfolioService(PortfolioService):
                 tradable = ETradePortfolioService._get_tradable_from_position(position)
                 quantity = position["quantity"]
                 return_portfolio.add_position(tradable, quantity)
-
-        return GetPortfolioResponse(return_portfolio)
+        # TODO: Create a portfolio object that hte API will return
+        return GetPortfolioResponse(portfolio=return_portfolio.to_portfolio())
 
     @staticmethod
     def _get_tradable_from_position(position) -> Tradable:
@@ -94,8 +93,6 @@ class ETradePortfolioService(PortfolioService):
             expiry_year: int = product["expiryYear"]
             expiry_day: int = product["expiryDay"]
             expiry_month: int = product["expiryMonth"]
-            return Option(equity=e, option_type=option_type, strike_price=strike_price, expiry=datetime.datetime(expiry_year, expiry_month, expiry_day).date(), style=exercise_style)
+            return Option(equity=e, type=option_type, strike=strike_price, expiry=datetime.datetime(expiry_year, expiry_month, expiry_day).date(), style=exercise_style)
         else:
             raise Exception(f"Security type {product['securityType']} not supported yet")
-
-

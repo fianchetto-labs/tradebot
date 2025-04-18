@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime
 
+from pydantic import BaseModel
+
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.finance.option import Option
@@ -10,8 +12,11 @@ from fianchetto_tradebot.common.order.tradable_type import TradableType
 
 logger = logging.getLogger(__name__)
 
+class Portfolio(BaseModel):
+    equities: dict
+    options: dict
 
-class Portfolio:
+class PortfolioBuilder:
     def __init__(self):
 
         # equities[equity] = count
@@ -26,16 +31,16 @@ class Portfolio:
             type: OptionType = tradable.type
             expiry: datetime = tradable.expiry
 
-            if tradable.equity.ticker not in self.options:
+            if ticker not in self.options:
                 self.options[ticker] = dict()
                 self.options[ticker][expiry] = dict()
                 self.options[ticker][expiry][strike] = dict()
                 self.options[ticker][expiry][strike][type] = dict()
-            elif tradable.expiry not in self.options[ticker]:
+            elif expiry not in self.options[ticker]:
                 self.options[ticker][expiry] = dict()
                 self.options[ticker][expiry][strike] = dict()
                 self.options[ticker][expiry][strike][type] = dict()
-            elif tradable.strike not in self.options[ticker][expiry]:
+            elif strike not in self.options[ticker][expiry]:
                 self.options[ticker][expiry][strike] = dict()
                 self.options[ticker][expiry][strike][type] = dict()
 
@@ -74,3 +79,8 @@ class Portfolio:
         return (ticker in self.options and expiry in self.options[ticker] and
                 strike in self.options[ticker][expiry] and
                 tradable.type in self.options[ticker][expiry][strike])
+
+    def to_portfolio(self)->Portfolio:
+        return Portfolio(equities=self.equities, options=self.options)
+
+

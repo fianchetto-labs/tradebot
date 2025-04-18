@@ -1,18 +1,18 @@
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.currency import Currency
-from fianchetto_tradebot.common.portfolio.portfolio import Portfolio
+from fianchetto_tradebot.common.portfolio.portfolio_builder import PortfolioBuilder
 from tests.common import test_option
 from tests.common.util.test_object_util import get_sample_option, get_sample_equity
 
 
 def test_add_option():
-    p = Portfolio()
+    p = PortfolioBuilder()
     o = get_sample_option()
     p.add_position(o, 1)
     assert 1 == p.get_quantity(o)
 
 def test_add_two_options_diff_strike():
-    p = Portfolio()
+    p = PortfolioBuilder()
     o = get_sample_option()
     o2 = get_sample_option()
     o2.strike = Amount(whole=10, part=0, negative=False, currency=Currency.US_DOLLARS)
@@ -25,7 +25,7 @@ def test_add_two_options_diff_strike():
 
 
 def test_add_two_options_diff_expiry():
-    p = Portfolio()
+    p = PortfolioBuilder()
     o = get_sample_option()
     o2 = get_sample_option()
     o2.expiry = test_option.expiry2
@@ -38,14 +38,14 @@ def test_add_two_options_diff_expiry():
 
 
 def test_add_equity():
-    p = Portfolio()
+    p = PortfolioBuilder()
     e = get_sample_equity()
     p.add_position(e, 1)
     assert 1 == p.get_quantity(e)
 
 
 def test_remove_option():
-    p = Portfolio()
+    p = PortfolioBuilder()
     o = get_sample_option()
     p.add_position(o, 1)
 
@@ -55,7 +55,7 @@ def test_remove_option():
 
 
 def test_remove_equity():
-    p = Portfolio()
+    p = PortfolioBuilder()
     e = get_sample_equity()
     p.add_position(e, 1)
 

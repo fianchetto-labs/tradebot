@@ -17,10 +17,9 @@ from fianchetto_tradebot.common.finance.amount import Amount
 DEFAULT_INST_TYPE = "BROKERAGE"
 
 class ETradeAccountService(AccountService):
-
     def __init__(self, connector: ETradeConnector):
         super().__init__(connector)
-        self.session, self.base_url = self.connector.load_connection()
+        self.session, self.base_url = connector.load_connection()
 
     def list_accounts(self) -> AccountListResponse:
         path = f"/v1/accounts/list.json"
@@ -44,7 +43,6 @@ class ETradeAccountService(AccountService):
         account_balance: AccountBalance = ETradeAccountService._parse_account_balance_response(response)
 
         return GetAccountBalanceResponse(account_balance=account_balance)
-
 
     def get_account_info(self, get_account_info_request: GetAccountInfoRequest) -> GetAccountInfoResponse:
         path = f"/v1/accounts/list.json"

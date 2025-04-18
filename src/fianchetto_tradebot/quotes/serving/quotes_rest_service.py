@@ -7,6 +7,7 @@ from fianchetto_tradebot.common.api.accounts.get_account_balance_request import 
 from fianchetto_tradebot.common.api.accounts.get_account_balance_response import GetAccountBalanceResponse
 from fianchetto_tradebot.common.api.accounts.get_account_info_request import GetAccountInfoRequest
 from fianchetto_tradebot.common.api.accounts.get_account_info_response import GetAccountInfoResponse
+from fianchetto_tradebot.common.api.encoding.custom_json_provider import CustomJSONProvider
 from fianchetto_tradebot.common.api.portfolio.etrade_portfolio_service import ETradePortfolioService
 from fianchetto_tradebot.common.api.portfolio.get_portfolio_request import GetPortfolioRequest
 from fianchetto_tradebot.common.api.portfolio.get_portfolio_response import GetPortfolioResponse
@@ -67,7 +68,7 @@ class QuotesRestService(RestService):
         get_portfolio_request: GetPortfolioRequest = GetPortfolioRequest(account_id)
         get_portfolio_response: GetPortfolioResponse = portfolio_service.get_portfolio_info(get_portfolio_request)
 
-        return jsonify(get_portfolio_response)
+        return jsonify(CustomJSONProvider.stringify_keys(get_portfolio_response))
 
     def _setup_exchange_services(self):
         # Delegated to subclass
