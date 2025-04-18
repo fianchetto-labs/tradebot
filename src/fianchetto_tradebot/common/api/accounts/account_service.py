@@ -5,14 +5,14 @@ from fianchetto_tradebot.common.api.accounts.get_account_balance_request import 
 from fianchetto_tradebot.common.api.accounts.get_account_balance_response import GetAccountBalanceResponse
 from fianchetto_tradebot.common.api.accounts.get_account_info_request import GetAccountInfoRequest
 from fianchetto_tradebot.common.api.accounts.get_account_info_response import GetAccountInfoResponse
+from fianchetto_tradebot.common.api.api_service import ApiService
 from fianchetto_tradebot.common.exchange.connector import Connector
 
 
-class AccountService(ABC):
-
+class AccountService(ApiService):
     def __init__(self, connector: Connector):
-        self.connector: Connector = connector
-
+        super().__init__(connector)
+        
     def list_accounts(self) -> AccountListResponse:
         pass
 

@@ -66,10 +66,10 @@ class RestService(ABC):
         self.app.run(*args, **kwargs)
 
     def get_root(self):
-        return f"{self.service_key} service"
+        return f"{self.service_key.name} Service"
 
     def health_check(self):
-        return f"{self.service_key} service Up"
+        return f"{self.service_key.name} Service Up"
 
     def _register_endpoints(self):
         # Delegated to subclass

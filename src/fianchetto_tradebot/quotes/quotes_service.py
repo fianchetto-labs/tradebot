@@ -9,8 +9,7 @@ from fianchetto_tradebot.quotes.api.get_tradable_request import GetTradableReque
 from fianchetto_tradebot.quotes.api.get_tradable_response import GetTradableResponse
 
 
-class QuoteService(ApiService):
-
+class QuotesService(ApiService):
     def __init__(self, connector: Connector):
         super().__init__(connector)
 

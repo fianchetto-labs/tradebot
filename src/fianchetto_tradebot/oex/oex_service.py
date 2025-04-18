@@ -22,8 +22,8 @@ from fianchetto_tradebot.common.order.order import Order
 from fianchetto_tradebot.common.order.order_status import OrderStatus
 from fianchetto_tradebot.common.service.rest_service import RestService, ETRADE_ONLY_EXCHANGE_CONFIG
 from fianchetto_tradebot.common.service.service_key import ServiceKey
-from fianchetto_tradebot.quotes.etrade.etrade_quote_service import ETradeQuoteService
-from fianchetto_tradebot.quotes.quote_service import QuoteService
+from fianchetto_tradebot.quotes.etrade.etrade_quotes_service import ETradeQuotesService
+from fianchetto_tradebot.quotes.quotes_service import QuotesService
 
 JAN_1_2024 = datetime(2024,1,1).date()
 DEFAULT_START_DATE = JAN_1_2024
@@ -63,16 +63,16 @@ class OexService(RestService):
 
     def _setup_exchange_services(self):
         self.order_services: dict[ExchangeName, OrderService] = dict()
-        self.quote_services: dict[ExchangeName, QuoteService] = dict()
+        self.quotes_services: dict[ExchangeName, QuotesService] = dict()
 
         # E*Trade
         etrade_key: ExchangeName = ExchangeName.ETRADE
         etrade_connector: ETradeConnector = self.connectors[ExchangeName.ETRADE]
         etrade_order_service = ETradeOrderService(etrade_connector)
-        etrade_quote_service = ETradeQuoteService(etrade_connector)
+        etrade_quotes_service = ETradeQuotesService(etrade_connector)
 
         self.order_services[etrade_key] = etrade_order_service
-        self.quote_services[etrade_key] = etrade_quote_service
+        self.quotes_services[etrade_key] = etrade_quotes_service
 
         # TODO: Add for IKBR and Schwab
 

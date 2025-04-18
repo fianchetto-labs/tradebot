@@ -18,11 +18,11 @@ from fianchetto_tradebot.quotes.api.get_option_expire_dates_request import GetOp
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_response import GetOptionExpireDatesResponse
 from fianchetto_tradebot.quotes.api.get_tradable_request import GetTradableRequest
 from fianchetto_tradebot.quotes.api.get_tradable_response import GetTradableResponse
-from fianchetto_tradebot.quotes.quote_service import QuoteService
+from fianchetto_tradebot.quotes.quotes_service import QuotesService
 
 logger = logging.getLogger(__name__)
 
-class ETradeQuoteService(QuoteService):
+class ETradeQuotesService(QuotesService):
 
     def get_tradable_quote(self, tradable_request: GetTradableRequest) -> GetTradableResponse:
 
