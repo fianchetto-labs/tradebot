@@ -37,6 +37,8 @@ class RestService(ABC):
         self._app.json_provider_class = CustomJSONProvider(self._app)  # Tell Flask to use the custom encoder
         self._app.json = CustomJSONProvider(self._app)
         self._establish_connections(config_files=credential_config_files)
+        self._register_endpoints()
+        self._setup_exchange_services()
 
     @property
     def app(self) -> Flask:
@@ -72,8 +74,9 @@ class RestService(ABC):
         return f"{self.service_key.name} Service Up"
 
     def _register_endpoints(self):
-        # Delegated to subclass
-        pass
+        self.app.add_url_rule(rule='/', endpoint='root', view_func=self.get_root, methods=['GET'])
+        self.app.add_url_rule(rule='/health-check', endpoint='health-check', view_func=self.health_check, methods=['GET'])
+
 
     def _setup_exchange_services(self):
         # Delegated to subclass

@@ -8,9 +8,8 @@ print(sys.path)
 
 class TestAccount:
     def test_create_account(self):
-        a = Account("abc123", "n1", "random acct")
+        a = Account(account_id="abc123", account_name="n1", account_desc="random acct")
 
-        print(sys.path)
         print(a)
 
 if __name__ == "__main__":

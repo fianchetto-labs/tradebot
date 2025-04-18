@@ -30,12 +30,9 @@ DEFAULT_START_DATE = JAN_1_2024
 DEFAULT_COUNT = 100
 
 
-class OexService(RestService):
+class OexRestService(RestService):
     def __init__(self, credential_config_files: dict[ExchangeName, str]=ETRADE_ONLY_EXCHANGE_CONFIG):
         super().__init__(ServiceKey.OEX, credential_config_files)
-
-        self._register_endpoints()
-        self._setup_exchange_services()
 
     @property
     def app(self) -> Flask:
@@ -46,8 +43,7 @@ class OexService(RestService):
         self._app = app
 
     def _register_endpoints(self):
-        self.app.add_url_rule(rule='/', endpoint='root', view_func=self.get_root, methods=['GET'])
-        self.app.add_url_rule(rule='/health-check', endpoint='health-check', view_func=self.health_check, methods=['GET'])
+        super()._register_endpoints()
         self.app.add_url_rule(rule='/api/v1/<exchange>/<account_id>/orders', endpoint='list-orders', view_func=self.list_orders, methods=['GET'])
         self.app.add_url_rule(rule='/api/v1/<exchange>/<account_id>/orders/<order_id>', endpoint='get-order',
                               view_func=self.get_order, methods=['GET'])
@@ -178,5 +174,5 @@ class OexService(RestService):
 
 if __name__ == "__main__":
     # Login To Exchange Here
-    oex_app = OexService()
+    oex_app = OexRestService()
     oex_app.run(host="0.0.0.0", port=8080)

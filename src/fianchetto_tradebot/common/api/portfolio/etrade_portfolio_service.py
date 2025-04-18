@@ -12,6 +12,7 @@ from fianchetto_tradebot.common.finance.exercise_style import ExerciseStyle
 from fianchetto_tradebot.common.finance.option_type import OptionType
 from fianchetto_tradebot.common.finance.tradable import Tradable
 from fianchetto_tradebot.common.portfolio.portfolio import Portfolio
+from oex.test_get_market_price import equity
 
 DEFAULT_SORT_BY = "DAYS_EXPIRATION"
 DEFAULT_SORT_ORDER = "ASC"
@@ -82,7 +83,7 @@ class ETradePortfolioService(PortfolioService):
         symbol = product["symbol"]
         symbol_desc = position["Complete"]["symbolDescription"]
 
-        e = Equity(symbol, symbol_desc)
+        e = Equity(ticker=symbol, company_name=symbol_desc)
 
         if product["securityType"] == "EQ":
             return e
@@ -93,8 +94,8 @@ class ETradePortfolioService(PortfolioService):
             expiry_year: int = product["expiryYear"]
             expiry_day: int = product["expiryDay"]
             expiry_month: int = product["expiryMonth"]
-            return Option(e, option_type, strike_price, datetime.datetime(expiry_year, expiry_month, expiry_day).date(), exercise_style)
+            return Option(equity=e, option_type=option_type, strike_price=strike_price, expiry=datetime.datetime(expiry_year, expiry_month, expiry_day).date(), style=exercise_style)
         else:
-            raise Exception(f"Style {product['securityType']} not supported yet")
+            raise Exception(f"Security type {product['securityType']} not supported yet")
 
 

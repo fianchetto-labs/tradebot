@@ -3,14 +3,14 @@ from fianchetto_tradebot.common.order.action import Action
 from fianchetto_tradebot.common.order.order import Order
 from fianchetto_tradebot.quotes.api.get_tradable_request import GetTradableRequest
 from fianchetto_tradebot.quotes.api.get_tradable_response import GetTradableResponse
-from fianchetto_tradebot.quotes.quote_service import QuoteService
+from fianchetto_tradebot.quotes.quotes_service import QuotesService
 
 ADJUSTED_NO_BIDS_WIDE_SPREAD_ASK = .03
 
 class TradeExecutionUtil:
     # This can also be done via order Bid-Ask - advantage is fewer API calls. Downside is relying on ETrade's order service
     # This would be necessary to establish a first price for the order. Other issue is it wouldn't adjust for very wide spreads
-    def get_market_price(order: Order, quote_service: QuoteService, adjust_excessive_spreads=True) -> Price:
+    def get_market_price(order: Order, quote_service: QuotesService, adjust_excessive_spreads=True) -> Price:
         mark_to_market_price: float = 0
         best_price: float = 0
         worst_price: float = 0

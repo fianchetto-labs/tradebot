@@ -9,8 +9,5 @@ class PortfolioService(ApiService):
     def __init__(self, connector: Connector):
         super().__init__(connector)
 
-    def list_portfolios(self):
-        pass
-
     def get_portfolio_info(self, get_portfolio_request: GetPortfolioRequest, exchange_specific_options: dict[str, str]):
         pass
