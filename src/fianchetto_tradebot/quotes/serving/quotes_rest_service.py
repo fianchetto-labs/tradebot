@@ -23,6 +23,7 @@ from fianchetto_tradebot.common.service.service_key import ServiceKey
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_request import GetOptionExpireDatesRequest
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_response import GetOptionExpireDatesResponse
 from fianchetto_tradebot.quotes.api.get_options_chain_request import GetOptionsChainRequest
+from fianchetto_tradebot.quotes.api.get_options_chain_response import GetOptionsChainResponse
 from fianchetto_tradebot.quotes.api.get_tradable_request import GetTradableRequest
 from fianchetto_tradebot.quotes.api.get_tradable_response import GetTradableResponse
 from fianchetto_tradebot.quotes.etrade.etrade_quotes_service import ETradeQuotesService
@@ -95,7 +96,8 @@ class QuotesRestService(RestService):
         get_portfolio_request: GetPortfolioRequest = GetPortfolioRequest(account_id)
         get_portfolio_response: GetPortfolioResponse = portfolio_service.get_portfolio_info(get_portfolio_request)
 
-        return jsonify(CustomJSONProvider.stringify_keys(get_portfolio_response))
+        with_stringified_keys = CustomJSONProvider.stringify_keys(get_portfolio_response)
+        return jsonify(with_stringified_keys)
 
     def get_equity_quote(self, exchange, equity):
         quotes_service: QuotesService = self.quotes_services[ExchangeName[exchange.upper()]]
@@ -110,9 +112,8 @@ class QuotesRestService(RestService):
 
         tradable: Tradable = Equity(ticker=equity)
         # TODO: Adjust this so as to get all expiries, instead of one
-        tradeable_request: GetOptionsChainRequest = GetOptionsChainRequest(tradable=tradable, expiry=None)
-        get_tradable_response: GetTradableResponse = quotes_service.get_tradable_quote(tradeable_request)
-
+        get_options_chain_request: GetOptionsChainRequest = GetOptionsChainRequest(tradable=tradable, expiry=None)
+        get_tradable_response: GetOptionsChainResponse = quotes_service.get_options_chain(get_options_chain_request)
 
         return jsonify(get_tradable_response)
 
@@ -132,9 +133,10 @@ class QuotesRestService(RestService):
         expiry_date = parse(expiry)
 
         tradeable_request: GetOptionsChainRequest = GetOptionsChainRequest(ticker=equity, expiry=expiry_date)
-        get_tradable_response: GetTradableResponse = quotes_service.get_options_chain(tradeable_request)
+        get_options_chain_response: GetOptionsChainResponse = quotes_service.get_options_chain(tradeable_request)
 
-        return jsonify(get_tradable_response)
+        with_stringified_keys = CustomJSONProvider.stringify_keys(get_options_chain_response)
+        return jsonify(with_stringified_keys)
 
     def _setup_exchange_services(self):
         # Delegated to subclass

@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 
 from pydantic import BaseModel
 
@@ -7,13 +8,17 @@ from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.finance.price import Price
 from fianchetto_tradebot.common.finance.priced_option import PricedOption
 from fianchetto_tradebot.common.finance.option_type import OptionType
-import datetime
+
 
 logger = logging.getLogger(__name__)
 
 
 class Chain(BaseModel):
     equity: Equity
+    #strike_expiry_chain_call: dict[Amount, dict[date, Price]]
+    #expiry_strike_chain_call: dict[date, dict[Amount, Price]]
+    #strike_expiry_chain_put: dict[Amount, dict[date, Price]]
+    #expiry_strike_chain_put: dict[date, dict[Amount, Price]]
     strike_expiry_chain_call: dict
     expiry_strike_chain_call: dict
     strike_expiry_chain_put: dict
@@ -23,12 +28,12 @@ class ChainBuilder:
     def __init__(self, equity: Equity):
         self.equity: Equity = equity
         # keyed on strike then date
-        self.strike_expiry_chain_call: dict[Amount, dict[datetime, Price]] = dict()
-        self.expiry_strike_chain_call: dict[datetime, dict[Amount, Price]] = dict()
+        self.strike_expiry_chain_call: dict[Amount, dict[date, Price]] = dict()#dict[Amount, dict[date, Price]]()
+        self.expiry_strike_chain_call: dict[date, dict[Amount, Price]] = dict()#dict[date, dict[Amount, Price]]()
 
         # keyed on date then strike
-        self.strike_expiry_chain_put: dict[Amount, dict[datetime, Price]] = dict()
-        self.expiry_strike_chain_put: dict[datetime, dict[Amount, Price]] = dict()
+        self.strike_expiry_chain_put: dict[Amount, dict[date, Price]] = dict()#dict[Amount, dict[date, Price]]()
+        self.expiry_strike_chain_put: dict[date, dict[Amount, Price]] = dict()#dict[date, dict[Amount, Price]]()
 
     def add(self, priced_option: PricedOption):
         option = priced_option.option
@@ -57,7 +62,7 @@ class ChainBuilder:
 
         return '\n' + '\n'.join(full_set)
 
-    def print(self, expiry: datetime):
+    def print(self, expiry: date):
 
         # Collect all the strikes for a given expiry:
         if expiry not in self.expiry_strike_chain_call or expiry not in self.expiry_strike_chain_put:
@@ -86,7 +91,7 @@ class ChainBuilder:
                 logger.warning("Overwriting value ")
             self.strike_expiry_chain_call[option.strike][option.expiry] = price
         else:
-            self.strike_expiry_chain_call[option.strike] = dict()
+            self.strike_expiry_chain_call[option.strike] = dict()#dict[date, Price]()
             self.strike_expiry_chain_call[option.strike][option.expiry] = price
 
         # update option.expiry_strike
@@ -95,7 +100,7 @@ class ChainBuilder:
                 logger.warning("Overwriting value ")
             self.expiry_strike_chain_call[option.expiry][option.strike] = price
         else:
-            self.expiry_strike_chain_call[option.expiry] = dict()
+            self.expiry_strike_chain_call[option.expiry] = dict()#dict[Amount, Price]()
             self.expiry_strike_chain_call[option.expiry][option.strike] = price
 
     def _update_put_chain(self, priced_option: PricedOption):
@@ -106,7 +111,7 @@ class ChainBuilder:
                 logger.warning("Overwriting value ")
             self.strike_expiry_chain_put[option.strike][option.expiry] = price
         else:
-            self.strike_expiry_chain_put[option.strike] = dict()
+            self.strike_expiry_chain_put[option.strike] = dict()#dict[date, Price]()
             self.strike_expiry_chain_put[option.strike][option.expiry] = price
 
         # update option.expiry_strike
@@ -115,7 +120,7 @@ class ChainBuilder:
                 logger.warning("Overwriting value ")
             self.expiry_strike_chain_put[option.expiry][option.strike] = price
         else:
-            self.expiry_strike_chain_put[option.expiry] = dict()
+            self.expiry_strike_chain_put[option.expiry] = dict()#dict[Amount, Price]()
             self.expiry_strike_chain_put[option.expiry][option.strike] = price
 
     def add_chain(self, other):
@@ -124,27 +129,27 @@ class ChainBuilder:
 
         for expiry in other.expiry_strike_chain_put:
             if expiry not in self.expiry_strike_chain_put:
-                self.expiry_strike_chain_put[expiry] = dict()
+                self.expiry_strike_chain_put[expiry] = dict()#dict[Amount, Price]()
             for strike in other.expiry_strike_chain_put[expiry]:
                 self.expiry_strike_chain_put[expiry][strike] = other.expiry_strike_chain_put[expiry][strike].copy_of()
 
         for expiry in other.expiry_strike_chain_call:
             if expiry not in self.expiry_strike_chain_call:
-                self.expiry_strike_chain_call[expiry] = dict()
+                self.expiry_strike_chain_call[expiry] = dict()#dict[Amount, Price]()
             for strike in other.expiry_strike_chain_call[expiry]:
                 self.expiry_strike_chain_call[expiry][strike] = other.expiry_strike_chain_call[expiry][strike].copy_of()
 
         for strike in other.strike_expiry_chain_put:
             if strike not in self.strike_expiry_chain_put:
-                self.strike_expiry_chain_put[strike] = dict()
+                self.strike_expiry_chain_put[strike] = dict()#dict[date, Price]()
             for expiry in other.strike_expiry_chain_put[strike]:
                 self.strike_expiry_chain_put[strike][expiry] = other.strike_expiry_chain_put[strike][expiry].copy_of()
 
         for strike in other.strike_expiry_chain_call:
             if strike not in self.strike_expiry_chain_call:
-                self.strike_expiry_chain_call[strike] = dict()
+                self.strike_expiry_chain_call[strike] = dict()#dict[date, Price]()
             for expiry in other.strike_expiry_chain_call[strike]:
                 self.strike_expiry_chain_call[strike][expiry] = other.strike_expiry_chain_call[strike][expiry].copy_of()
 
     def to_chain(self):
-        return Chain(equity=self.equity, strike_expiry_chain_call=self.strike_expiry_chain_call, expiry_strike_chain_call=self.expiry_strike_chain_call, strike_expiry_chain_put=self.expiry_strike_chain_put, expiry_strike_chain_put=self.expiry_strike_chain_put)
+        return Chain(equity=self.equity, strike_expiry_chain_call=self.strike_expiry_chain_call, expiry_strike_chain_call=self.expiry_strike_chain_call, strike_expiry_chain_put=self.strike_expiry_chain_put, expiry_strike_chain_put=self.expiry_strike_chain_put)

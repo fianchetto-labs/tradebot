@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 
 
 from fianchetto_tradebot.common.finance.amount import Amount
@@ -16,7 +16,7 @@ class Option(Tradable):
     equity: Equity
     type: OptionType
     strike: Amount
-    expiry: datetime
+    expiry: date
     style: ExerciseStyle = ExerciseStyle.AMERICAN
 
     def copy_of(self):
@@ -54,7 +54,7 @@ class Option(Tradable):
     def from_str(input: str):
         components: list[str] = input.split(' ')
         ticker: str = str(components[0])
-        expiry: datetime = parse(" ".join(components[1:4]))
+        expiry: date = parse(" ".join(components[1:4]))
         strike: Amount = Amount.from_string(components[4])
         type: OptionType = OptionType.from_str(components[5])
 

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 
 import pytest as pytest
 from pydantic import ValidationError
@@ -18,8 +18,8 @@ type2 = OptionType.CALL
 
 strike = Amount(whole=10, part=0, currency=Currency.US_DOLLARS)
 
-expiry = GoodForSixtyDays().expiry_date
-expiry2 = GoodForDay().expiry_date
+expiry: date = GoodForSixtyDays().expiry_date.date()
+expiry2: date = GoodForDay().expiry_date.date()
 
 price = Amount(whole=0, part=87, currency=Currency.US_DOLLARS)
 style = ExerciseStyle.AMERICAN
@@ -36,7 +36,7 @@ def test_option_empty_type():
 
 
 def test_option_none_date():
-    with pytest.raises(ValidationError, match='Input should be a valid datetime'):
+    with pytest.raises(ValidationError, match='Input should be a valid date'):
         Option(equity=e, type=type, strike=strike, expiry=None, style=style)
 
 
@@ -67,7 +67,7 @@ def test_option_parsing_european():
 
     assert o.type == OptionType.CALL
     assert o.strike == Amount(whole=19, part=0)
-    assert datetime(2024, 10, 16) == o.expiry
+    assert date(2024, 10, 16) == o.expiry
     assert o.style == ExerciseStyle.EUROPEAN
 
 
@@ -77,5 +77,5 @@ def test_option_parsing_american():
 
     assert o.type == OptionType.CALL
     assert o.strike == Amount(whole=7, part=50)
-    assert datetime(2024, 11, 8) == o.expiry
+    assert date(2024, 11, 8) == o.expiry
     assert o.style == ExerciseStyle.AMERICAN

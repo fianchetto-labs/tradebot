@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime
+from datetime import date
 
 from dateutil.parser import parse
 
@@ -64,7 +64,7 @@ class ETradeQuotesService(QuotesService):
         params["symbol"] = equity.ticker
 
         if get_options_chain_request.expiry:
-            as_datetime: datetime.date = get_options_chain_request.expiry
+            as_datetime: date = get_options_chain_request.expiry
             year = as_datetime.year
             month = as_datetime.month
             day = as_datetime.day
@@ -78,7 +78,7 @@ class ETradeQuotesService(QuotesService):
         response = self.session.get(url, params=params)
         options_chain = ETradeQuotesService._parse_options_chain(response, equity)
 
-        return GetOptionsChainResponse(options_chain)
+        return GetOptionsChainResponse(options_chain=options_chain)
 
     def get_option_expire_dates(self, get_options_expire_dates_request: GetOptionExpireDatesRequest)-> GetOptionExpireDatesResponse:
         path = f"/v1/market/optionexpiredate.json"
@@ -87,7 +87,7 @@ class ETradeQuotesService(QuotesService):
         url = self.base_url + path
         response = self.session.get(url, params=params)
 
-        exp_list: list[datetime.date] = ETradeQuotesService._parse_option_expire_dates(response)
+        exp_list: list[date] = ETradeQuotesService._parse_option_expire_dates(response)
 
         return GetOptionExpireDatesResponse(expire_dates=exp_list)
 
@@ -106,7 +106,7 @@ class ETradeQuotesService(QuotesService):
         expiry_month = selected["month"]
         expiry_year = selected["year"]
 
-        expiry_date = datetime(expiry_year, expiry_month, expiry_day).date()
+        expiry_date: date = date(expiry_year, expiry_month, expiry_day)
         option_pairs = option_chain_response["OptionPair"]
         for option_pair in option_pairs:
             # Note that exercise style is not available in the response, per the documentation. We'll need a good way to look it up.
@@ -181,7 +181,7 @@ class ETradeQuotesService(QuotesService):
             logger.error("Error: Quote API service error")
 
     @staticmethod
-    def _parse_option_expire_dates(response)->list[datetime.date] :
+    def _parse_option_expire_dates(response)->list[date] :
         data: dict = json.loads(response.text)
 
         exp_date_list = []
@@ -191,6 +191,6 @@ class ETradeQuotesService(QuotesService):
             year = expiration_date["year"]
             month = expiration_date["month"]
             day = expiration_date["day"]
-            exp_date_list.append(datetime(year, month, day).date())
+            exp_date_list.append(date(year, month, day))
 
         return exp_date_list

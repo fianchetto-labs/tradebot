@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 from fianchetto_tradebot.common.finance.chain import ChainBuilder
 from fianchetto_tradebot.common.finance.amount import Amount
@@ -20,6 +20,22 @@ DEFAULT_REFERENCE_OPTIONS_PRICE: float = 1.0
 
 DEFAULT_SPREAD_AMT: float = .07
 
+def instantiate_simple_chain_builder() -> ChainBuilder:
+    underlying = Equity(ticker="GE")
+    cb = ChainBuilder(Equity(ticker="GE"))
+    p = Price(bid=1.0, ask=2.0)
+    expiry_date = date(2025, 9, 19)
+    o = Option(equity=underlying, type=OptionType.CALL, strike=Amount(whole=25, part=0), expiry=expiry_date,
+               style=ExerciseStyle.AMERICAN)
+
+    o2 = Option(equity=underlying, type=OptionType.PUT, strike=Amount(whole=25, part=0), expiry=expiry_date,
+                style=ExerciseStyle.AMERICAN)
+    po = PricedOption(option=o, price=p)
+    po2 = PricedOption(option=o2, price=p)
+    cb.add(po)
+    cb.add(po2)
+
+    return cb
 
 def build_chain(equity=DEFAULT_EQUITY, num_strikes_each_side=DEFAULT_NUM_STRIKES_EACH_SIDE, expiry=DEFAULT_EXPIRY, num_expiries=DEFAULT_NUM_EXPIRIES, centered_around=DEFAULT_MIDDLE_STRIKE, strike_delta=DEFAULT_STRIKE_DELTA, reference_options_price=DEFAULT_REFERENCE_OPTIONS_PRICE, spread_amt=DEFAULT_SPREAD_AMT):
     return_chain = ChainBuilder(equity)
