@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from fianchetto_tradebot.common.finance.chain import Chain
+from fianchetto_tradebot.common.finance.chain import ChainBuilder
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.finance.option import Option
@@ -22,7 +22,7 @@ DEFAULT_SPREAD_AMT: float = .07
 
 
 def build_chain(equity=DEFAULT_EQUITY, num_strikes_each_side=DEFAULT_NUM_STRIKES_EACH_SIDE, expiry=DEFAULT_EXPIRY, num_expiries=DEFAULT_NUM_EXPIRIES, centered_around=DEFAULT_MIDDLE_STRIKE, strike_delta=DEFAULT_STRIKE_DELTA, reference_options_price=DEFAULT_REFERENCE_OPTIONS_PRICE, spread_amt=DEFAULT_SPREAD_AMT):
-    return_chain = Chain(equity)
+    return_chain = ChainBuilder(equity)
 
     current_expiry = expiry
     current_reference_options_price: Amount = reference_options_price
@@ -41,7 +41,7 @@ def build_chain(equity=DEFAULT_EQUITY, num_strikes_each_side=DEFAULT_NUM_STRIKES
 # This is a simple generation tool. It's not meant to simulate realistic numbers
 def build_chain_for_expiry(equity=DEFAULT_EQUITY, num_strikes_each_side=DEFAULT_NUM_STRIKES_EACH_SIDE, expiry=DEFAULT_EXPIRY, centered_around=DEFAULT_MIDDLE_STRIKE, strike_delta=DEFAULT_STRIKE_DELTA, reference_options_price=DEFAULT_REFERENCE_OPTIONS_PRICE, spread_amt=DEFAULT_SPREAD_AMT):
 
-    return_chain = Chain(equity)
+    return_chain = ChainBuilder(equity)
     strikes: dict[float] = _get_strikes(centered_around, strike_delta, num_strikes_each_side)
     option_prices_at_strikes = _get_option_prices_at_strikes(equity, strikes, strike_delta, num_strikes_each_side, reference_options_price, spread_amt, expiry)
     for strike in strikes:

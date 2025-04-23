@@ -5,3 +5,8 @@ def test_print_chain():
     c = chain_testing_util.build_chain()
 
     print(c)
+
+def test_chain_builder_to_chain():
+    c = chain_testing_util.build_chain()
+
+    print(c.to_chain())

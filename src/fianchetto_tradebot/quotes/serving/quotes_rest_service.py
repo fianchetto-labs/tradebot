@@ -1,3 +1,5 @@
+from dateutil.parser import parse
+
 from flask import jsonify
 
 from fianchetto_tradebot.common.api.accounts.account_list_response import AccountListResponse
@@ -14,8 +16,15 @@ from fianchetto_tradebot.common.api.portfolio.get_portfolio_response import GetP
 from fianchetto_tradebot.common.api.portfolio.portfolio_service import PortfolioService
 from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.exchange.exchange_name import ExchangeName
+from fianchetto_tradebot.common.finance.equity import Equity
+from fianchetto_tradebot.common.finance.tradable import Tradable
 from fianchetto_tradebot.common.service.rest_service import RestService, ETRADE_ONLY_EXCHANGE_CONFIG
 from fianchetto_tradebot.common.service.service_key import ServiceKey
+from fianchetto_tradebot.quotes.api.get_option_expire_dates_request import GetOptionExpireDatesRequest
+from fianchetto_tradebot.quotes.api.get_option_expire_dates_response import GetOptionExpireDatesResponse
+from fianchetto_tradebot.quotes.api.get_options_chain_request import GetOptionsChainRequest
+from fianchetto_tradebot.quotes.api.get_tradable_request import GetTradableRequest
+from fianchetto_tradebot.quotes.api.get_tradable_response import GetTradableResponse
 from fianchetto_tradebot.quotes.etrade.etrade_quotes_service import ETradeQuotesService
 from fianchetto_tradebot.quotes.quotes_service import QuotesService
 
@@ -36,8 +45,27 @@ class QuotesRestService(RestService):
         self.app.add_url_rule(rule='/api/v1/<exchange>/accounts/<account_id>/balance', endpoint='get-account-balance',
                               view_func=self.get_account_balance, methods=['GET'])
 
+        # Portfolio Endpoints
         self.app.add_url_rule(rule='/api/v1/<exchange>/accounts/<account_id>/portfolio', endpoint='get-account-portfolio',
                               view_func=self.get_account_portfolio, methods=['GET'])
+
+        # Quotes Endpoints
+
+        self.app.add_url_rule(rule='/api/v1/<exchange>/quotes/equity/<equity>', endpoint='get-equity-quote',
+                              view_func=self.get_equity_quote, methods=['GET'])
+
+        self.app.add_url_rule(rule='/api/v1/<exchange>/quotes/equity/<equity>/options_chain', endpoint='get-options-chain',
+                              view_func=self.get_options_chain, methods=['GET'])
+
+
+        self.app.add_url_rule(rule='/api/v1/<exchange>/quotes/equity/<equity>/options_chain/expiry', endpoint='get-options-chain-expiries',
+                              view_func=self.get_options_chain_expiries, methods=['GET'])
+
+        self.app.add_url_rule(rule='/api/v1/<exchange>/quotes/equity/<equity>/options_chain/expiry/<expiry>', endpoint='get-options-chain-by-expiry',
+                              view_func=self.get_options_chain_by_expiry, methods=['GET'])
+
+
+        # TODO - add more granular endpoints for options by expiry, strike, etc
 
 
     def list_accounts(self, exchange:str):
@@ -45,7 +73,6 @@ class QuotesRestService(RestService):
         account_list_response: AccountListResponse = account_service.list_accounts()
 
         return jsonify(account_list_response)
-
 
     def get_account(self, exchange:str, account_id: str):
         account_service: AccountService = self.account_services[ExchangeName[exchange.upper()]]
@@ -70,6 +97,45 @@ class QuotesRestService(RestService):
 
         return jsonify(CustomJSONProvider.stringify_keys(get_portfolio_response))
 
+    def get_equity_quote(self, exchange, equity):
+        quotes_service: QuotesService = self.quotes_services[ExchangeName[exchange.upper()]]
+        tradable: Tradable = Equity(ticker=equity)
+        tradeable_request: GetTradableRequest = GetTradableRequest(tradable=tradable)
+        get_tradable_response: GetTradableResponse = quotes_service.get_tradable_quote(tradeable_request)
+
+        return jsonify(get_tradable_response)
+
+    def get_options_chain(self, exchange, equity):
+        quotes_service: QuotesService = self.quotes_services[ExchangeName[exchange.upper()]]
+
+        tradable: Tradable = Equity(ticker=equity)
+        # TODO: Adjust this so as to get all expiries, instead of one
+        tradeable_request: GetOptionsChainRequest = GetOptionsChainRequest(tradable=tradable, expiry=None)
+        get_tradable_response: GetTradableResponse = quotes_service.get_tradable_quote(tradeable_request)
+
+
+        return jsonify(get_tradable_response)
+
+    def get_options_chain_expiries(self, exchange, equity):
+        quotes_service: QuotesService = self.quotes_services[ExchangeName[exchange.upper()]]
+
+        # TODO: Need to define a good format for expiry values
+        expiry_request: GetOptionExpireDatesRequest = GetOptionExpireDatesRequest(ticker=equity)
+        get_tradable_response: GetOptionExpireDatesResponse = quotes_service.get_option_expire_dates(expiry_request)
+
+        return jsonify(get_tradable_response)
+
+    def get_options_chain_by_expiry(self, exchange, equity, expiry):
+        quotes_service: QuotesService = self.quotes_services[ExchangeName[exchange.upper()]]
+
+        # Document for format in which to get this (yyyy_mm_dd)
+        expiry_date = parse(expiry)
+
+        tradeable_request: GetOptionsChainRequest = GetOptionsChainRequest(ticker=equity, expiry=expiry_date)
+        get_tradable_response: GetTradableResponse = quotes_service.get_options_chain(tradeable_request)
+
+        return jsonify(get_tradable_response)
+
     def _setup_exchange_services(self):
         # Delegated to subclass
         self.quotes_services: dict[ExchangeName, QuotesService] = dict()
@@ -89,7 +155,6 @@ class QuotesRestService(RestService):
         self.account_services[etrade_key] = etrade_account_service
 
         # TODO: Add for Schwab and IKBR
-    pass
 
 
 if __name__ == "__main__":

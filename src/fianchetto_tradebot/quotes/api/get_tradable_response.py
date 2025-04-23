@@ -1,16 +1,15 @@
 from datetime import datetime
-from typing import Optional
-
-from pydantic import BaseModel
+from typing import Optional, Union
 
 from fianchetto_tradebot.common.api.finance.greeks.greeks import Greeks
+from fianchetto_tradebot.common.finance.equity import Equity
+from fianchetto_tradebot.common.finance.option import Option
 from fianchetto_tradebot.common.finance.price import Price
-from fianchetto_tradebot.common.finance.tradable import Tradable
 from fianchetto_tradebot.common.api.response import Response
 
 
-class GetTradableResponse(Response, BaseModel):
-    tradable: Tradable
+class GetTradableResponse(Response):
+    tradable: Union[Equity, Option]
     response_time: Optional[datetime] = None
     current_price: Price
     volume: int

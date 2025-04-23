@@ -1,10 +1,8 @@
-from datetime import datetime
+from datetime import date
 
-from fianchetto_tradebot.common.finance.equity import Equity
+from pydantic import BaseModel
 
 
-class GetOptionsChainRequest:
-    def __init__(self, equity: Equity, expiry: datetime.date):
-        # Perhaps a date will also be required
-        self.equity = equity
-        self.expiry: datetime.date = expiry
+class GetOptionsChainRequest(BaseModel):
+    ticker: str
+    expiry: date

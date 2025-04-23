@@ -34,6 +34,8 @@ from fianchetto_tradebot.common.order.order_price import OrderPrice
 from fianchetto_tradebot.common.order.order_type import OrderType
 from fianchetto_tradebot.common.order.placed_order import PlacedOrder
 from fianchetto_tradebot.common.order.placed_order_details import PlacedOrderDetails
+from fianchetto_tradebot.quotes.api.get_option_expire_dates_response import GetOptionExpireDatesResponse
+from fianchetto_tradebot.quotes.api.get_tradable_response import GetTradableResponse
 
 
 class CustomJSONProvider(DefaultJSONProvider):
@@ -76,6 +78,12 @@ class CustomJSONProvider(DefaultJSONProvider):
             return o.model_dump()
 
         if isinstance(o, (GetAccountBalanceResponse)):
+            return o.model_dump()
+
+        if isinstance(o, (GetTradableResponse)):
+            return o.model_dump()
+
+        if isinstance(o, (GetOptionExpireDatesResponse)):
             return o.model_dump()
 
         if isinstance(o, (ExecutedOrder)):

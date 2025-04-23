@@ -38,7 +38,7 @@ def q():
     return ETradeQuoteService(connector)
 
 def test_option_expirations(q: QuoteService):
-    req: GetOptionExpireDatesRequest = GetOptionExpireDatesRequest(ticker)
+    req: GetOptionExpireDatesRequest = GetOptionExpireDatesRequest(ticker=ticker)
     resp: GetOptionExpireDatesResponse = q.get_option_expire_dates(req)
 
     print(resp.expire_dates)

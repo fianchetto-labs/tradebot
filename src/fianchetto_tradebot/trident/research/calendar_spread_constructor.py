@@ -4,7 +4,7 @@ from pandas import DataFrame
 
 from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.finance.amount import Amount
-from fianchetto_tradebot.common.finance.chain import Chain
+from fianchetto_tradebot.common.finance.chain import ChainBuilder, Chain
 from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.finance.price import Price
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_request import GetOptionExpireDatesRequest
@@ -49,22 +49,22 @@ class CalendarSpreadConstructor:
         # The security in question
         self.equity: Equity = equity
 
-        self.options_chain: Chain = self.build_options_chain()
+        self.options_chain: ChainBuilder = self.build_options_chain()
 
     def build_options_chain(self) -> Chain:
-        get_option_expire_dates_request = GetOptionExpireDatesRequest(self.equity.ticker)
+        get_option_expire_dates_request = GetOptionExpireDatesRequest(ticker=equity.ticker)
         option_expire_dates_response = self.qs.get_option_expire_dates(get_option_expire_dates_request)
 
-        options_chain = Chain(self.equity)
+        options_chain_builder = ChainBuilder(self.equity)
         for expiry in option_expire_dates_response.expire_dates[:self.num_strikes]:
-            get_options_chain_request: GetOptionsChainRequest = GetOptionsChainRequest(self.equity, expiry)
+            get_options_chain_request: GetOptionsChainRequest = GetOptionsChainRequest(ticker=self.equity.ticker, expiry=expiry)
             get_options_chain_response: GetOptionsChainResponse = self.qs.get_options_chain(get_options_chain_request)
             options_list = get_options_chain_response.options_chain
 
             print(f"Adding options from {expiry}")
-            options_chain.add_chain(options_list)
+            options_chain_builder.add_chain(options_list)
 
-        return options_chain
+        return options_chain_builder.to_chain()
 
     def get_current_price(self)->float:
         return self.qs.get_tradable_quote(GetTradableRequest(tradable=self.equity)).current_price.mark

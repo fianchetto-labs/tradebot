@@ -1,5 +1,7 @@
 import logging
 
+from pydantic import BaseModel
+
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.finance.price import Price
@@ -10,17 +12,23 @@ import datetime
 logger = logging.getLogger(__name__)
 
 
-class Chain:
+class Chain(BaseModel):
+    equity: Equity
+    strike_expiry_chain_call: dict
+    expiry_strike_chain_call: dict
+    strike_expiry_chain_put: dict
+    expiry_strike_chain_put: dict
 
+class ChainBuilder:
     def __init__(self, equity: Equity):
         self.equity: Equity = equity
         # keyed on strike then date
-        self.strike_expiry_chain_call: dict[datetime, dict[Amount, Price]] = dict()
-        self.expiry_strike_chain_call: dict[Amount, dict[datetime, Price]] = dict()
+        self.strike_expiry_chain_call: dict[Amount, dict[datetime, Price]] = dict()
+        self.expiry_strike_chain_call: dict[datetime, dict[Amount, Price]] = dict()
 
         # keyed on date then strike
-        self.strike_expiry_chain_put: dict[datetime, dict[Amount, Price]] = dict()
-        self.expiry_strike_chain_put: dict[Amount, dict[datetime, Price]] = dict()
+        self.strike_expiry_chain_put: dict[Amount, dict[datetime, Price]] = dict()
+        self.expiry_strike_chain_put: dict[datetime, dict[Amount, Price]] = dict()
 
     def add(self, priced_option: PricedOption):
         option = priced_option.option
@@ -137,3 +145,6 @@ class Chain:
                 self.strike_expiry_chain_call[strike] = dict()
             for expiry in other.strike_expiry_chain_call[strike]:
                 self.strike_expiry_chain_call[strike][expiry] = other.strike_expiry_chain_call[strike][expiry].copy_of()
+
+    def to_chain(self):
+        return Chain(equity=self.equity, strike_expiry_chain_call=self.strike_expiry_chain_call, expiry_strike_chain_call=self.expiry_strike_chain_call, strike_expiry_chain_put=self.expiry_strike_chain_put, expiry_strike_chain_put=self.expiry_strike_chain_put)
