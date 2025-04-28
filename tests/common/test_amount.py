@@ -109,12 +109,12 @@ def test_multiply_two_amounts_is_negative():
 
 
 def test_amount_str_and_repr():
-    amt = Amount(whole=5, part=99, currency="USD", negative=False)
+    amt = Amount(whole=5, part=99, currency=Currency.US_DOLLARS, negative=False)
 
     assert str(amt) == "5.99 USD"
     assert repr(amt) == "Amount(whole=5, part=99, currency='USD', negative=False)"
 
-    neg_amt = Amount(whole=3, part=45, currency="EUR", negative=True)
+    neg_amt = Amount(whole=3, part=45, currency=Currency.EURO, negative=True)
 
     assert str(neg_amt) == "-3.45 EUR"
     assert repr(neg_amt) == "Amount(whole=3, part=45, currency='EUR', negative=True)"
