@@ -101,7 +101,7 @@ class Amount(BaseModel):
             return -1 * nominal
         return nominal
 
-    def to_float(self):
+    def to_float(self)->float:
         absolute_value = self.whole + self.part / 100.0
         if self.negative:
             return -1 * absolute_value
@@ -109,10 +109,10 @@ class Amount(BaseModel):
             return absolute_value
 
     def __str__(self):
-        return f"{self.to_float():.2f}"
+        return f"{self.to_float():.2f} {self.currency}"
 
     def __repr__(self):
-        return self.__str__()
+        return f"Amount(whole={self.whole}, part={self.part}, currency='{self.currency}', negative={self.negative})"
 
     def __abs__(self):
         return Amount.from_float(abs(self.to_float()))

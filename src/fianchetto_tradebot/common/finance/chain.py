@@ -1,7 +1,7 @@
 import logging
 from datetime import date
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer, field_validator
 
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.equity import Equity
@@ -15,25 +15,125 @@ logger = logging.getLogger(__name__)
 
 class Chain(BaseModel):
     equity: Equity
-    #strike_expiry_chain_call: dict[Amount, dict[date, Price]]
-    #expiry_strike_chain_call: dict[date, dict[Amount, Price]]
-    #strike_expiry_chain_put: dict[Amount, dict[date, Price]]
-    #expiry_strike_chain_put: dict[date, dict[Amount, Price]]
-    strike_expiry_chain_call: dict
-    expiry_strike_chain_call: dict
-    strike_expiry_chain_put: dict
-    expiry_strike_chain_put: dict
+    strike_expiry_chain_call: dict[Amount, dict[date, Price]]
+    expiry_strike_chain_call: dict[date, dict[Amount, Price]]
+    strike_expiry_chain_put: dict[Amount, dict[date, Price]]
+    expiry_strike_chain_put: dict[date, dict[Amount, Price]]
+
+    # We get a dictionary .. we give it a better one
+
+    @field_serializer('strike_expiry_chain_call', when_used='always')
+    def serialize_strike_expiry_chain_call(self, strike_expiry_chain_call:dict):
+        serialized: dict = dict()
+        for amount, date_price_dict in strike_expiry_chain_call.items():
+            amount_str = str(amount)
+            serialized[amount_str] = date_price_dict
+
+        return serialized
+
+    @field_validator('strike_expiry_chain_call', mode='before')
+    def deserialize_strike_expiry_chain_call(cls, v):
+        # Rebuild Amount keys (deep inside)
+        if isinstance(v, dict):
+            rebuilt = dict()
+            for amount, date_price_map in v.items():
+                if isinstance(amount, Amount):
+                    amount_obj = amount
+                else:
+                    amount_obj = Amount.from_string(amount)
+                rebuilt[amount_obj] = dict()
+                for date_key, price in date_price_map.items():
+                    rebuilt[amount_obj][date_key] = price
+            return rebuilt
+        return v
+
+    @field_serializer('strike_expiry_chain_put', when_used='always')
+    def serialize_strike_expiry_chain_put(self, strike_expiry_chain_put: dict):
+        serialized: dict = dict()
+        for amount, date_price_dict in strike_expiry_chain_put.items():
+            amount_str = str(amount)
+            serialized[amount_str] = date_price_dict
+
+        return serialized
+
+    @field_validator('strike_expiry_chain_put', mode='before')
+    def deserialize_strike_expiry_chain_put(cls, v):
+        # Rebuild Amount keys (deep inside)
+        if isinstance(v, dict):
+            rebuilt = {}
+            for amount, date_price_map in v.items():
+                if isinstance(amount, Amount):
+                    amount_obj = amount
+                else:
+                    amount_obj = Amount.from_string(amount)
+                rebuilt[amount_obj] = dict()
+                for date_key, price in date_price_map.items():
+                    rebuilt[amount_obj][date_key] = price
+            return rebuilt
+        return v
+
+    @field_serializer('expiry_strike_chain_call', when_used='always')
+    def serialize_expiry_strike_chain_call(self, expiry_strike_chain_call: dict):
+        serialized: dict = dict()
+        for expiry, strike_to_price in expiry_strike_chain_call.items():
+            serialized[expiry] = dict()
+            for strike, price in strike_to_price.items():
+                serialized[expiry][strike] = price
+
+        return serialized
+
+    @field_validator('expiry_strike_chain_call', mode='before')
+    def deserialize_expiry_strike_chain_call(cls, v):
+        # Rebuild Amount keys (deep inside)
+        if isinstance(v, dict):
+            rebuilt = {}
+            for expiry, strike_price_map in v.items():
+                rebuilt[expiry] = dict()
+                for strike, price in strike_price_map.items():
+                    if isinstance(strike, Amount):
+                        amount_obj = strike
+                    else:
+                        amount_obj = Amount.from_string(strike)
+                    rebuilt[expiry][amount_obj] = price
+            return rebuilt
+        return v
+
+    @field_serializer('expiry_strike_chain_put', when_used='always')
+    def serialize_expiry_strike_chain_put(self, expiry_strike_chain_put: dict):
+        serialized: dict = dict()
+        for expiry, strike_to_price in expiry_strike_chain_put.items():
+            serialized[expiry] = dict()
+            for strike, price in strike_to_price.items():
+                serialized[expiry][strike] = price
+
+        return serialized
+
+    @field_validator('expiry_strike_chain_put', mode='before')
+    def deserialize_expiry_strike_chain_put(cls, v):
+        # Rebuild Amount keys (deep inside)
+        if isinstance(v, dict):
+            rebuilt = {}
+            for expiry, strike_price_map in v.items():
+                rebuilt[expiry] = dict()
+                for strike, price in strike_price_map.items():
+                    if isinstance(strike, Amount):
+                        amount_obj = strike
+                    else:
+                        amount_obj = Amount.from_string(strike)
+                    rebuilt[expiry][amount_obj] = price
+            return rebuilt
+        return v
 
 class ChainBuilder:
     def __init__(self, equity: Equity):
         self.equity: Equity = equity
         # keyed on strike then date
-        self.strike_expiry_chain_call: dict[Amount, dict[date, Price]] = dict()#dict[Amount, dict[date, Price]]()
-        self.expiry_strike_chain_call: dict[date, dict[Amount, Price]] = dict()#dict[date, dict[Amount, Price]]()
+        self.strike_expiry_chain_call: dict = dict[Amount, dict[date, Price]]()
+        self.expiry_strike_chain_call: dict = dict[date, dict[Amount, Price]]()
 
         # keyed on date then strike
-        self.strike_expiry_chain_put: dict[Amount, dict[date, Price]] = dict()#dict[Amount, dict[date, Price]]()
-        self.expiry_strike_chain_put: dict[date, dict[Amount, Price]] = dict()#dict[date, dict[Amount, Price]]()
+        self.strike_expiry_chain_put: dict = dict[Amount, dict[date, Price]]()
+        self.expiry_strike_chain_put: dict = dict[date, dict[Amount, Price]]()
 
     def add(self, priced_option: PricedOption):
         option = priced_option.option

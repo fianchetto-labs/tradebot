@@ -106,3 +106,15 @@ def test_multiply_two_amounts_is_negative():
     assert a3.currency == Currency.US_DOLLARS
     print(a3.negative)
     assert True is a3.negative
+
+
+def test_amount_str_and_repr():
+    amt = Amount(whole=5, part=99, currency="USD", negative=False)
+
+    assert str(amt) == "5.99 USD"
+    assert repr(amt) == "Amount(whole=5, part=99, currency='USD', negative=False)"
+
+    neg_amt = Amount(whole=3, part=45, currency="EUR", negative=True)
+
+    assert str(neg_amt) == "-3.45 EUR"
+    assert repr(neg_amt) == "Amount(whole=3, part=45, currency='EUR', negative=True)"

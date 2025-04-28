@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class Currency(str, Enum):
-    US_DOLLARS = "usd"
-    CANADIAN_DOLLARS = "cad"
-    EURO = "eur"
-    MEXICAN_PESO = "mep"
+    US_DOLLARS = "USD"
+    CANADIAN_DOLLARS = "CAD"
+    EURO = "EUR"
+    MEXICAN_PESO = "MEP"
