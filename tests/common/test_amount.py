@@ -16,7 +16,6 @@ def test_add_two_amounts():
 def test_no_trailing_zero_after_decimal():
     assert Amount.from_string("5.2") == Amount(whole=5, part=20)
 
-
 def test_part_less_than_10():
     assert Amount.from_float(5.02) == Amount(whole=5, part=2)
 
@@ -112,9 +111,9 @@ def test_amount_str_and_repr():
     amt = Amount(whole=5, part=99, currency=Currency.US_DOLLARS, negative=False)
 
     assert str(amt) == "5.99 USD"
-    assert repr(amt) == "Amount(whole=5, part=99, currency='USD', negative=False)"
+    assert repr(amt) == "Amount(whole=5, part=99, currency=Currency.US_DOLLARS, negative=False)"
 
     neg_amt = Amount(whole=3, part=45, currency=Currency.EURO, negative=True)
 
     assert str(neg_amt) == "-3.45 EUR"
-    assert repr(neg_amt) == "Amount(whole=3, part=45, currency='EUR', negative=True)"
+    assert repr(neg_amt) == "Amount(whole=3, part=45, currency=Currency.EURO, negative=True)"

@@ -112,7 +112,7 @@ class Amount(BaseModel):
         return f"{self.to_float():.2f} {self.currency.value}"
 
     def __repr__(self):
-        return f"Amount(whole={self.whole}, part={self.part}, currency='{self.currency}', negative={self.negative})"
+        return f"Amount(whole={self.whole}, part={self.part}, currency={self.currency}, negative={self.negative})"
 
     def __abs__(self):
         return Amount.from_float(abs(self.to_float()))

@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Currency(str, Enum):
+class Currency(Enum):
     US_DOLLARS = "USD"
     CANADIAN_DOLLARS = "CAD"
     EURO = "EUR"
