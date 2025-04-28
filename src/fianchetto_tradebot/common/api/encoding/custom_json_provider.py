@@ -34,6 +34,9 @@ from fianchetto_tradebot.common.order.order_price import OrderPrice
 from fianchetto_tradebot.common.order.order_type import OrderType
 from fianchetto_tradebot.common.order.placed_order import PlacedOrder
 from fianchetto_tradebot.common.order.placed_order_details import PlacedOrderDetails
+from fianchetto_tradebot.quotes.api.get_option_expire_dates_response import GetOptionExpireDatesResponse
+from fianchetto_tradebot.quotes.api.get_options_chain_response import GetOptionsChainResponse
+from fianchetto_tradebot.quotes.api.get_tradable_response import GetTradableResponse
 
 
 class CustomJSONProvider(DefaultJSONProvider):
@@ -76,6 +79,15 @@ class CustomJSONProvider(DefaultJSONProvider):
             return o.model_dump()
 
         if isinstance(o, (GetAccountBalanceResponse)):
+            return o.model_dump()
+
+        if isinstance(o, (GetTradableResponse)):
+            return o.model_dump()
+
+        if isinstance(o, (GetOptionExpireDatesResponse)):
+            return o.model_dump()
+
+        if isinstance(o, (GetOptionsChainResponse)):
             return o.model_dump()
 
         if isinstance(o, (ExecutedOrder)):
@@ -193,7 +205,8 @@ class CustomJSONProvider(DefaultJSONProvider):
         elif isinstance(obj, list):
             return [CustomJSONProvider.stringify_keys(i) for i in obj]
         elif isinstance(obj, BaseModel):
-            return CustomJSONProvider.stringify_keys(obj.model_dump())
+            model_dump = obj.model_dump()
+            return CustomJSONProvider.stringify_keys(model_dump)
         elif isinstance(obj, Enum):
             return obj.value
         elif isinstance(obj, datetime):

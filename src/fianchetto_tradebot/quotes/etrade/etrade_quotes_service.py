@@ -1,11 +1,13 @@
 import json
 import logging
-from datetime import datetime
+from datetime import date
+
+from dateutil.parser import parse
 
 from fianchetto_tradebot.common.api.finance.greeks.greeks import Greeks
 from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.finance.amount import Amount
-from fianchetto_tradebot.common.finance.chain import Chain
+from fianchetto_tradebot.common.finance.chain import ChainBuilder, Chain
 from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.finance.option import Option
 from fianchetto_tradebot.common.finance.option_type import OptionType
@@ -56,13 +58,13 @@ class ETradeQuotesService(QuotesService):
         pass
 
     def get_options_chain(self, get_options_chain_request: GetOptionsChainRequest) -> GetOptionsChainResponse:
-        equity: Equity = get_options_chain_request.equity
+        equity: Equity = Equity(ticker=get_options_chain_request.ticker)
 
         params: dict[str, str] = dict[str, str]()
         params["symbol"] = equity.ticker
 
         if get_options_chain_request.expiry:
-            as_datetime: datetime.date = get_options_chain_request.expiry
+            as_datetime: date = get_options_chain_request.expiry
             year = as_datetime.year
             month = as_datetime.month
             day = as_datetime.day
@@ -76,27 +78,27 @@ class ETradeQuotesService(QuotesService):
         response = self.session.get(url, params=params)
         options_chain = ETradeQuotesService._parse_options_chain(response, equity)
 
-        return GetOptionsChainResponse(options_chain)
+        return GetOptionsChainResponse(options_chain=options_chain)
 
     def get_option_expire_dates(self, get_options_expire_dates_request: GetOptionExpireDatesRequest)-> GetOptionExpireDatesResponse:
         path = f"/v1/market/optionexpiredate.json"
         params: dict[str, str] = dict[str, str]()
-        params["symbol"] = get_options_expire_dates_request.symbol
+        params["symbol"] = get_options_expire_dates_request.ticker
         url = self.base_url + path
         response = self.session.get(url, params=params)
 
-        exp_list: list[datetime.date] = ETradeQuotesService._parse_option_expire_dates(response)
+        exp_list: list[date] = ETradeQuotesService._parse_option_expire_dates(response)
 
-        return GetOptionExpireDatesResponse(exp_list)
+        return GetOptionExpireDatesResponse(expire_dates=exp_list)
 
     def get_option_details(self, option: Option):
         pass
 
     @staticmethod
-    def _parse_options_chain(input, equity:Equity):
+    def _parse_options_chain(input, equity:Equity)->Chain:
         data: dict = json.loads(input.text)
 
-        option_chain = Chain(equity)
+        option_chain_builder = ChainBuilder(equity)
         option_chain_response = data['OptionChainResponse']
 
         selected = option_chain_response["SelectedED"]
@@ -104,25 +106,25 @@ class ETradeQuotesService(QuotesService):
         expiry_month = selected["month"]
         expiry_year = selected["year"]
 
-        expiry_date = datetime(expiry_year, expiry_month, expiry_day).date()
+        expiry_date: date = date(expiry_year, expiry_month, expiry_day)
         option_pairs = option_chain_response["OptionPair"]
         for option_pair in option_pairs:
             # Note that exercise style is not available in the response, per the documentation. We'll need a good way to look it up.
             if "Call" in option_pair:
                 call_details=option_pair["Call"]
-                call = Option(equity, OptionType.CALL, Amount.from_string(str(call_details["strikePrice"])), expiry_date)
-                price = Price(call_details["bid"], call_details["ask"], call_details["lastPrice"])
-                po: PricedOption = PricedOption(call, price)
-                option_chain.add(po)
+                call = Option(equity=equity, type=OptionType.CALL, strike=Amount.from_string(str(call_details["strikePrice"])), expiry=expiry_date)
+                price = Price(bid=call_details["bid"], ask=call_details["ask"], last=call_details["lastPrice"])
+                po: PricedOption = PricedOption(option=call, price=price)
+                option_chain_builder.add(po)
 
             if "Put" in option_pair:
                 put_details=option_pair["Put"]
-                put = Option(equity, OptionType.PUT, Amount.from_string(str(put_details["strikePrice"])), expiry_date)
-                price = Price(put_details["bid"], put_details["ask"], put_details["lastPrice"])
-                po: PricedOption = PricedOption(put, price)
-                option_chain.add(po)
+                put = Option(equity=equity, type=OptionType.PUT, strike=Amount.from_string(str(put_details["strikePrice"])), expiry=expiry_date)
+                price = Price(bid=put_details["bid"], ask=put_details["ask"], last=put_details["lastPrice"])
+                po: PricedOption = PricedOption(option=put, price=price)
+                option_chain_builder.add(po)
 
-        return option_chain
+        return option_chain_builder.to_chain()
 
     @staticmethod
     def _parse_market_response(tradable: Tradable, input)->GetTradableResponse:
@@ -158,14 +160,13 @@ class ETradeQuotesService(QuotesService):
                         iv = option_greeks["iv"]
                         # This one is curious .. shouldn't this be an amount or price?
                         current_value: bool = option_greeks["currentValue"]
-                        greeks = Greeks(delta, gamma, theta, vega, rho, iv, current_value)
+                        greeks = Greeks(delta=delta, gamma=gamma, theta=theta, vega=vega, rho=rho, iv=iv, current_value=current_value)
                     else:
                         print(f"Warn - greeks not present in response for {tradable}")
                         greeks = None
                 else:
                     greeks = None
-
-                return GetTradableResponse(tradable, response_time, Price(bid, ask), volume, greeks)
+                return GetTradableResponse(tradable=tradable, response_time=parse(response_time), current_price=Price(bid=bid, ask=ask), volume=volume, greeks=greeks)
             else:
                 # Handle errors
                 if data is not None and 'QuoteResponse' in data and 'Messages' in data["QuoteResponse"] \
@@ -180,7 +181,7 @@ class ETradeQuotesService(QuotesService):
             logger.error("Error: Quote API service error")
 
     @staticmethod
-    def _parse_option_expire_dates(response)->list[datetime.date] :
+    def _parse_option_expire_dates(response)->list[date] :
         data: dict = json.loads(response.text)
 
         exp_date_list = []
@@ -190,6 +191,6 @@ class ETradeQuotesService(QuotesService):
             year = expiration_date["year"]
             month = expiration_date["month"]
             day = expiration_date["day"]
-            exp_date_list.append(datetime(year, month, day).date())
+            exp_date_list.append(date(year, month, day))
 
         return exp_date_list

@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import date
+
+from pydantic import BaseModel
 
 
-class GetOptionExpireDatesResponse:
-    def __init__(self, expire_dates: list[datetime.date]):
-        # Perhaps a date will also be required
-        self.expire_dates: list[datetime.date] = expire_dates
+class GetOptionExpireDatesResponse(BaseModel):
+    expire_dates: list[date]

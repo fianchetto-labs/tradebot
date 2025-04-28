@@ -24,5 +24,5 @@ def test_good_for_sixty_days():
 
     assert good_for_sixty_days_expiry.valid_at(now + datetime.timedelta(seconds=3))
     assert good_for_sixty_days_expiry.valid_at(now + datetime.timedelta(seconds=10))
-    assert good_for_sixty_days_expiry.valid_at(now + datetime.timedelta(days=59))
-    assert good_for_sixty_days_expiry.valid_at(now + datetime.timedelta(days=61)) == False
+    assert good_for_sixty_days_expiry.valid_at((now + datetime.timedelta(days=59)))
+    assert good_for_sixty_days_expiry.valid_at((now + datetime.timedelta(days=61))) == False

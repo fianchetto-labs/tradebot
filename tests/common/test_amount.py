@@ -16,7 +16,6 @@ def test_add_two_amounts():
 def test_no_trailing_zero_after_decimal():
     assert Amount.from_string("5.2") == Amount(whole=5, part=20)
 
-
 def test_part_less_than_10():
     assert Amount.from_float(5.02) == Amount(whole=5, part=2)
 
@@ -25,10 +24,10 @@ def test_part_less_than_10_2():
 
 def test_part_less_than_10_str_rep():
     actual = str(Amount.from_float(1.09))
-    assert actual == "1.09"
+    assert actual == "1.09 USD"
 
 def test_negative_value_str_rep():
-    assert str(Amount.from_float(-1.09)) == "-1.09"
+    assert str(Amount.from_float(-1.09)) == "-1.09 USD"
 
 def test_subtract_two_amounts():
     a1 = Amount(whole=10, part=15, currency=Currency.US_DOLLARS)
@@ -106,3 +105,15 @@ def test_multiply_two_amounts_is_negative():
     assert a3.currency == Currency.US_DOLLARS
     print(a3.negative)
     assert True is a3.negative
+
+
+def test_amount_str_and_repr():
+    amt = Amount(whole=5, part=99, currency=Currency.US_DOLLARS, negative=False)
+
+    assert str(amt) == "5.99 USD"
+    assert repr(amt) == "Amount(whole=5, part=99, currency=Currency.US_DOLLARS, negative=False)"
+
+    neg_amt = Amount(whole=3, part=45, currency=Currency.EURO, negative=True)
+
+    assert str(neg_amt) == "-3.45 EUR"
+    assert repr(neg_amt) == "Amount(whole=3, part=45, currency=Currency.EURO, negative=True)"

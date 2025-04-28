@@ -1,7 +1,7 @@
 import logging
-from datetime import datetime
+from datetime import datetime, date
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, field_serializer
 
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.equity import Equity
@@ -14,15 +14,46 @@ logger = logging.getLogger(__name__)
 
 class Portfolio(BaseModel):
     equities: dict
-    options: dict
+    options: dict[str, dict[date, dict[Amount, dict[OptionType, float]]]]
+
+    @field_serializer('options', when_used='always')
+    def serialize_options(self, options: dict):
+        # Stringify the Amount keys (deep inside)
+        serialized = dict()
+        for symbol, date_map in options.items():
+            serialized[symbol] = dict()
+            for expiry, amount_map in date_map.items():
+                serialized[symbol][expiry] = {}
+                for amount_obj, opttype_map in amount_map.items():
+                    amount_key = str(amount_obj)
+                    serialized[symbol][expiry][amount_key] = opttype_map
+        return serialized
+
+    @field_validator('options', mode='before')
+    def deserialize_options(cls, v):
+        # Rebuild Amount keys (deep inside)
+        if isinstance(v, dict):
+            rebuilt = {}
+            for symbol, date_map in v.items():
+                rebuilt[symbol] = {}
+                for expiry, amount_map in date_map.items():
+                    rebuilt[symbol][expiry] = {}
+                    for amount_key, opttype_map in amount_map.items():
+                        if isinstance(amount_key, Amount):
+                            amount_obj = amount_key
+                        else:
+                            amount_obj = Amount.from_string(amount_key)
+                        rebuilt[symbol][expiry][amount_obj] = opttype_map
+            return rebuilt
+        return v
 
 class PortfolioBuilder:
     def __init__(self):
 
         # equities[equity] = count
-        self.equities = dict()
+        self.equities = dict[str, float]()
         # options[equity][expiry][strike][type:put/call] = count
-        self.options = dict()
+        self.options = dict[str, dict[date, dict[Amount, dict[OptionType, float]]]]()
 
     def add_position(self, tradable: Tradable, quantity: int):
         if isinstance(tradable, Option):
@@ -32,17 +63,14 @@ class PortfolioBuilder:
             expiry: datetime = tradable.expiry
 
             if ticker not in self.options:
-                self.options[ticker] = dict()
-                self.options[ticker][expiry] = dict()
-                self.options[ticker][expiry][strike] = dict()
-                self.options[ticker][expiry][strike][type] = dict()
+                self.options[ticker] = dict[date, dict[Amount, dict[OptionType, float]]]()
+                self.options[ticker][expiry] = dict[Amount, dict[OptionType, float]]()
+                self.options[ticker][expiry][strike] = dict[OptionType, float]()
             elif expiry not in self.options[ticker]:
-                self.options[ticker][expiry] = dict()
-                self.options[ticker][expiry][strike] = dict()
-                self.options[ticker][expiry][strike][type] = dict()
+                self.options[ticker][expiry] = dict[Amount, dict[OptionType, float]]()
+                self.options[ticker][expiry][strike] = dict[OptionType, float]()
             elif strike not in self.options[ticker][expiry]:
-                self.options[ticker][expiry][strike] = dict()
-                self.options[ticker][expiry][strike][type] = dict()
+                self.options[ticker][expiry][strike] = dict[OptionType, float]()
 
             self.options[ticker][expiry][strike][type] = float(quantity)
         elif isinstance(tradable, Equity):
