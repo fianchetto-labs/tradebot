@@ -35,9 +35,10 @@ class OrderConversionUtil:
 
         order_detail = input_order["OrderDetail"][0]
         execution_order_details: ExecutionOrderDetails = ExecutionOrderDetails(
-        Amount.from_float(order_detail["orderValue"]), datetime.fromtimestamp(order_detail["executedTime"] / 1000))
+            order_value=Amount.from_float(order_detail["orderValue"]),
+            executed_time=datetime.fromtimestamp(order_detail["executedTime"] / 1000))
 
-        return ExecutedOrder(placed_order, execution_order_details)
+        return ExecutedOrder(order=placed_order, execution_order_details=execution_order_details)
 
     @staticmethod
     def to_placed_order_from_json(input_order: dict, query_account_id = None, query_order_id: str = None)->PlacedOrder:
@@ -118,10 +119,10 @@ class OrderConversionUtil:
         if order_term == "GOOD_FOR_DAY":
             return GoodForDay()
         if order_term == "GOOD_TILL_CANCELLED" or order_term == "GOOD_UNTIL_CANCEL":
-            return GoodUntilCancelled(all_or_none)
+            return GoodUntilCancelled(all_or_none=all_or_none)
         if order_term == "GOOD_TILL_DATE":
             # TODO: It's not clear where we get the value for GoodUntilDate
-            return GoodUntilDate(datetime.date.today(), all_or_none)
+            return GoodUntilDate(expiry_date=datetime.now().date(), all_or_none=all_or_none)
 
     @staticmethod
     def build_order(order: Order) -> str:
