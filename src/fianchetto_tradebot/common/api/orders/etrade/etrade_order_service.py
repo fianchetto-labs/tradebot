@@ -40,7 +40,7 @@ ORDER_EXECUTED_OR_REJECTED_CODE = 5001
 class ETradeOrderService(OrderService):
     def __init__(self, connector: ETradeConnector):
         super().__init__(connector)
-        self.session, self.base_url = self.connector.load_connection()
+        self.session, self.async_session, self.base_url = self.connector.load_connection()
 
     def list_orders(self, list_orders_request: ListOrdersRequest, exchange_specific_opts: dict[str, str]=None) -> ListOrdersResponse:
         account_id = list_orders_request.account_id
