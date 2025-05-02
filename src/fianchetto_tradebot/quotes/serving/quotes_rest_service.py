@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, date
 
 from dateutil.parser import parse
@@ -18,7 +19,7 @@ from fianchetto_tradebot.common.api.portfolio.get_portfolio_response import GetP
 from fianchetto_tradebot.common.api.portfolio.portfolio_service import PortfolioService
 from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.exchange.exchange_name import ExchangeName
-from fianchetto_tradebot.common.finance.chain import ChainBuilder
+from fianchetto_tradebot.common.finance.chain import ChainBuilder, Chain
 from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.finance.tradable import Tradable
 from fianchetto_tradebot.common.service.rest_service import RestService, ETRADE_ONLY_EXCHANGE_CONFIG
@@ -113,24 +114,10 @@ class QuotesRestService(RestService):
     def get_options_chain(self, exchange, equity):
         quotes_service: QuotesService = self.quotes_services[ExchangeName[exchange.upper()]]
 
-        tradable: Tradable = Equity(ticker=equity)
-        # TODO: Adjust this so as to get all expiries, instead of one
-        expiries = self.get_options_chain_expiries(exchange, equity)
-        full_chain_builder: ChainBuilder = ChainBuilder(tradable)
+        get_options_chain_request: GetOptionsChainRequest = GetOptionsChainRequest(ticker=equity)
+        get_option_chain_response: GetOptionsChainResponse = quotes_service.get_options_chain(get_options_chain_request)
 
-        for expiry_str in expiries.json['expire_dates']:
-            print(type(expiry_str))
-            dt = datetime.strptime(expiry_str, '%a, %d %b %Y %H:%M:%S %Z')
-            expiry: date = dt.date()
-
-            get_options_chain_request: GetOptionsChainRequest = GetOptionsChainRequest(ticker=equity, expiry=expiry)
-            get_options_chain_response: GetOptionsChainResponse = quotes_service.get_options_chain(get_options_chain_request)
-
-            full_chain_builder.add_chain(get_options_chain_response.options_chain)
-
-        with_stringified_keys = CustomJSONProvider.stringify_keys(full_chain_builder.to_chain())
-
-        # TODO: Check that it's possible to reconstruct the native object with the stringified keys
+        with_stringified_keys = CustomJSONProvider.stringify_keys(get_option_chain_response.options_chain)
         return jsonify(with_stringified_keys)
 
     def get_options_chain_expiries(self, exchange, equity):
