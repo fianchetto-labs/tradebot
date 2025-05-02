@@ -4,8 +4,9 @@ import os
 from time import sleep
 
 import pytest
+from fianchetto_tradebot.quotes.etrade.etrade_quote_service import ETradeQuoteService
+from fianchetto_tradebot.quotes.quote_service import QuoteService
 
-from fianchetto_tradebot.common.api.orders.order_util import OrderUtil
 from fianchetto_tradebot.common.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common.api.orders.etrade.etrade_order_service import ETradeOrderService
@@ -13,9 +14,9 @@ from fianchetto_tradebot.common.api.orders.get_order_request import GetOrderRequ
 from fianchetto_tradebot.common.api.orders.get_order_response import GetOrderResponse
 from fianchetto_tradebot.common.api.orders.order_metadata import OrderMetadata
 from fianchetto_tradebot.common.api.orders.order_service import OrderService
+from fianchetto_tradebot.common.api.orders.order_util import OrderUtil
 from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
-from tests.common.api.orders.order_test_util import OrderTestUtil
 from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.equity import Equity
@@ -24,10 +25,10 @@ from fianchetto_tradebot.common.order.action import Action
 from fianchetto_tradebot.common.order.order_price_type import OrderPriceType
 from fianchetto_tradebot.common.order.order_status import OrderStatus
 from fianchetto_tradebot.common.order.order_type import OrderType
-from fianchetto_tradebot.quotes.etrade.etrade_quote_service import ETradeQuoteService
-from fianchetto_tradebot.quotes.quote_service import QuoteService
-from fianchetto_tradebot.oex.tactics.incremental_price_delta_execution_tactic import IncrementalPriceDeltaExecutionTactic
+from fianchetto_tradebot.oex.tactics.incremental_price_delta_execution_tactic import \
+    IncrementalPriceDeltaExecutionTactic
 from fianchetto_tradebot.oex.trade_execution_util import TradeExecutionUtil
+from tests.common.api.orders.order_test_util import OrderTestUtil
 
 DEFAULT_WAIT: datetime.timedelta = datetime.timedelta(seconds=8)
 DEFAULT_INITIAL_DELTA = Amount(whole=0, part=25)

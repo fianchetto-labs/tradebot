@@ -1,5 +1,3 @@
-from abc import ABC
-
 from fianchetto_tradebot.common.api.accounts.account_list_response import AccountListResponse
 from fianchetto_tradebot.common.api.accounts.get_account_balance_request import GetAccountBalanceRequest
 from fianchetto_tradebot.common.api.accounts.get_account_balance_response import GetAccountBalanceResponse

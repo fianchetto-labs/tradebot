@@ -3,6 +3,8 @@ import datetime
 import os
 
 import pytest
+from fianchetto_tradebot.quotes.etrade.etrade_quote_service import ETradeQuoteService
+from fianchetto_tradebot.quotes.quote_service import QuoteService
 
 from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.finance.equity import Equity
@@ -10,8 +12,6 @@ from fianchetto_tradebot.quotes.api.get_option_expire_dates_request import GetOp
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_response import GetOptionExpireDatesResponse
 from fianchetto_tradebot.quotes.api.get_options_chain_request import GetOptionsChainRequest
 from fianchetto_tradebot.quotes.api.get_options_chain_response import GetOptionsChainResponse
-from fianchetto_tradebot.quotes.etrade.etrade_quote_service import ETradeQuoteService
-from fianchetto_tradebot.quotes.quote_service import QuoteService
 
 """
 NOTE - To test in real life, it's necessary to include an `integration_test_properties.ini` file.

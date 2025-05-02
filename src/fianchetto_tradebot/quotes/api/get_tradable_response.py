@@ -2,10 +2,10 @@ from datetime import datetime
 from typing import Optional, Union
 
 from fianchetto_tradebot.common.api.finance.greeks.greeks import Greeks
+from fianchetto_tradebot.common.api.response import Response
 from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.finance.option import Option
 from fianchetto_tradebot.common.finance.price import Price
-from fianchetto_tradebot.common.api.response import Response
 
 
 class GetTradableResponse(Response):

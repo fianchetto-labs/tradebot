@@ -6,9 +6,9 @@ from fianchetto_tradebot.common.order.order_price import OrderPrice
 from fianchetto_tradebot.common.order.order_price_type import OrderPriceType
 from fianchetto_tradebot.common.order.order_type import OrderType
 from fianchetto_tradebot.common.order.placed_order import PlacedOrder
-from fianchetto_tradebot.quotes.quotes_service import QuotesService
 from fianchetto_tradebot.oex.tactics.execution_tactic import ExecutionTactic
 from fianchetto_tradebot.oex.trade_execution_util import TradeExecutionUtil
+from fianchetto_tradebot.quotes.quotes_service import QuotesService
 
 GAP_REDUCTION_RATIO = 1/3
 DEFAULT_WAIT_SEC = 12

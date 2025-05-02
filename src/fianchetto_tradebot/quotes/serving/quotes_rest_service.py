@@ -1,8 +1,4 @@
-import asyncio
-from datetime import datetime, date
-
 from dateutil.parser import parse
-
 from flask import jsonify
 
 from fianchetto_tradebot.common.api.accounts.account_list_response import AccountListResponse
@@ -19,7 +15,6 @@ from fianchetto_tradebot.common.api.portfolio.get_portfolio_response import GetP
 from fianchetto_tradebot.common.api.portfolio.portfolio_service import PortfolioService
 from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.exchange.exchange_name import ExchangeName
-from fianchetto_tradebot.common.finance.chain import ChainBuilder, Chain
 from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.finance.tradable import Tradable
 from fianchetto_tradebot.common.service.rest_service import RestService, ETRADE_ONLY_EXCHANGE_CONFIG

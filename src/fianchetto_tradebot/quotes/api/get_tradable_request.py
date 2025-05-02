@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from fianchetto_tradebot.common.finance.tradable import Tradable
 from fianchetto_tradebot.common.api.request import Request
+from fianchetto_tradebot.common.finance.tradable import Tradable
 
 
 class GetTradableRequest(Request, BaseModel):

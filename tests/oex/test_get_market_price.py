@@ -15,10 +15,10 @@ from fianchetto_tradebot.common.order.order import Order
 from fianchetto_tradebot.common.order.order_line import OrderLine
 from fianchetto_tradebot.common.order.order_price import OrderPrice
 from fianchetto_tradebot.common.order.order_price_type import OrderPriceType
+from fianchetto_tradebot.oex.trade_execution_util import TradeExecutionUtil
 from fianchetto_tradebot.quotes.api.get_tradable_request import GetTradableRequest
 from fianchetto_tradebot.quotes.api.get_tradable_response import GetTradableResponse
 from fianchetto_tradebot.quotes.quotes_service import QuotesService
-from fianchetto_tradebot.oex.trade_execution_util import TradeExecutionUtil
 
 equity = Equity(ticker="GE", company_name="General Electric")
 

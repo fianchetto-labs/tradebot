@@ -1,6 +1,7 @@
 import datetime
 
 from pandas import DataFrame
+from sortedcontainers import SortedDict
 
 from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.finance.amount import Amount
@@ -13,8 +14,6 @@ from fianchetto_tradebot.quotes.api.get_options_chain_response import GetOptions
 from fianchetto_tradebot.quotes.api.get_tradable_request import GetTradableRequest
 from fianchetto_tradebot.quotes.etrade.etrade_quotes_service import ETradeQuotesService
 from fianchetto_tradebot.quotes.quotes_service import QuotesService
-
-from sortedcontainers import SortedDict
 
 DEFAULT_NUM_STRIKES = 15
 DEFAULT_DELTA_FROM_CURRENT_PRICE = 5

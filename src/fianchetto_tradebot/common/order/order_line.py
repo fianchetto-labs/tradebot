@@ -3,8 +3,8 @@ from pydantic import BaseModel, field_validator, field_serializer
 
 from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.finance.option import Option
-from fianchetto_tradebot.common.order.action import Action
 from fianchetto_tradebot.common.finance.tradable import Tradable
+from fianchetto_tradebot.common.order.action import Action
 
 QUANTITY_FILLED_NOT_SPECIFIED = -1
 

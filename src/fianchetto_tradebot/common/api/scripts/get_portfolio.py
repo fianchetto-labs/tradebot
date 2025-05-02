@@ -1,12 +1,13 @@
 import configparser
 import os
 
-from fianchetto_tradebot.common.api.portfolio.get_portfolio_request import GetPortfolioRequest
-from fianchetto_tradebot.common.api.portfolio.get_portfolio_response import GetPortfolioResponse
-from fianchetto_tradebot.common.api.portfolio.etrade_portfolio_service import ETradePortfolioService
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.quotes.etrade.etrade_quote_service import ETradeQuoteService
 from fianchetto_tradebot.quotes.quote_service import QuoteService
+
+from fianchetto_tradebot.common.api.portfolio.etrade_portfolio_service import ETradePortfolioService
+from fianchetto_tradebot.common.api.portfolio.get_portfolio_request import GetPortfolioRequest
+from fianchetto_tradebot.common.api.portfolio.get_portfolio_response import GetPortfolioResponse
+from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
 
 """
 NOTE - To test in real life, it's necessary to include an `integration_test_properties.ini` file.

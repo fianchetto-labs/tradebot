@@ -6,7 +6,6 @@ from rauth import OAuth1Session
 
 from fianchetto_tradebot.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.common.api.orders.get_order_response import GetOrderResponse
-from tests.common.api.orders.order_test_util import OrderTestUtil
 from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector, DEFAULT_ETRADE_BASE_URL_FILE
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.price import Price
@@ -17,8 +16,9 @@ from fianchetto_tradebot.common.order.order_price_type import OrderPriceType
 from fianchetto_tradebot.common.order.order_status import OrderStatus
 from fianchetto_tradebot.common.order.placed_order import PlacedOrder
 from fianchetto_tradebot.common.order.placed_order_details import PlacedOrderDetails
-from fianchetto_tradebot.oex.tactics.incremental_price_delta_execution_tactic import IncrementalPriceDeltaExecutionTactic
-
+from fianchetto_tradebot.oex.tactics.incremental_price_delta_execution_tactic import \
+    IncrementalPriceDeltaExecutionTactic
+from tests.common.api.orders.order_test_util import OrderTestUtil
 
 ORDER_PRICE_EXACTLY_200 = Amount(whole=200, part=0)
 ORDER_PRICE_EXACTLY_100: Amount = Amount(whole=100, part=0)

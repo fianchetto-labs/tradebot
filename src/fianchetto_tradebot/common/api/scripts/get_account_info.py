@@ -10,6 +10,7 @@ from fianchetto_tradebot.common.api.accounts.etrade.etrade_account_service impor
 from fianchetto_tradebot.common.api.accounts.get_account_balance_request import GetAccountBalanceRequest
 from fianchetto_tradebot.common.api.accounts.get_account_info_request import GetAccountInfoRequest
 from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
+
 """
 NOTE - To test in real life, it's necessary to include an `integration_test_properties.ini` file.
 This file is in .gitignore, so as to not leak anyone's sensitive info when they commit code back.

@@ -5,10 +5,9 @@ from pydantic import BaseModel, field_serializer, field_validator
 
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.equity import Equity
+from fianchetto_tradebot.common.finance.option_type import OptionType
 from fianchetto_tradebot.common.finance.price import Price
 from fianchetto_tradebot.common.finance.priced_option import PricedOption
-from fianchetto_tradebot.common.finance.option_type import OptionType
-
 
 logger = logging.getLogger(__name__)
 

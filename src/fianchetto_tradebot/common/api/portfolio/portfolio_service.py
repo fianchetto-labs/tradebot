@@ -1,5 +1,3 @@
-from abc import ABC
-
 from fianchetto_tradebot.common.api.api_service import ApiService
 from fianchetto_tradebot.common.api.portfolio.get_portfolio_request import GetPortfolioRequest
 from fianchetto_tradebot.common.exchange.connector import Connector

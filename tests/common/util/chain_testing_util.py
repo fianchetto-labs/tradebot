@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta, date
 
-from fianchetto_tradebot.common.finance.chain import ChainBuilder
 from fianchetto_tradebot.common.finance.amount import Amount
+from fianchetto_tradebot.common.finance.chain import ChainBuilder
 from fianchetto_tradebot.common.finance.equity import Equity
-from fianchetto_tradebot.common.finance.option import Option
-from fianchetto_tradebot.common.finance.priced_option import PricedOption
 from fianchetto_tradebot.common.finance.exercise_style import ExerciseStyle
+from fianchetto_tradebot.common.finance.option import Option
 from fianchetto_tradebot.common.finance.option_type import OptionType
 from fianchetto_tradebot.common.finance.price import Price
+from fianchetto_tradebot.common.finance.priced_option import PricedOption
 
 DEFAULT_EQUITY = Equity(ticker="GE", company_name="General Electric", price=Price(bid=9.66,ask=10.07))
 

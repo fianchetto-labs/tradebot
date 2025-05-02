@@ -1,5 +1,6 @@
 from datetime import date
 
+from dateutil.parser import parse
 
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.equity import Equity
@@ -8,8 +9,6 @@ from fianchetto_tradebot.common.finance.option_type import OptionType
 from fianchetto_tradebot.common.finance.tradable import Tradable
 from fianchetto_tradebot.common.order.tradable_type import TradableType
 from fianchetto_tradebot.common.utils.local_ticker_lookup import LocalTickerLookup
-
-from dateutil.parser import parse
 
 
 class Option(Tradable):

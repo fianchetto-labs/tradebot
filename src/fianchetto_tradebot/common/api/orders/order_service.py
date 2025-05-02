@@ -1,5 +1,3 @@
-from abc import ABC
-
 from fianchetto_tradebot.common.api.api_service import ApiService
 from fianchetto_tradebot.common.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common.api.orders.cancel_order_response import CancelOrderResponse

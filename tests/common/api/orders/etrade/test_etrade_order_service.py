@@ -1,15 +1,13 @@
 import os
 import pickle
-
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
 from aioauth_client import OAuth1Client
 from rauth import OAuth1Session
 
 from fianchetto_tradebot.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.common.api.orders.order_metadata import OrderMetadata
-from tests.common.api.orders.order_test_util import OrderTestUtil
 from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
 from fianchetto_tradebot.common.api.orders.preview_order_response import PreviewOrderResponse
@@ -24,7 +22,7 @@ from fianchetto_tradebot.common.order.order_line import OrderLine
 from fianchetto_tradebot.common.order.order_price import OrderPrice
 from fianchetto_tradebot.common.order.order_price_type import OrderPriceType
 from fianchetto_tradebot.common.order.order_type import OrderType
-
+from tests.common.api.orders.order_test_util import OrderTestUtil
 
 # TODO: Adjust this suite to do both XML and JSON inputs ..
 # For some endpoints, I wasn't able to get the JSON input to work

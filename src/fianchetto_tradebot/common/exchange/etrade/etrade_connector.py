@@ -2,13 +2,12 @@ import configparser
 import datetime
 import logging
 import os
-from pathlib import Path
-
-from rauth import OAuth1Service, OAuth1Session
-from aioauth_client import OAuth1Client
-
 import pickle
 import webbrowser
+from pathlib import Path
+
+from aioauth_client import OAuth1Client
+from rauth import OAuth1Service, OAuth1Session
 
 from fianchetto_tradebot.common.exchange.connector import Connector
 

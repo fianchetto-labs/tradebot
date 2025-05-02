@@ -1,8 +1,7 @@
 import asyncio
 import json
 import logging
-from asyncio import Future
-from datetime import date, datetime
+from datetime import date
 
 from dateutil.parser import parse
 
@@ -16,10 +15,10 @@ from fianchetto_tradebot.common.finance.option_type import OptionType
 from fianchetto_tradebot.common.finance.price import Price
 from fianchetto_tradebot.common.finance.priced_option import PricedOption
 from fianchetto_tradebot.common.finance.tradable import Tradable
-from fianchetto_tradebot.quotes.api.get_options_chain_request import GetOptionsChainRequest
-from fianchetto_tradebot.quotes.api.get_options_chain_response import GetOptionsChainResponse
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_request import GetOptionExpireDatesRequest
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_response import GetOptionExpireDatesResponse
+from fianchetto_tradebot.quotes.api.get_options_chain_request import GetOptionsChainRequest
+from fianchetto_tradebot.quotes.api.get_options_chain_response import GetOptionsChainResponse
 from fianchetto_tradebot.quotes.api.get_tradable_request import GetTradableRequest
 from fianchetto_tradebot.quotes.api.get_tradable_response import GetTradableResponse
 from fianchetto_tradebot.quotes.quotes_service import QuotesService

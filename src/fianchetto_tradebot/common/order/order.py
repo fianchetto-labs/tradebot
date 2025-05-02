@@ -11,6 +11,7 @@ from fianchetto_tradebot.common.order.order_price import OrderPrice
 from fianchetto_tradebot.common.order.order_type import OrderType
 from fianchetto_tradebot.common.order.tradable_type import TradableType
 
+
 # TODO: Add ratio
 class Order(BaseModel):
     expiry: OrderExpiry
