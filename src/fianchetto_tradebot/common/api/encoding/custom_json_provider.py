@@ -1,6 +1,6 @@
 import dataclasses
 import decimal
-
+import typing as t
 import uuid
 from datetime import date, datetime
 from enum import Enum
@@ -8,7 +8,6 @@ from enum import Enum
 from flask.json.provider import DefaultJSONProvider
 from pydantic import BaseModel
 from werkzeug.http import http_date
-import typing as t
 
 from fianchetto_tradebot.common.api.accounts.account_list_response import AccountListResponse
 from fianchetto_tradebot.common.api.accounts.get_account_balance_response import GetAccountBalanceResponse

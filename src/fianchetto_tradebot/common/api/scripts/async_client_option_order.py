@@ -1,16 +1,10 @@
 import asyncio
 import configparser
 import os
-import time
 from datetime import datetime, date
-
 from random import uniform
-import pytest
-import requests
 
 from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
-from fianchetto_tradebot.quotes.etrade.etrade_quotes_service import ETradeQuotesService
-from fianchetto_tradebot.quotes.quotes_service import QuotesService
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'integration_test_properties.ini')
 ACCOUNT_ID_KEY = 'ACCOUNT_ID_KEY'

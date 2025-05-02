@@ -6,6 +6,7 @@ from fianchetto_tradebot.common.api.orders.order_preview import OrderPreview
 from fianchetto_tradebot.common.api.request_status import RequestStatus
 from fianchetto_tradebot.common.api.response import Response
 
+
 class PreviewOrderResponse(Response):
     order_metadata: OrderMetadata
     preview_id: Optional[str]

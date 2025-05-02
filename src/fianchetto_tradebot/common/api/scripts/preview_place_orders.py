@@ -6,13 +6,13 @@ from datetime import datetime
 import jsonpickle
 import pytest
 
-from fianchetto_tradebot.common.api.orders.order_util import OrderUtil
 from fianchetto_tradebot.common.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.common.api.orders.order_list_request import ListOrdersRequest
 from fianchetto_tradebot.common.api.orders.order_metadata import OrderMetadata
 from fianchetto_tradebot.common.api.orders.order_service import OrderService
+from fianchetto_tradebot.common.api.orders.order_util import OrderUtil
 from fianchetto_tradebot.common.api.orders.place_modify_order_request import PlaceModifyOrderRequest
 from fianchetto_tradebot.common.api.orders.place_modify_order_response import PlaceModifyOrderResponse
 from fianchetto_tradebot.common.api.orders.place_order_request import PlaceOrderRequest
@@ -21,12 +21,12 @@ from fianchetto_tradebot.common.api.orders.preview_modify_order_request import P
 from fianchetto_tradebot.common.api.orders.preview_modify_order_response import PreviewModifyOrderResponse
 from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
 from fianchetto_tradebot.common.api.orders.preview_order_response import PreviewOrderResponse
-from tests.common.api.orders.order_test_util import OrderTestUtil
 from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.order.order import Order
 from fianchetto_tradebot.common.order.order_status import OrderStatus
 from fianchetto_tradebot.common.order.order_type import OrderType
+from tests.common.api.orders.order_test_util import OrderTestUtil
 
 """
 NOTE - To test in real life, it's necessary to include an `integration_test_properties.ini` file.

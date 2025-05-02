@@ -2,8 +2,8 @@ import configparser
 import logging
 import os
 
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import DEFAULT_SESSION_FILE
 from fianchetto_tradebot.common.exchange.connector import Connector
+from fianchetto_tradebot.common.exchange.etrade.etrade_connector import DEFAULT_SESSION_FILE
 
 config = configparser.ConfigParser()
 

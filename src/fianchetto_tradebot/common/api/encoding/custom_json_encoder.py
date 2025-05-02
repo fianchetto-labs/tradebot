@@ -1,6 +1,5 @@
 import dataclasses
 import decimal
-
 import uuid
 from datetime import date
 from json import JSONEncoder

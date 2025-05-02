@@ -4,20 +4,20 @@ from datetime import datetime
 
 import pytest
 
-from fianchetto_tradebot.common.api.orders.order_util import OrderUtil
 from fianchetto_tradebot.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.common.api.orders.get_order_request import GetOrderRequest
 from fianchetto_tradebot.common.api.orders.get_order_response import GetOrderResponse
 from fianchetto_tradebot.common.api.orders.order_list_request import ListOrdersRequest
 from fianchetto_tradebot.common.api.orders.order_metadata import OrderMetadata
 from fianchetto_tradebot.common.api.orders.order_service import OrderService
+from fianchetto_tradebot.common.api.orders.order_util import OrderUtil
 from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
-from tests.common.api.orders.order_test_util import OrderTestUtil
 from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.order.executed_order import ExecutedOrder
 from fianchetto_tradebot.common.order.order_status import OrderStatus
 from fianchetto_tradebot.common.order.placed_order import PlacedOrder
+from tests.common.api.orders.order_test_util import OrderTestUtil
 
 """
 NOTE - To test in real life, it's necessary to include an `integration_test_properties.ini` file.

@@ -6,8 +6,8 @@ from pydantic import ValidationError
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.currency import Currency
 from fianchetto_tradebot.common.finance.equity import Equity
-from fianchetto_tradebot.common.finance.option import Option
 from fianchetto_tradebot.common.finance.exercise_style import ExerciseStyle
+from fianchetto_tradebot.common.finance.option import Option
 from fianchetto_tradebot.common.finance.option_type import OptionType
 from fianchetto_tradebot.common.order.expiry.good_for_day import GoodForDay
 from fianchetto_tradebot.common.order.expiry.good_for_sixty_days import GoodForSixtyDays
