@@ -344,7 +344,7 @@ class ETradeOrderService(OrderService):
             placed_order: PlacedOrder = OrderConversionUtil.to_placed_order_from_json(order, account_id, order_id)
 
             if status == OrderStatus.EXECUTED:
-                executed_order = OrderConversionUtil.to_executed_order_from_json(order, account_id=account_id)
+                executed_order = OrderConversionUtil.to_executed_order_from_json(input_order=order, account_id=account_id)
                 return_order_list.append(executed_order)
             else:
                 return_order_list.append(placed_order)
