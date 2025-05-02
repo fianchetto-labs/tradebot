@@ -14,15 +14,15 @@ from fianchetto_tradebot.common.exchange.connector import Connector
 
 config = configparser.ConfigParser()
 
-DEFAULT_ETRADE_CONFIG_FILE = os.path.join(os.path.dirname(__file__), './config.ini')
-DEFAULT_ETRADE_SESSION_FILE = os.path.join(os.path.dirname(__file__), './serialized/etrade_session.out')
-DEFAULT_ETRADE_ASYNC_SESSION_FILE = os.path.join(os.path.dirname(__file__), './serialized/async_etrade_session.out')
+DEFAULT_CONFIG_FILE = os.path.join(os.path.dirname(__file__), './config.ini')
+DEFAULT_SESSION_FILE = os.path.join(os.path.dirname(__file__), './serialized/etrade_session.out')
+DEFAULT_ASYNC_SESSION_FILE = os.path.join(os.path.dirname(__file__), './serialized/async_etrade_session.out')
 
 DEFAULT_ETRADE_BASE_URL_FILE = os.path.join(os.path.dirname(__file__), './serialized/etrade_base_url.out')
 
+# For debugging
 REQUEST_TOKEN_FILE = os.path.join(os.path.dirname(__file__), './serialized/etrade_request_token.out')
 REQUEST_TOKEN_SECRET_FILE =os.path.join(os.path.dirname(__file__), './serialized/etrade_request_token_secret.out')
-
 OAUTH_TOKEN_FILE = os.path.join(os.path.dirname(__file__), './serialized/etrade_oauth_token.out')
 OAUTH_TOKEN_SECRET_FILE =os.path.join(os.path.dirname(__file__), './serialized/etrade_auth_token_secret.out')
 
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 EXCHANGE_NAME = "E*TRADE"
 
 class ETradeConnector(Connector):
-    def __init__(self, config_file=DEFAULT_ETRADE_CONFIG_FILE, session_file=DEFAULT_ETRADE_SESSION_FILE, async_session_file=DEFAULT_ETRADE_ASYNC_SESSION_FILE, base_url_file=DEFAULT_ETRADE_BASE_URL_FILE):
+    def __init__(self, config_file=DEFAULT_CONFIG_FILE, session_file=DEFAULT_SESSION_FILE, async_session_file=DEFAULT_ASYNC_SESSION_FILE, base_url_file=DEFAULT_ETRADE_BASE_URL_FILE):
         self.exchange = EXCHANGE_NAME
         self.config_file = config_file
         self.session_file = session_file
@@ -123,15 +123,16 @@ class ETradeConnector(Connector):
             signature_type="query"
         )
 
-        print(session)
-        print(async_session)
         self.serialize_session(session)
         self.serialize_async_session(async_session)
         self.serialize_request_token(request_token)
+        self.serialize_base_url(base_url)
+
+        # For debugging
         self.serialize_request_token_secret(request_token_secret)
         self.serialize_oauth_token(session.access_token)
         self.serialize_oauth_token_secret(session.access_token_secret)
-        self.serialize_base_url(base_url)
+
         return session, async_session, base_url
 
     def serialize_session(self, session: OAuth1Session):
@@ -163,13 +164,13 @@ class ETradeConnector(Connector):
             pickle.dump(base_url, f)
 
     @staticmethod
-    def deserialize_session(input=DEFAULT_ETRADE_SESSION_FILE) -> OAuth1Session:
+    def deserialize_session(input=DEFAULT_SESSION_FILE) -> OAuth1Session:
         input_file = Path(input)
         with open(input_file, "rb") as f:
             return pickle.load(f)
 
     @staticmethod
-    def deserialize_async_session(input=DEFAULT_ETRADE_ASYNC_SESSION_FILE) -> OAuth1Session:
+    def deserialize_async_session(input=DEFAULT_ASYNC_SESSION_FILE) -> OAuth1Session:
         input_file = Path(input)
         with open(input_file, "rb") as f:
             return pickle.load(f)
@@ -219,44 +220,3 @@ class ETradeConnector(Connector):
             return False
 
         return True
-
-    def get_async_connection(self):
-        config.read(self.config_file)
-        using_sandbox = self._is_using_sandbox()
-
-        if using_sandbox:
-            consumer_key = config["SANDBOX"]["SANDBOX_API_KEY"]
-            consumer_secret = config["SANDBOX"]["SANDBOX_API_SECRET"]
-        else:
-            consumer_key = config["PROD"]["PROD_API_KEY"],
-            consumer_secret = config["PROD"]["PROD_API_SECRET"]
-
-        resource_owner_key = self.deserialize_request_token()
-        resource_owner_secret = self.deserialize_request_token_secret()
-
-        oauth_token_key = self.deserialize_oauth_token()
-        oauth_token_secret_key = self.deserialize_oauth_token_secret()
-
-        client = OAuth1Client(
-            consumer_key=consumer_key,
-            consumer_secret=consumer_secret,
-            resource_owner_key=resource_owner_key,
-            resource_owner_secret=resource_owner_secret,
-            access_token_key=resource_owner_key,
-            oauth_token=oauth_token_key,
-            oauth_token_secret=oauth_token_secret_key,
-            base_url=self.base_url,
-            signature_method='HMAC-SHA1',
-            signature_type="query"
-        )
-
-        return client
-
-    def _is_using_sandbox(self)->bool:
-        return "apisb" in str(self.base_url).lower()
-
-
-if __name__ == "__main__":
-    connector = ETradeConnector(DEFAULT_ETRADE_CONFIG_FILE, DEFAULT_ETRADE_SESSION_FILE)
-    session, base_url = connector.establish_connection()
-    pass

@@ -134,7 +134,15 @@ class ETradeQuotesService(QuotesService):
         data: dict = json.loads(input.text)
 
         option_chain_builder = ChainBuilder(equity)
+        if 'OptionChainResponse' not in data:
+            print(f"Option Chain Response not available - {data}")
+            return option_chain_builder.to_chain()
+
         option_chain_response = data['OptionChainResponse']
+
+        if 'OptionPair' not in option_chain_response:
+            print(f"Could not parse options chain {option_chain_response}")
+            return option_chain_builder.to_chain()
 
         selected = option_chain_response["SelectedED"]
         expiry_day = selected["day"]

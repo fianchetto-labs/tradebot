@@ -30,8 +30,7 @@ def account_key():
 def get_credentials():
     config.read(CONFIG_FILE)
     connector: ETradeConnector = ETradeConnector()
-    session, base_url = connector.load_connection()
-    async_session = connector.get_async_connection()
+    session, async_session, base_url = connector.load_connection()
 
     return base_url, session, async_session
 
