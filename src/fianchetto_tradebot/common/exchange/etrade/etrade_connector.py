@@ -14,16 +14,17 @@ from fianchetto_tradebot.common.exchange.connector import Connector
 config = configparser.ConfigParser()
 
 DEFAULT_CONFIG_FILE = os.path.join(os.path.dirname(__file__), './config.ini')
-DEFAULT_SESSION_FILE = os.path.join(os.path.dirname(__file__), './serialized/etrade_session.out')
-DEFAULT_ASYNC_SESSION_FILE = os.path.join(os.path.dirname(__file__), './serialized/async_etrade_session.out')
 
-DEFAULT_ETRADE_BASE_URL_FILE = os.path.join(os.path.dirname(__file__), './serialized/etrade_base_url.out')
+DEFAULT_SESSION_FILE = os.path.join(os.path.dirname(__file__), '/tmp/fianchetto_serialized/etrade_session.out')
+DEFAULT_ASYNC_SESSION_FILE = os.path.join(os.path.dirname(__file__), '/tmp/fianchetto_serialized/serialized/async_etrade_session.out')
+
+DEFAULT_ETRADE_BASE_URL_FILE = os.path.join(os.path.dirname(__file__), '/tmp/fianchetto_serialized/etrade_base_url.out')
 
 # For debugging
-REQUEST_TOKEN_FILE = os.path.join(os.path.dirname(__file__), './serialized/etrade_request_token.out')
-REQUEST_TOKEN_SECRET_FILE =os.path.join(os.path.dirname(__file__), './serialized/etrade_request_token_secret.out')
-OAUTH_TOKEN_FILE = os.path.join(os.path.dirname(__file__), './serialized/etrade_oauth_token.out')
-OAUTH_TOKEN_SECRET_FILE =os.path.join(os.path.dirname(__file__), './serialized/etrade_auth_token_secret.out')
+REQUEST_TOKEN_FILE = os.path.join(os.path.dirname(__file__), '/tmp/fianchetto_serialized/etrade_request_token.out')
+REQUEST_TOKEN_SECRET_FILE =os.path.join(os.path.dirname(__file__), '/tmp/fianchetto_serialized/etrade_request_token_secret.out')
+OAUTH_TOKEN_FILE = os.path.join(os.path.dirname(__file__), '/tmp/fianchetto_serialized/etrade_oauth_token.out')
+OAUTH_TOKEN_SECRET_FILE =os.path.join(os.path.dirname(__file__), '/tmp/fianchetto_serialized/etrade_auth_token_secret.out')
 
 logger = logging.getLogger(__name__)
 
@@ -135,31 +136,73 @@ class ETradeConnector(Connector):
         return session, async_session, base_url
 
     def serialize_session(self, session: OAuth1Session):
-        with open(self.session_file, "wb") as f:
+        file_to_serialize = self.session_file
+        if not os.path.exists(os.path.dirname(file_to_serialize)):
+            try:
+                os.makedirs(os.path.dirname(file_to_serialize))
+            except Exception as e:
+                raise(f"Could not make path for file {file_to_serialize}")
+        with open(file_to_serialize, "wb") as f:
             pickle.dump(session, f)
 
     def serialize_async_session(self, async_session: OAuth1Client):
-        with open(self.async_session_file, "wb") as f:
+        file_to_serialize = self.async_session_file
+        if not os.path.exists(os.path.dirname(file_to_serialize)):
+            try:
+                os.makedirs(os.path.dirname(file_to_serialize))
+            except Exception as e:
+                raise (f"Could not make path for file {file_to_serialize}")
+        with open(file_to_serialize, "wb") as f:
             pickle.dump(async_session, f)
 
     def serialize_request_token(self, token: str):
+        file_to_serialize = REQUEST_TOKEN_FILE
+        if not os.path.exists(os.path.dirname(file_to_serialize)):
+            try:
+                os.makedirs(os.path.dirname(file_to_serialize))
+            except Exception as e:
+                raise (f"Could not make path for file {file_to_serialize}")
         with open(REQUEST_TOKEN_FILE, "wb") as f:
             pickle.dump(token, f)
 
     def serialize_request_token_secret(self, token_secret: str):
+        file_to_serialize = REQUEST_TOKEN_SECRET_FILE
+        if not os.path.exists(os.path.dirname(file_to_serialize)):
+            try:
+                os.makedirs(os.path.dirname(file_to_serialize))
+            except Exception:
+                raise (f"Could not make path for file {file_to_serialize}")
         with open(REQUEST_TOKEN_SECRET_FILE, "wb") as f:
             pickle.dump(token_secret, f)
 
     def serialize_oauth_token(self, token: str):
+        file_to_serialize = OAUTH_TOKEN_FILE
+        if not os.path.exists(os.path.dirname(file_to_serialize)):
+            try:
+                os.makedirs(os.path.dirname(file_to_serialize))
+            except Exception:
+                raise (f"Could not make path for file {file_to_serialize}")
         with open(OAUTH_TOKEN_FILE, "wb") as f:
             pickle.dump(token, f)
 
     def serialize_oauth_token_secret(self, token_secret: str):
+        file_to_serialize = OAUTH_TOKEN_SECRET_FILE
+        if not os.path.exists(os.path.dirname(file_to_serialize)):
+            try:
+                os.makedirs(os.path.dirname(file_to_serialize))
+            except Exception:
+                raise (f"Could not make path for file {file_to_serialize}")
         with open(OAUTH_TOKEN_SECRET_FILE, "wb") as f:
             pickle.dump(token_secret, f)
 
     def serialize_base_url(self, base_url: str):
-        with open(self.base_url_file, "wb") as f:
+        file_to_serialize = self.base_url_file
+        if not os.path.exists(os.path.dirname(file_to_serialize)):
+            try:
+                os.makedirs(os.path.dirname(file_to_serialize))
+            except Exception:
+                raise (f"Could not make path for file {file_to_serialize}")
+        with open(file_to_serialize, "wb") as f:
             pickle.dump(base_url, f)
 
     @staticmethod
