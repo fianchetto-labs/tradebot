@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='fianchetto-tradebot',
-    version='0.1.6',
+    version='0.1.7',
     author='Fianchetto Labs',
     author_email='aleks@fianchettolabs.com',
     description='Library for implementing API trading integrations with popular brokerages like ETrade, Schwab, and Interactive Brokers',
