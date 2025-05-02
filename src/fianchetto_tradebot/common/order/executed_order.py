@@ -6,7 +6,7 @@ from fianchetto_tradebot.common.order.placed_order import PlacedOrder
 
 class ExecutedOrder(BaseModel):
     order: PlacedOrder
-    execution_details: ExecutionOrderDetails
+    execution_order_details: ExecutionOrderDetails
 
     def get_order(self):
         return self.order

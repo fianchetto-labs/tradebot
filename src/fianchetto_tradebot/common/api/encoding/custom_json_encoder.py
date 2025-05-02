@@ -58,7 +58,7 @@ class CustomJSONEncoder(JSONEncoder):
         if isinstance(o, (ExecutedOrder)):
             return {
                 "order": o.order,
-                "execution_details": o.execution_details
+                "execution_details": o.execution_order_details
             }
 
         if isinstance(o, (ExecutionOrderDetails)):
