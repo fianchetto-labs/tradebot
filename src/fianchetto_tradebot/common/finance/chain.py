@@ -191,7 +191,7 @@ class ChainBuilder:
                 logger.warning("Overwriting value ")
             self.strike_expiry_chain_call[option.strike][option.expiry] = price
         else:
-            self.strike_expiry_chain_call[option.strike] = dict()#dict[date, Price]()
+            self.strike_expiry_chain_call[option.strike] = dict[date, Price]()
             self.strike_expiry_chain_call[option.strike][option.expiry] = price
 
         # update option.expiry_strike
@@ -200,7 +200,7 @@ class ChainBuilder:
                 logger.warning("Overwriting value ")
             self.expiry_strike_chain_call[option.expiry][option.strike] = price
         else:
-            self.expiry_strike_chain_call[option.expiry] = dict()#dict[Amount, Price]()
+            self.expiry_strike_chain_call[option.expiry] = dict[Amount, Price]()
             self.expiry_strike_chain_call[option.expiry][option.strike] = price
 
     def _update_put_chain(self, priced_option: PricedOption):
@@ -211,7 +211,7 @@ class ChainBuilder:
                 logger.warning("Overwriting value ")
             self.strike_expiry_chain_put[option.strike][option.expiry] = price
         else:
-            self.strike_expiry_chain_put[option.strike] = dict()#dict[date, Price]()
+            self.strike_expiry_chain_put[option.strike] = dict[date, Price]()
             self.strike_expiry_chain_put[option.strike][option.expiry] = price
 
         # update option.expiry_strike
@@ -220,34 +220,34 @@ class ChainBuilder:
                 logger.warning("Overwriting value ")
             self.expiry_strike_chain_put[option.expiry][option.strike] = price
         else:
-            self.expiry_strike_chain_put[option.expiry] = dict()#dict[Amount, Price]()
+            self.expiry_strike_chain_put[option.expiry] = dict[Amount, Price]()
             self.expiry_strike_chain_put[option.expiry][option.strike] = price
 
-    def add_chain(self, other):
+    def add_chain(self, other: Chain):
         if other.equity != self.equity:
             raise Exception("Cannot add two chains with different equities")
 
         for expiry in other.expiry_strike_chain_put:
             if expiry not in self.expiry_strike_chain_put:
-                self.expiry_strike_chain_put[expiry] = dict()#dict[Amount, Price]()
+                self.expiry_strike_chain_put[expiry] = dict[Amount, Price]()
             for strike in other.expiry_strike_chain_put[expiry]:
                 self.expiry_strike_chain_put[expiry][strike] = other.expiry_strike_chain_put[expiry][strike].copy_of()
 
         for expiry in other.expiry_strike_chain_call:
             if expiry not in self.expiry_strike_chain_call:
-                self.expiry_strike_chain_call[expiry] = dict()#dict[Amount, Price]()
+                self.expiry_strike_chain_call[expiry] = dict[Amount, Price]()
             for strike in other.expiry_strike_chain_call[expiry]:
                 self.expiry_strike_chain_call[expiry][strike] = other.expiry_strike_chain_call[expiry][strike].copy_of()
 
         for strike in other.strike_expiry_chain_put:
             if strike not in self.strike_expiry_chain_put:
-                self.strike_expiry_chain_put[strike] = dict()#dict[date, Price]()
+                self.strike_expiry_chain_put[strike] = dict[date, Price]()
             for expiry in other.strike_expiry_chain_put[strike]:
                 self.strike_expiry_chain_put[strike][expiry] = other.strike_expiry_chain_put[strike][expiry].copy_of()
 
         for strike in other.strike_expiry_chain_call:
             if strike not in self.strike_expiry_chain_call:
-                self.strike_expiry_chain_call[strike] = dict()#dict[date, Price]()
+                self.strike_expiry_chain_call[strike] = dict[date, Price]()
             for expiry in other.strike_expiry_chain_call[strike]:
                 self.strike_expiry_chain_call[strike][expiry] = other.strike_expiry_chain_call[strike][expiry].copy_of()
 

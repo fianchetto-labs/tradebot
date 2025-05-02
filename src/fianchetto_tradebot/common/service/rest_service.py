@@ -5,25 +5,25 @@ from flask import Flask
 
 from fianchetto_tradebot.common.api.encoding.custom_json_provider import CustomJSONProvider
 from fianchetto_tradebot.common.exchange.connector import Connector
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector, DEFAULT_ETRADE_CONFIG_FILE
+from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector, DEFAULT_CONFIG_FILE
 from fianchetto_tradebot.common.exchange.exchange_name import ExchangeName
 from fianchetto_tradebot.common.exchange.ikbr.ikbr_connector import IkbrConnector, DEFAULT_IKBR_CONFIG_FILE
 from fianchetto_tradebot.common.exchange.schwab.schwab_connector import SchwabConnector, DEFAULT_SCHWAB_CONFIG_FILE
 from fianchetto_tradebot.common.service.service_key import ServiceKey
 
 DEFAULT_EXCHANGE_CONFIGS: Final[dict[ExchangeName, str]] = {
-    ExchangeName.ETRADE : DEFAULT_ETRADE_CONFIG_FILE,
+    ExchangeName.ETRADE : DEFAULT_CONFIG_FILE,
     ExchangeName.IKBR : DEFAULT_IKBR_CONFIG_FILE,
     ExchangeName.SCHWAB : DEFAULT_SCHWAB_CONFIG_FILE
 }
 
 
 ETRADE_ONLY_EXCHANGE_CONFIG: Final[dict[ExchangeName, str]] = {
-    ExchangeName.ETRADE : DEFAULT_ETRADE_CONFIG_FILE,
+    ExchangeName.ETRADE : DEFAULT_CONFIG_FILE,
 }
 
 IKBR_ONLY_EXCHANGE_CONFIG: Final[dict[ExchangeName, str]] = {
-    ExchangeName.IKBR : DEFAULT_ETRADE_CONFIG_FILE,
+    ExchangeName.IKBR : DEFAULT_CONFIG_FILE,
 }
 
 SCHWAB_ONLY_EXCHANGE_CONFIG: Final[dict[ExchangeName, str]] = {
