@@ -1,6 +1,8 @@
+import asyncio
 import json
 import logging
-from datetime import date
+from asyncio import Future
+from datetime import date, datetime
 
 from dateutil.parser import parse
 
@@ -57,7 +59,7 @@ class ETradeQuotesService(QuotesService):
         # TODO: Implement this
         pass
 
-    def get_options_chain(self, get_options_chain_request: GetOptionsChainRequest) -> GetOptionsChainResponse:
+    def get_options_chain_sequential(self, get_options_chain_request: GetOptionsChainRequest) -> GetOptionsChainResponse:
         equity: Equity = Equity(ticker=get_options_chain_request.ticker)
 
         params: dict[str, str] = dict[str, str]()
@@ -82,38 +84,37 @@ class ETradeQuotesService(QuotesService):
 
         return GetOptionsChainResponse(options_chain=options_chain)
 
-    async def fetch_all_options_chain(self, ticker: str, expiries: list[date]):
-        tasks = [
-            self.async_session
-        ]
+    async def _assemble_individual_option_expiry_requests(self, ticker: str, expiries: list[date]) -> list:
+        tasks = [self.get_options_chain_task(ticker, expiry) for expiry in expiries]
+        return await asyncio.gather(*tasks)
 
-    def get_options_chain_parallel(self, get_options_chain_request: GetOptionsChainRequest) -> GetOptionsChainResponse:
-        equity: Equity = Equity(ticker=get_options_chain_request.ticker)
+    def get_options_chain(self, get_options_chain_request: GetOptionsChainRequest)->GetOptionsChainResponse:
+        ticker = get_options_chain_request.ticker
+        expiries: list[date] = self.get_option_expire_dates(GetOptionExpireDatesRequest(ticker=ticker)).expire_dates
 
+        results = asyncio.run(self._assemble_individual_option_expiry_requests(ticker, expiries))
+
+        cb: ChainBuilder = ChainBuilder(Equity(ticker=ticker))
+        for result in results:
+            cb.add_chain(result)
+
+        return GetOptionsChainResponse(options_chain=cb.to_chain())
+
+    async def get_options_chain_task(self, ticker:str, expiry: date) -> Chain:
         params: dict[str, str] = dict[str, str]()
-        params["symbol"] = equity.ticker
 
-        # Default behavior, if expiry is not provided, is to deliver the chain at the most upcoming expiry
-        if get_options_chain_request.expiry:
-            as_datetime: date = get_options_chain_request.expiry
-            year = as_datetime.year
-            month = as_datetime.month
-            day = as_datetime.day
+        params["expiryYear"] = expiry.year
+        params["expiryMonth"] = expiry.month
+        params["expiryDay"] = expiry.day
 
-            params["expiryYear"] = year
-            params["expiryMonth"] = month
-            params["expiryDay"] = day
+        params["symbol"] = ticker
 
-        params["expiryYear"] = '2025'
         path = f"/v1/market/optionchains.json"
         url = self.base_url + path
 
-
-
-        response = self.session.get(url, params=params)
-        options_chain = ETradeQuotesService._parse_options_chain(response, equity)
-
-        return GetOptionsChainResponse(options_chain=options_chain)
+        # Open question about the params...do I need to manually add to URI?
+        response: dict = await self.async_session.request(method="GET", url=url, params=params)
+        return ETradeQuotesService._parse_options_chain_dict(response, Equity(ticker=ticker))
 
     def get_option_expire_dates(self, get_options_expire_dates_request: GetOptionExpireDatesRequest)-> GetOptionExpireDatesResponse:
         path = f"/v1/market/optionexpiredate.json"
@@ -130,9 +131,11 @@ class ETradeQuotesService(QuotesService):
         pass
 
     @staticmethod
-    def _parse_options_chain(input, equity:Equity)->Chain:
-        data: dict = json.loads(input.text)
+    def _parse_options_chain(input, equity: Equity)->Chain:
+        return ETradeQuotesService._parse_options_chain_dict(input.text, equity)
 
+    @staticmethod
+    def _parse_options_chain_dict(data:dict, equity:Equity)->Chain:
         option_chain_builder = ChainBuilder(equity)
         if 'OptionChainResponse' not in data:
             print(f"Option Chain Response not available - {data}")

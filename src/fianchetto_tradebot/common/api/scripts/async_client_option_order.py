@@ -55,8 +55,8 @@ async def fetch(session, url):
         return await response.json()
 
 async def assemble_simple_tasks(session, base_url):
-    p1 = f"{base_url}/v1/market/quote/GE.json"
-    p2 = f"{base_url}/v1/market/quote/CRM.json"
+    p1 = f"{base_url}/v1/market/optionchains.json"
+    p2 = f"{base_url}/v1/market/optionchains.json"
 
     urls = [p1, p2]
 
@@ -72,7 +72,7 @@ async def print_time(id, url, session):
     #await requests.get(url) #The response cannot be used in an await expression. makes sense. Seems like there's some
     # kind of API or interface that needs to be implemented by the method
 
-    result = await session.request(method="GET", url="/v1/market/quote/GE.json")
+    result = await session.request(method="GET", url=url, params={"symbol": "GE"})
     print(result)
     print(f"{id}: {datetime.now()} Finally done! ")
 
@@ -81,9 +81,8 @@ if __name__ == "__main__":
     connector: ETradeConnector = ETradeConnector()
     session, async_session, base_url = connector.load_connection()
 
-    uri =  f"{base_url}/v1/market/quote/GE.json"
-    response = session.get(url=uri)
+    uri =  f"{base_url}/v1/market/optionchains.json"
+    response = session.get(url=uri, params={"symbol": "GE"})
     print(response.json())
-
 
     results = asyncio.run(assemble_simple_tasks(async_session, base_url))
