@@ -31,7 +31,7 @@ DEFAULT_PORTFOLIO_OPTIONS = {
 class ETradePortfolioService(PortfolioService):
     def __init__(self, connector: Connector):
         super().__init__(connector)
-        self.session, self.base_url = self.connector.load_connection()
+        self.session, self.async_session, self.base_url = self.connector.load_connection()
 
     def get_portfolio_info(self, get_portfolio_request: GetPortfolioRequest, exchange_specific_options: dict[str, str] = DEFAULT_PORTFOLIO_OPTIONS) -> GetPortfolioResponse:
         account_id_key = get_portfolio_request.account_id

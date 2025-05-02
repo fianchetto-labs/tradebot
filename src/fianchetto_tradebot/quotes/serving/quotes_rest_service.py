@@ -126,7 +126,6 @@ class QuotesRestService(RestService):
             get_options_chain_request: GetOptionsChainRequest = GetOptionsChainRequest(ticker=equity, expiry=expiry)
             get_options_chain_response: GetOptionsChainResponse = quotes_service.get_options_chain(get_options_chain_request)
 
-            # PricedOption vs. Option...
             full_chain_builder.add_chain(get_options_chain_response.options_chain)
 
         with_stringified_keys = CustomJSONProvider.stringify_keys(full_chain_builder.to_chain())

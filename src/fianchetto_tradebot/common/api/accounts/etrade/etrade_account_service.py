@@ -19,7 +19,7 @@ DEFAULT_INST_TYPE = "BROKERAGE"
 class ETradeAccountService(AccountService):
     def __init__(self, connector: ETradeConnector):
         super().__init__(connector)
-        self.session, self.base_url = connector.load_connection()
+        self.session, self.async_session, self.base_url = connector.load_connection()
 
     def list_accounts(self) -> AccountListResponse:
         path = f"/v1/accounts/list.json"

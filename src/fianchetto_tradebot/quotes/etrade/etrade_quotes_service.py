@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class ETradeQuotesService(QuotesService):
     def __init__(self, connector: ETradeConnector):
         super().__init__(connector)
-        self.session, self.base_url = connector.load_connection()
+        self.session, self.async_session, self.base_url = connector.load_connection()
 
     def get_tradable_quote(self, tradable_request: GetTradableRequest) -> GetTradableResponse:
         tradable = tradable_request.get_tradable()
@@ -63,6 +63,7 @@ class ETradeQuotesService(QuotesService):
         params: dict[str, str] = dict[str, str]()
         params["symbol"] = equity.ticker
 
+        # Default behavior, if expiry is not provided, is to deliver the chain at the most upcoming expiry
         if get_options_chain_request.expiry:
             as_datetime: date = get_options_chain_request.expiry
             year = as_datetime.year
@@ -73,8 +74,42 @@ class ETradeQuotesService(QuotesService):
             params["expiryMonth"] = month
             params["expiryDay"] = day
 
+        params["expiryYear"] = '2025'
         path = f"/v1/market/optionchains.json"
         url = self.base_url + path
+        response = self.session.get(url, params=params)
+        options_chain = ETradeQuotesService._parse_options_chain(response, equity)
+
+        return GetOptionsChainResponse(options_chain=options_chain)
+
+    async def fetch_all_options_chain(self, ticker: str, expiries: list[date]):
+        tasks = [
+            self.async_session
+        ]
+
+    def get_options_chain_parallel(self, get_options_chain_request: GetOptionsChainRequest) -> GetOptionsChainResponse:
+        equity: Equity = Equity(ticker=get_options_chain_request.ticker)
+
+        params: dict[str, str] = dict[str, str]()
+        params["symbol"] = equity.ticker
+
+        # Default behavior, if expiry is not provided, is to deliver the chain at the most upcoming expiry
+        if get_options_chain_request.expiry:
+            as_datetime: date = get_options_chain_request.expiry
+            year = as_datetime.year
+            month = as_datetime.month
+            day = as_datetime.day
+
+            params["expiryYear"] = year
+            params["expiryMonth"] = month
+            params["expiryDay"] = day
+
+        params["expiryYear"] = '2025'
+        path = f"/v1/market/optionchains.json"
+        url = self.base_url + path
+
+
+
         response = self.session.get(url, params=params)
         options_chain = ETradeQuotesService._parse_options_chain(response, equity)
 
@@ -194,3 +229,14 @@ class ETradeQuotesService(QuotesService):
             exp_date_list.append(date(year, month, day))
 
         return exp_date_list
+
+    def _get_async_session_from_session(self):
+        from aioauth_client import OAuth1Client
+
+        client = OAuth1Client(
+            client_id="consumer_key",
+            client_secret="consumer_secret",
+            resource_owner_key="access_token",
+            resource_owner_secret="access_token_secret",
+            base_url="https://api.etrade.com"
+        )

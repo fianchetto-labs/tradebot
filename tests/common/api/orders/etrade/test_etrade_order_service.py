@@ -4,6 +4,7 @@ import pickle
 import pytest
 from unittest.mock import MagicMock, patch
 
+from aioauth_client import OAuth1Client
 from rauth import OAuth1Session
 
 from fianchetto_tradebot.common.api.orders.etrade.etrade_order_service import ETradeOrderService
@@ -67,10 +68,11 @@ def place_order_spread_response():
 
 @pytest.fixture
 @patch('rauth.OAuth1Session')
-def connector(session: OAuth1Session):
+@patch('aioauth_client.OAuth1Client')
+def connector(session: OAuth1Session, async_session: OAuth1Client):
     # build a connector that gives back a mock session
     connector: ETradeConnector = ETradeConnector()
-    connector.load_connection = MagicMock(return_value = (session, DEFAULT_ETRADE_BASE_URL_FILE))
+    connector.load_connection = MagicMock(return_value = (session, async_session, DEFAULT_ETRADE_BASE_URL_FILE))
     return connector
 
 @pytest.fixture
