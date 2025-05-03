@@ -89,7 +89,11 @@ class ETradeQuotesService(QuotesService):
 
     def get_options_chain(self, get_options_chain_request: GetOptionsChainRequest)->GetOptionsChainResponse:
         ticker = get_options_chain_request.ticker
-        expiries: list[date] = self.get_option_expire_dates(GetOptionExpireDatesRequest(ticker=ticker)).expire_dates
+
+        if get_options_chain_request.expiry:
+            expiries = [get_options_chain_request.expiry]
+        else:
+            expiries: list[date] = self.get_option_expire_dates(GetOptionExpireDatesRequest(ticker=ticker)).expire_dates
 
         results = asyncio.run(self._assemble_individual_option_expiry_requests(ticker, expiries))
 
