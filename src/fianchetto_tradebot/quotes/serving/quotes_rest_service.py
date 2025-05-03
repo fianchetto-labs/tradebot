@@ -50,7 +50,6 @@ class QuotesRestService(RestService):
                               view_func=self.get_account_portfolio, methods=['GET'])
 
         # Quotes Endpoints
-
         self.app.add_url_rule(rule='/api/v1/<exchange>/quotes/equity/<equity>', endpoint='get-equity-quote',
                               view_func=self.get_equity_quote, methods=['GET'])
 
@@ -120,9 +119,9 @@ class QuotesRestService(RestService):
 
         # TODO: Need to define a good format for expiry values
         expiry_request: GetOptionExpireDatesRequest = GetOptionExpireDatesRequest(ticker=equity)
-        get_tradable_response: GetOptionExpireDatesResponse = quotes_service.get_option_expire_dates(expiry_request)
+        get_option_expiries_response: GetOptionExpireDatesResponse = quotes_service.get_option_expire_dates(expiry_request)
 
-        return jsonify(get_tradable_response)
+        return jsonify(get_option_expiries_response)
 
     def get_options_chain_by_expiry(self, exchange, equity, expiry):
         quotes_service: QuotesService = self.quotes_services[ExchangeName[exchange.upper()]]
@@ -130,8 +129,8 @@ class QuotesRestService(RestService):
         # Document for format in which to get this (yyyy_mm_dd)
         expiry_date = parse(expiry)
 
-        tradeable_request: GetOptionsChainRequest = GetOptionsChainRequest(ticker=equity, expiry=expiry_date)
-        get_options_chain_response: GetOptionsChainResponse = quotes_service.get_options_chain(tradeable_request)
+        get_options_chain_request: GetOptionsChainRequest = GetOptionsChainRequest(ticker=equity, expiry=expiry_date)
+        get_options_chain_response: GetOptionsChainResponse = quotes_service.get_options_chain(get_options_chain_request)
 
         with_stringified_keys = CustomJSONProvider.stringify_keys(get_options_chain_response)
         return jsonify(with_stringified_keys)
