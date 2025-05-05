@@ -2,9 +2,8 @@ from datetime import datetime
 
 import uvicorn
 from fastapi import FastAPI
-from flask import make_response
-from flask import request
 
+from build.lib.fianchetto_tradebot.common.api.request_status import RequestStatus
 from fianchetto_tradebot.common.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common.api.orders.etrade.etrade_order_service import ETradeOrderService
@@ -133,16 +132,10 @@ class OexRestService(RestService):
         if not preview_order_request.order_metadata.account_id:
             preview_order_request.order_metadata.account_id = account_id
 
-        order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
-        preview_order_response: PreviewOrderResponse = order_service.preview_order(preview_order_request)
-        preview_id = preview_order_response.preview_id
+        order_service: OrderService = self.order_services[ExchangeName[exchange.upper()]]
+        place_order_response: PlaceOrderResponse = order_service.preview_and_place_order(preview_order_request)
 
-        order_metadata: OrderMetadata = preview_order_request.order_metadata
-        order: Order = preview_order_request.order
-        place_order_request: PlaceOrderRequest = PlaceOrderRequest(order_metadata=order_metadata, preview_id=preview_id,
-                                                                   order=order)
-        place_order_response: PlaceOrderResponse = order_service.place_order(place_order_request)
-        return place_order_response
+        return jsonify(place_order_response)
 
     def cancel_order(self, brokerage: str, account_id: str, order_id: str):
         cancel_order_request = CancelOrderRequest(account_id=account_id, order_id=order_id)
@@ -150,6 +143,23 @@ class OexRestService(RestService):
         cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
 
         return cancel_order_response
+
+    def modify_order(self, exchange: str, account_id: str, order_id: str):
+        preview_order_request = PreviewOrderRequest.model_validate(request.json)
+        order_service: OrderService = self.order_services[ExchangeName[exchange.upper()]]
+
+        # cancel
+        cancel_order_request = CancelOrderRequest(account_id=account_id, order_id=order_id)
+        cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
+
+        # TODO: Validation here in case the response is somehow unsatisfactory
+        if cancel_order_response.request_status is not RequestStatus.SUCCESS:
+            return {"error": "Order not cancelled. Please retry"}, 500
+
+        # preview_and_place
+        place_order_response: PlaceOrderResponse = order_service.preview_and_place_order(preview_order_request)
+        return jsonify(place_order_response)
+
 
 if __name__ == "__main__":
     oex_app = OexRestService()
