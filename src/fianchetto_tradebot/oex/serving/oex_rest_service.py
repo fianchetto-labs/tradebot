@@ -75,7 +75,8 @@ class OexRestService(RestService):
     def run(self, *args, **kwargs):
         self.app.run(*args, **kwargs)
 
-    def list_orders(self, brokerage: str, account_id: str):
+    @app.get("/api/v1/{brokerage}/{account_id}/orders", response_model=ListOrdersResponse)
+    async def list_orders(self, brokerage: str, account_id: str):
         args = request.args
         status_str = args.get('status')
         status = OrderStatus.ANY if not status_str else OrderStatus[status_str]
@@ -88,9 +89,10 @@ class OexRestService(RestService):
         list_order_request = ListOrdersRequest(account_id=account_id, status=status, from_date=from_date, to_date=to_date, count=count)
 
         resp: ListOrdersResponse = order_service.list_orders(list_order_request)
+        return resp
 
-        return jsonify(resp)
 
+    @app.get("/api/v1/{brokerage}/{account_id}/orders/{order_id}", response_model=GetOrderResponse)
     def get_order(self, brokerage: str, account_id: str, order_id: str):
         if not order_id:
             # TODO: Factor this out
