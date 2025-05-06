@@ -149,7 +149,7 @@ class OrderConversionUtil:
                                <orderTerm>{order_term}</orderTerm>
                                <marketSession>REGULAR</marketSession>
                                <stopPrice />
-                               <limitPrice>{order.order_price.price}</limitPrice>
+                               <limitPrice>{order.order_price.price.to_float()}</limitPrice>
                                {instrument_xml}
                        </Order>
             """
