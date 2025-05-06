@@ -1,5 +1,4 @@
 from dateutil.parser import parse
-from flask import jsonify
 
 from fianchetto_tradebot.common.api.accounts.account_list_response import AccountListResponse
 from fianchetto_tradebot.common.api.accounts.account_service import AccountService
@@ -37,31 +36,18 @@ class QuotesRestService(RestService):
         super()._register_endpoints()
 
         # Account endpoints
-        self.app.add_url_rule(rule='/api/v1/<brokerage>/accounts', endpoint='list-accounts',
-                              view_func=self.list_accounts, methods=['GET'])
-        self.app.add_url_rule(rule='/api/v1/<brokerage>/accounts/<account_id>', endpoint='get-account',
-                              view_func=self.get_account, methods=['GET'])
-
-        self.app.add_url_rule(rule='/api/v1/<brokerage>/accounts/<account_id>/balance', endpoint='get-account-balance',
-                              view_func=self.get_account_balance, methods=['GET'])
+        self.app.add_api_route(path='/api/v1/{brokerage}/accounts', endpoint=self.list_accounts, methods=['GET'], response_model=AccountListResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}', endpoint=self.get_account, methods=['GET'], response_model=GetAccountInfoResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/balance', endpoint=self.get_account_balance, methods=['GET'], response_model=GetAccountBalanceResponse)
 
         # Portfolio Endpoints
-        self.app.add_url_rule(rule='/api/v1/<brokerage>/accounts/<account_id>/portfolio', endpoint='get-account-portfolio',
-                              view_func=self.get_account_portfolio, methods=['GET'])
+        self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/portfolio', endpoint=self.get_account_portfolio, methods=['GET'], response_model=GetPortfolioResponse)
 
         # Quotes Endpoints
-        self.app.add_url_rule(rule='/api/v1/<brokerage>/quotes/equity/<equity>', endpoint='get-equity-quote',
-                              view_func=self.get_equity_quote, methods=['GET'])
-
-        self.app.add_url_rule(rule='/api/v1/<brokerage>/quotes/equity/<equity>/options_chain', endpoint='get-options-chain',
-                              view_func=self.get_options_chain, methods=['GET'])
-
-
-        self.app.add_url_rule(rule='/api/v1/<brokerage>/quotes/equity/<equity>/options_chain/expiry', endpoint='get-options-chain-expiries',
-                              view_func=self.get_options_chain_expiries, methods=['GET'])
-
-        self.app.add_url_rule(rule='/api/v1/<brokerage>/quotes/equity/<equity>/options_chain/expiry/<expiry>', endpoint='get-options-chain-by-expiry',
-                              view_func=self.get_options_chain_by_expiry, methods=['GET'])
+        self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}', endpoint=self.get_equity_quote, methods=['GET'])
+        self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}/options_chain', endpoint=self.get_options_chain, methods=['GET'])
+        self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}/options_chain/expiry', endpoint=self.get_options_chain_expiries, methods=['GET'])
+        self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}/options_chain/expiry/{expiry}', endpoint=self.get_options_chain_by_expiry, methods=['GET'])
 
 
         # TODO - add more granular endpoints for options by expiry, strike, etc
@@ -71,21 +57,21 @@ class QuotesRestService(RestService):
         account_service: AccountService = self.account_services[Brokerage[brokerage.upper()]]
         account_list_response: AccountListResponse = account_service.list_accounts()
 
-        return jsonify(account_list_response)
+        return account_list_response
 
     def get_account(self, brokerage:str, account_id: str):
         account_service: AccountService = self.account_services[Brokerage[brokerage.upper()]]
         get_account_info_request: GetAccountInfoRequest = GetAccountInfoRequest(account_id=account_id)
         get_account_response: GetAccountInfoResponse = account_service.get_account_info(get_account_info_request)
 
-        return jsonify(get_account_response)
+        return get_account_response
 
     def get_account_balance(self, brokerage:str, account_id: str):
         account_service: AccountService = self.account_services[Brokerage[brokerage.upper()]]
         get_account_balance_request: GetAccountBalanceRequest = GetAccountBalanceRequest(account_id=account_id)
         get_account_balance_response: GetAccountBalanceResponse = account_service.get_account_balance(get_account_balance_request)
 
-        return jsonify(get_account_balance_response)
+        return get_account_balance_response
 
     def get_account_portfolio(self, brokerage:str, account_id: str):
         # TODO - get brokerage-specific options that are now part of the defaults. This is tricky b/c normally we'd want to
@@ -94,8 +80,7 @@ class QuotesRestService(RestService):
         get_portfolio_request: GetPortfolioRequest = GetPortfolioRequest(account_id)
         get_portfolio_response: GetPortfolioResponse = portfolio_service.get_portfolio_info(get_portfolio_request)
 
-        with_stringified_keys = CustomJSONProvider.stringify_keys(get_portfolio_response)
-        return jsonify(with_stringified_keys)
+        return get_portfolio_response
 
     def get_equity_quote(self, brokerage, equity):
         quotes_service: QuotesService = self.quotes_services[Brokerage[brokerage.upper()]]
@@ -103,7 +88,7 @@ class QuotesRestService(RestService):
         tradeable_request: GetTradableRequest = GetTradableRequest(tradable=tradable)
         get_tradable_response: GetTradableResponse = quotes_service.get_tradable_quote(tradeable_request)
 
-        return jsonify(get_tradable_response)
+        return get_tradable_response
 
     def get_options_chain(self, brokerage, equity):
         quotes_service: QuotesService = self.quotes_services[Brokerage[brokerage.upper()]]
@@ -112,7 +97,7 @@ class QuotesRestService(RestService):
         get_option_chain_response: GetOptionsChainResponse = quotes_service.get_options_chain(get_options_chain_request)
 
         with_stringified_keys = CustomJSONProvider.stringify_keys(get_option_chain_response.options_chain)
-        return jsonify(with_stringified_keys)
+        return with_stringified_keys
 
     def get_options_chain_expiries(self, brokerage, equity):
         quotes_service: QuotesService = self.quotes_services[Brokerage[brokerage.upper()]]
@@ -121,7 +106,7 @@ class QuotesRestService(RestService):
         expiry_request: GetOptionExpireDatesRequest = GetOptionExpireDatesRequest(ticker=equity)
         get_option_expiries_response: GetOptionExpireDatesResponse = quotes_service.get_option_expire_dates(expiry_request)
 
-        return jsonify(get_option_expiries_response)
+        return get_option_expiries_response
 
     def get_options_chain_by_expiry(self, brokerage, equity, expiry):
         quotes_service: QuotesService = self.quotes_services[Brokerage[brokerage.upper()]]
@@ -133,7 +118,7 @@ class QuotesRestService(RestService):
         get_options_chain_response: GetOptionsChainResponse = quotes_service.get_options_chain(get_options_chain_request)
 
         with_stringified_keys = CustomJSONProvider.stringify_keys(get_options_chain_response)
-        return jsonify(with_stringified_keys)
+        return with_stringified_keys
 
     def _setup_brokerage_services(self):
         # Delegated to subclass

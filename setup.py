@@ -22,14 +22,14 @@ setup(
     include_package_data=True,
     install_requires=[
         'aioauth-client',
-        'flask',
         'pandas',
         'pydantic',
         'pygments',
         'python-dateutil',
         'pytz',
         'rauth',
-        'sortedcontainers'
+        'sortedcontainers',
+        'uvicorn'
     ],
     extras_require={
         'dev': ['pytest']

@@ -1,8 +1,8 @@
 from abc import ABC
 from typing import Final
 
-from fastapi import FastAPI
-from flask import Flask
+import uvicorn
+from fastapi import FastAPI, APIRouter
 
 from fianchetto_tradebot.common.api.encoding.custom_json_provider import CustomJSONProvider
 from fianchetto_tradebot.common.brokerage.connector import Connector
@@ -18,7 +18,6 @@ DEFAULT_BROKERAGE_CONFIGS: Final[dict[Brokerage, str]] = {
     Brokerage.SCHWAB : DEFAULT_SCHWAB_CONFIG_FILE
 }
 
-
 ETRADE_ONLY_BROKERAGE_CONFIG: Final[dict[Brokerage, str]] = {
     Brokerage.ETRADE : DEFAULT_CONFIG_FILE,
 }
@@ -31,23 +30,21 @@ SCHWAB_ONLY_BROKERAGE_CONFIG: Final[dict[Brokerage, str]] = {
     Brokerage.SCHWAB : DEFAULT_SCHWAB_CONFIG_FILE,
 }
 
+
 class RestService(ABC):
     def __init__(self, service_key: ServiceKey, credential_config_files: dict[Brokerage, str]):
         self.service_key = service_key
-        self._app = FastAPI()
+        self.app = FastAPI()
+        self.router = APIRouter()
         #self._app.json_provider_class = CustomJSONProvider(self._app)  # Tell Flask to use the custom encoder
         #self._app.json = CustomJSONProvider(self._app)
         self._establish_connections(config_files=credential_config_files)
         self._register_endpoints()
         self._setup_brokerage_services()
 
-    @property
-    def app(self) -> Flask:
-        return self._app
-
-    @app.setter
-    def app(self, app: Flask):
-        self._app = app
+    def _register_endpoints(self):
+        self.app.add_api_route(path="/health-check", endpoint=self.health_check, methods=['GET'])
+        self.app.add_api_route(path="/", endpoint=self.get_root, methods=['GET'])
 
     def _establish_connections(self, config_files: dict[Brokerage, str]):
         self.connectors: dict[Brokerage, Connector] = dict()
@@ -66,7 +63,7 @@ class RestService(ABC):
                 raise Exception(f"Brokerage {brokerage} not recognized")
 
     def run(self, *args, **kwargs):
-        self.app.run(*args, **kwargs)
+        uvicorn.run(self.app, *args, **kwargs)
 
     def get_root(self):
         return f"{self.service_key.name} Service"
@@ -74,12 +71,6 @@ class RestService(ABC):
     def health_check(self):
         return f"{self.service_key.name} Service Up"
 
-    def _register_endpoints(self):
-        self.app.add_url_rule(rule='/', endpoint='root', view_func=self.get_root, methods=['GET'])
-        self.app.add_url_rule(rule='/health-check', endpoint='health-check', view_func=self.health_check, methods=['GET'])
-
-
     def _setup_brokerage_services(self):
         # Delegated to subclass
         pass
-
