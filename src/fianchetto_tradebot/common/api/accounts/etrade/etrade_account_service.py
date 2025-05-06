@@ -11,7 +11,7 @@ from fianchetto_tradebot.common.api.accounts.get_account_balance_request import 
 from fianchetto_tradebot.common.api.accounts.get_account_balance_response import GetAccountBalanceResponse
 from fianchetto_tradebot.common.api.accounts.get_account_info_request import GetAccountInfoRequest
 from fianchetto_tradebot.common.api.accounts.get_account_info_response import GetAccountInfoResponse
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
+from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.finance.amount import Amount
 
 DEFAULT_INST_TYPE = "BROKERAGE"

@@ -4,7 +4,7 @@ import json
 from fianchetto_tradebot.common.api.portfolio.get_portfolio_request import GetPortfolioRequest
 from fianchetto_tradebot.common.api.portfolio.get_portfolio_response import GetPortfolioResponse
 from fianchetto_tradebot.common.api.portfolio.portfolio_service import PortfolioService
-from fianchetto_tradebot.common.exchange.connector import Connector
+from fianchetto_tradebot.common.brokerage.connector import Connector
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.finance.exercise_style import ExerciseStyle
@@ -33,15 +33,15 @@ class ETradePortfolioService(PortfolioService):
         super().__init__(connector)
         self.session, self.async_session, self.base_url = self.connector.load_connection()
 
-    def get_portfolio_info(self, get_portfolio_request: GetPortfolioRequest, exchange_specific_options: dict[str, str] = DEFAULT_PORTFOLIO_OPTIONS) -> GetPortfolioResponse:
+    def get_portfolio_info(self, get_portfolio_request: GetPortfolioRequest, brokerage_specific_options: dict[str, str] = DEFAULT_PORTFOLIO_OPTIONS) -> GetPortfolioResponse:
         account_id_key = get_portfolio_request.account_id
 
         path = f"/v1/accounts/{account_id_key}/portfolio.json"
 
         params: dict[str, str] = dict()
         params["count"] = str(DEFAULT_NUM_POSITIONS)
-        if exchange_specific_options:
-            for k,v in exchange_specific_options.items():
+        if brokerage_specific_options:
+            for k,v in brokerage_specific_options.items():
                 params[k]=v
 
         url = self.base_url + path

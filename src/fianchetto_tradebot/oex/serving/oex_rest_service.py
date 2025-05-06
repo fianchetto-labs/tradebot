@@ -16,11 +16,11 @@ from fianchetto_tradebot.common.api.orders.place_order_request import PlaceOrder
 from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
 from fianchetto_tradebot.common.api.orders.preview_order_response import PreviewOrderResponse
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
-from fianchetto_tradebot.common.exchange.exchange_name import ExchangeName
+from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
+from fianchetto_tradebot.common.brokerage.brokerage import Brokerage
 from fianchetto_tradebot.common.order.order import Order
 from fianchetto_tradebot.common.order.order_status import OrderStatus
-from fianchetto_tradebot.common.service.rest_service import RestService, ETRADE_ONLY_EXCHANGE_CONFIG
+from fianchetto_tradebot.common.service.rest_service import RestService, ETRADE_ONLY_BROKERAGE_CONFIG
 from fianchetto_tradebot.common.service.service_key import ServiceKey
 from fianchetto_tradebot.quotes.etrade.etrade_quotes_service import ETradeQuotesService
 from fianchetto_tradebot.quotes.quotes_service import QuotesService
@@ -31,7 +31,7 @@ DEFAULT_COUNT = 100
 
 
 class OexRestService(RestService):
-    def __init__(self, credential_config_files: dict[ExchangeName, str]=ETRADE_ONLY_EXCHANGE_CONFIG):
+    def __init__(self, credential_config_files: dict[Brokerage, str]=ETRADE_ONLY_BROKERAGE_CONFIG):
         super().__init__(ServiceKey.OEX, credential_config_files)
 
     @property
@@ -44,26 +44,26 @@ class OexRestService(RestService):
 
     def _register_endpoints(self):
         super()._register_endpoints()
-        self.app.add_url_rule(rule='/api/v1/<exchange>/<account_id>/orders', endpoint='list-orders', view_func=self.list_orders, methods=['GET'])
-        self.app.add_url_rule(rule='/api/v1/<exchange>/<account_id>/orders/<order_id>', endpoint='get-order',
+        self.app.add_url_rule(rule='/api/v1/<brokerage>/<account_id>/orders', endpoint='list-orders', view_func=self.list_orders, methods=['GET'])
+        self.app.add_url_rule(rule='/api/v1/<brokerage>/<account_id>/orders/<order_id>', endpoint='get-order',
                               view_func=self.get_order, methods=['GET'])
 
-        self.app.add_url_rule(rule='/api/v1/<exchange>/<account_id>/orders/preview', endpoint='preview-order',
+        self.app.add_url_rule(rule='/api/v1/<brokerage>/<account_id>/orders/preview', endpoint='preview-order',
                               view_func=self.preview_order, methods=['POST'])
 
-        self.app.add_url_rule(rule='/api/v1/<exchange>/<account_id>/orders/preview/<preview_id>', endpoint='place-order',
+        self.app.add_url_rule(rule='/api/v1/<brokerage>/<account_id>/orders/preview/<preview_id>', endpoint='place-order',
                               view_func=self.place_order, methods=['POST'])
 
-        self.app.add_url_rule(rule='/api/v1/<exchange>/<account_id>/orders/preview_and_place', endpoint='preview-and-place-order',
+        self.app.add_url_rule(rule='/api/v1/<brokerage>/<account_id>/orders/preview_and_place', endpoint='preview-and-place-order',
                               view_func=self.preview_and_place_order, methods=['POST'])
 
-    def _setup_exchange_services(self):
-        self.order_services: dict[ExchangeName, OrderService] = dict()
-        self.quotes_services: dict[ExchangeName, QuotesService] = dict()
+    def _setup_brokerage_services(self):
+        self.order_services: dict[Brokerage, OrderService] = dict()
+        self.quotes_services: dict[Brokerage, QuotesService] = dict()
 
         # E*Trade
-        etrade_key: ExchangeName = ExchangeName.ETRADE
-        etrade_connector: ETradeConnector = self.connectors[ExchangeName.ETRADE]
+        etrade_key: Brokerage = Brokerage.ETRADE
+        etrade_connector: ETradeConnector = self.connectors[Brokerage.ETRADE]
         etrade_order_service = ETradeOrderService(etrade_connector)
         etrade_quotes_service = ETradeQuotesService(etrade_connector)
 
@@ -75,7 +75,7 @@ class OexRestService(RestService):
     def run(self, *args, **kwargs):
         self.app.run(*args, **kwargs)
 
-    def list_orders(self, exchange: str, account_id: str):
+    def list_orders(self, brokerage: str, account_id: str):
         args = request.args
         status_str = args.get('status')
         status = OrderStatus.ANY if not status_str else OrderStatus[status_str]
@@ -84,14 +84,14 @@ class OexRestService(RestService):
 
         count = args.get('count') if 'count' in args else DEFAULT_COUNT
 
-        order_service: OrderService = self.order_services[ExchangeName[exchange.upper()]]
+        order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
         list_order_request = ListOrdersRequest(account_id=account_id, status=status, from_date=from_date, to_date=to_date, count=count)
 
         resp: ListOrdersResponse = order_service.list_orders(list_order_request)
 
         return jsonify(resp)
 
-    def get_order(self, exchange: str, account_id: str, order_id: str):
+    def get_order(self, brokerage: str, account_id: str, order_id: str):
         if not order_id:
             # TODO: Factor this out
             # TODO: Put HTTP response codes in an eum
@@ -99,14 +99,14 @@ class OexRestService(RestService):
             resp.headers['X-Something'] = 'A value'
             return resp
 
-        order_service: OrderService = self.order_services[ExchangeName[exchange.upper()]]
+        order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
         get_order_request = GetOrderRequest(account_id=account_id, order_id=order_id)
 
         resp: GetOrderResponse = order_service.get_order(get_order_request)
 
         return jsonify(resp)
 
-    def preview_order(self, exchange, account_id: str):
+    def preview_order(self, brokerage, account_id: str):
         content_type = request.headers.get('Content-Type')
         if (content_type != 'application/json'):
             return 'Content-Type not supported!'
@@ -115,12 +115,12 @@ class OexRestService(RestService):
         if not preview_order_request.order_metadata.account_id:
             preview_order_request.order_metadata.account_id = account_id
 
-        order_service: OrderService = self.order_services[ExchangeName[exchange.upper()]]
+        order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
         response: PreviewOrderResponse = order_service.preview_order(preview_order_request)
 
         return jsonify(response)
 
-    def place_order(self, exchange, account_id: str, preview_id: str):
+    def place_order(self, brokerage, account_id: str, preview_id: str):
         content_type = request.headers.get('Content-Type')
         if (content_type != 'application/json'):
             return 'Content-Type not supported!'
@@ -131,12 +131,12 @@ class OexRestService(RestService):
 
         place_order_request.preview_id = preview_id
 
-        order_service: OrderService = self.order_services[ExchangeName[exchange.upper()]]
+        order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
         response: PlaceOrderResponse = order_service.place_order(place_order_request)
 
         return jsonify(response)
 
-    def preview_and_place_order(self, exchange, account_id: str):
+    def preview_and_place_order(self, brokerage, account_id: str):
         content_type = request.headers.get('Content-Type')
         if (content_type != 'application/json'):
             return 'Content-Type not supported!'
@@ -145,7 +145,7 @@ class OexRestService(RestService):
         if not preview_order_request.order_metadata.account_id:
             preview_order_request.order_metadata.account_id = account_id
 
-        order_service: OrderService = self.order_services[ExchangeName[exchange.upper()]]
+        order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
         preview_order_response: PreviewOrderResponse = order_service.preview_order(preview_order_request)
         preview_id = preview_order_response.preview_id
 
@@ -156,18 +156,17 @@ class OexRestService(RestService):
         place_order_response: PlaceOrderResponse = order_service.place_order(place_order_request)
         return jsonify(place_order_response)
 
-    def cancel_order(self, exchange: str, account_id: str, order_id: str):
+    def cancel_order(self, brokerage: str, account_id: str, order_id: str):
         content_type = request.headers.get('Content-Type')
         if (content_type != 'application/json'):
             return 'Content-Type not supported!'
 
         cancel_order_request = CancelOrderRequest(account_id=account_id, order_id=order_id)
-        order_service: OrderService = self.order_services[ExchangeName[exchange.upper()]]
+        order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
         cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
 
         return jsonify(cancel_order_response)
 
 if __name__ == "__main__":
-    # Login To Exchange Here
     oex_app = OexRestService()
     oex_app.run(host="0.0.0.0", port=8080)

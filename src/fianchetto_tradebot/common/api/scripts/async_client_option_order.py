@@ -4,7 +4,7 @@ import os
 from datetime import datetime, date
 from random import uniform
 
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
+from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'integration_test_properties.ini')
 ACCOUNT_ID_KEY = 'ACCOUNT_ID_KEY'

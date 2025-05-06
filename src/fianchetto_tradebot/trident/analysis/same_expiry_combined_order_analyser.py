@@ -34,7 +34,7 @@ class SameDayExpiryCombinedOrderAnalyser:
     def get_margin_equity_required(self) -> Amount:
         # The naive approach would be to go through all the orders and add/subtract their M/E's.
         # However, a full spread put/call spread would only take the max of the two
-        # It also might be exchange-specific. RH and E*Trade treat some condors differently.
+        # It also might be brokerage-specific. RH and E*Trade treat some condors differently.
         return Amount(0, 0)
 
     def get_max_gain(self):

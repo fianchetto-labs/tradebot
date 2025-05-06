@@ -122,7 +122,7 @@ class CustomJSONEncoder(JSONEncoder):
 
         if isinstance(o, (PlacedOrderDetails)):
             return {
-                "exchange_order_id": o.exchange_order_id,
+                "brokerage_order_id": o.brokerage_order_id,
                 "status": str(o.status),
                 "account_id": o.account_id,
                 "current_market_price": o.current_market_price,

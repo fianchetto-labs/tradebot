@@ -26,7 +26,7 @@ class IncrementalPriceDeltaExecutionTactic(ExecutionTactic):
             current_order_price *= -1
 
         if not current_market_mark_to_market_price and quotes_service:
-            # After-hours it doesn't seem to provide this data in the E*Trade response. No matter, we can pull it from the exchange
+            # After-hours it doesn't seem to provide this data in the E*Trade response. No matter, we can pull it from the brokerage
             current_market_mark_to_market_price: float = TradeExecutionUtil.get_market_price(placed_order.order, quotes_service).mark
 
         delta = current_order_price - current_market_mark_to_market_price

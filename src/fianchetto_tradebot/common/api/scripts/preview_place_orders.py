@@ -21,7 +21,7 @@ from fianchetto_tradebot.common.api.orders.preview_modify_order_request import P
 from fianchetto_tradebot.common.api.orders.preview_modify_order_response import PreviewModifyOrderResponse
 from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
 from fianchetto_tradebot.common.api.orders.preview_order_response import PreviewOrderResponse
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
+from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.order.order import Order
 from fianchetto_tradebot.common.order.order_status import OrderStatus

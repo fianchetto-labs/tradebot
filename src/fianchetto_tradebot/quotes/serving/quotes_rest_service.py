@@ -13,11 +13,11 @@ from fianchetto_tradebot.common.api.portfolio.etrade_portfolio_service import ET
 from fianchetto_tradebot.common.api.portfolio.get_portfolio_request import GetPortfolioRequest
 from fianchetto_tradebot.common.api.portfolio.get_portfolio_response import GetPortfolioResponse
 from fianchetto_tradebot.common.api.portfolio.portfolio_service import PortfolioService
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
-from fianchetto_tradebot.common.exchange.exchange_name import ExchangeName
+from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
+from fianchetto_tradebot.common.brokerage.brokerage import Brokerage
 from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.finance.tradable import Tradable
-from fianchetto_tradebot.common.service.rest_service import RestService, ETRADE_ONLY_EXCHANGE_CONFIG
+from fianchetto_tradebot.common.service.rest_service import RestService, ETRADE_ONLY_BROKERAGE_CONFIG
 from fianchetto_tradebot.common.service.service_key import ServiceKey
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_request import GetOptionExpireDatesRequest
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_response import GetOptionExpireDatesResponse
@@ -30,83 +30,83 @@ from fianchetto_tradebot.quotes.quotes_service import QuotesService
 
 
 class QuotesRestService(RestService):
-    def __init__(self, credential_config_files: dict[ExchangeName, str]=ETRADE_ONLY_EXCHANGE_CONFIG):
+    def __init__(self, credential_config_files: dict[Brokerage, str]=ETRADE_ONLY_BROKERAGE_CONFIG):
         super().__init__(ServiceKey.QUOTES, credential_config_files)
 
     def _register_endpoints(self):
         super()._register_endpoints()
 
         # Account endpoints
-        self.app.add_url_rule(rule='/api/v1/<exchange>/accounts', endpoint='list-accounts',
+        self.app.add_url_rule(rule='/api/v1/<brokerage>/accounts', endpoint='list-accounts',
                               view_func=self.list_accounts, methods=['GET'])
-        self.app.add_url_rule(rule='/api/v1/<exchange>/accounts/<account_id>', endpoint='get-account',
+        self.app.add_url_rule(rule='/api/v1/<brokerage>/accounts/<account_id>', endpoint='get-account',
                               view_func=self.get_account, methods=['GET'])
 
-        self.app.add_url_rule(rule='/api/v1/<exchange>/accounts/<account_id>/balance', endpoint='get-account-balance',
+        self.app.add_url_rule(rule='/api/v1/<brokerage>/accounts/<account_id>/balance', endpoint='get-account-balance',
                               view_func=self.get_account_balance, methods=['GET'])
 
         # Portfolio Endpoints
-        self.app.add_url_rule(rule='/api/v1/<exchange>/accounts/<account_id>/portfolio', endpoint='get-account-portfolio',
+        self.app.add_url_rule(rule='/api/v1/<brokerage>/accounts/<account_id>/portfolio', endpoint='get-account-portfolio',
                               view_func=self.get_account_portfolio, methods=['GET'])
 
         # Quotes Endpoints
-        self.app.add_url_rule(rule='/api/v1/<exchange>/quotes/equity/<equity>', endpoint='get-equity-quote',
+        self.app.add_url_rule(rule='/api/v1/<brokerage>/quotes/equity/<equity>', endpoint='get-equity-quote',
                               view_func=self.get_equity_quote, methods=['GET'])
 
-        self.app.add_url_rule(rule='/api/v1/<exchange>/quotes/equity/<equity>/options_chain', endpoint='get-options-chain',
+        self.app.add_url_rule(rule='/api/v1/<brokerage>/quotes/equity/<equity>/options_chain', endpoint='get-options-chain',
                               view_func=self.get_options_chain, methods=['GET'])
 
 
-        self.app.add_url_rule(rule='/api/v1/<exchange>/quotes/equity/<equity>/options_chain/expiry', endpoint='get-options-chain-expiries',
+        self.app.add_url_rule(rule='/api/v1/<brokerage>/quotes/equity/<equity>/options_chain/expiry', endpoint='get-options-chain-expiries',
                               view_func=self.get_options_chain_expiries, methods=['GET'])
 
-        self.app.add_url_rule(rule='/api/v1/<exchange>/quotes/equity/<equity>/options_chain/expiry/<expiry>', endpoint='get-options-chain-by-expiry',
+        self.app.add_url_rule(rule='/api/v1/<brokerage>/quotes/equity/<equity>/options_chain/expiry/<expiry>', endpoint='get-options-chain-by-expiry',
                               view_func=self.get_options_chain_by_expiry, methods=['GET'])
 
 
         # TODO - add more granular endpoints for options by expiry, strike, etc
 
 
-    def list_accounts(self, exchange:str):
-        account_service: AccountService = self.account_services[ExchangeName[exchange.upper()]]
+    def list_accounts(self, brokerage:str):
+        account_service: AccountService = self.account_services[Brokerage[brokerage.upper()]]
         account_list_response: AccountListResponse = account_service.list_accounts()
 
         return jsonify(account_list_response)
 
-    def get_account(self, exchange:str, account_id: str):
-        account_service: AccountService = self.account_services[ExchangeName[exchange.upper()]]
+    def get_account(self, brokerage:str, account_id: str):
+        account_service: AccountService = self.account_services[Brokerage[brokerage.upper()]]
         get_account_info_request: GetAccountInfoRequest = GetAccountInfoRequest(account_id=account_id)
         get_account_response: GetAccountInfoResponse = account_service.get_account_info(get_account_info_request)
 
         return jsonify(get_account_response)
 
-    def get_account_balance(self, exchange:str, account_id: str):
-        account_service: AccountService = self.account_services[ExchangeName[exchange.upper()]]
+    def get_account_balance(self, brokerage:str, account_id: str):
+        account_service: AccountService = self.account_services[Brokerage[brokerage.upper()]]
         get_account_balance_request: GetAccountBalanceRequest = GetAccountBalanceRequest(account_id=account_id)
         get_account_balance_response: GetAccountBalanceResponse = account_service.get_account_balance(get_account_balance_request)
 
         return jsonify(get_account_balance_response)
 
-    def get_account_portfolio(self, exchange:str, account_id: str):
-        # TODO - get exchange-specific options that are now part of the defaults. This is tricky b/c normally we'd want to
+    def get_account_portfolio(self, brokerage:str, account_id: str):
+        # TODO - get brokerage-specific options that are now part of the defaults. This is tricky b/c normally we'd want to
         # wrap it up into an object, but for GET requests, we can't have a serialized body
-        portfolio_service: PortfolioService = self.portfolio_services[ExchangeName[exchange.upper()]]
+        portfolio_service: PortfolioService = self.portfolio_services[Brokerage[brokerage.upper()]]
         get_portfolio_request: GetPortfolioRequest = GetPortfolioRequest(account_id)
         get_portfolio_response: GetPortfolioResponse = portfolio_service.get_portfolio_info(get_portfolio_request)
 
         with_stringified_keys = CustomJSONProvider.stringify_keys(get_portfolio_response)
         return jsonify(with_stringified_keys)
 
-    def get_equity_quote(self, exchange, equity):
-        quotes_service: QuotesService = self.quotes_services[ExchangeName[exchange.upper()]]
+    def get_equity_quote(self, brokerage, equity):
+        quotes_service: QuotesService = self.quotes_services[Brokerage[brokerage.upper()]]
         tradable: Tradable = Equity(ticker=equity)
         tradeable_request: GetTradableRequest = GetTradableRequest(tradable=tradable)
         get_tradable_response: GetTradableResponse = quotes_service.get_tradable_quote(tradeable_request)
 
         return jsonify(get_tradable_response)
 
-    def get_options_chain(self, exchange, equity):
-        quotes_service: QuotesService = self.quotes_services[ExchangeName[exchange.upper()]]
+    def get_options_chain(self, brokerage, equity):
+        quotes_service: QuotesService = self.quotes_services[Brokerage[brokerage.upper()]]
 
         get_options_chain_request: GetOptionsChainRequest = GetOptionsChainRequest(ticker=equity)
         get_option_chain_response: GetOptionsChainResponse = quotes_service.get_options_chain(get_options_chain_request)
@@ -114,8 +114,8 @@ class QuotesRestService(RestService):
         with_stringified_keys = CustomJSONProvider.stringify_keys(get_option_chain_response.options_chain)
         return jsonify(with_stringified_keys)
 
-    def get_options_chain_expiries(self, exchange, equity):
-        quotes_service: QuotesService = self.quotes_services[ExchangeName[exchange.upper()]]
+    def get_options_chain_expiries(self, brokerage, equity):
+        quotes_service: QuotesService = self.quotes_services[Brokerage[brokerage.upper()]]
 
         # TODO: Need to define a good format for expiry values
         expiry_request: GetOptionExpireDatesRequest = GetOptionExpireDatesRequest(ticker=equity)
@@ -123,8 +123,8 @@ class QuotesRestService(RestService):
 
         return jsonify(get_option_expiries_response)
 
-    def get_options_chain_by_expiry(self, exchange, equity, expiry):
-        quotes_service: QuotesService = self.quotes_services[ExchangeName[exchange.upper()]]
+    def get_options_chain_by_expiry(self, brokerage, equity, expiry):
+        quotes_service: QuotesService = self.quotes_services[Brokerage[brokerage.upper()]]
 
         # Document for format in which to get this (yyyy_mm_dd)
         expiry_date = parse(expiry)
@@ -135,15 +135,15 @@ class QuotesRestService(RestService):
         with_stringified_keys = CustomJSONProvider.stringify_keys(get_options_chain_response)
         return jsonify(with_stringified_keys)
 
-    def _setup_exchange_services(self):
+    def _setup_brokerage_services(self):
         # Delegated to subclass
-        self.quotes_services: dict[ExchangeName, QuotesService] = dict()
-        self.portfolio_services: dict[ExchangeName, PortfolioService] = dict()
-        self.account_services: dict[ExchangeName, AccountService] = dict()
+        self.quotes_services: dict[Brokerage, QuotesService] = dict()
+        self.portfolio_services: dict[Brokerage, PortfolioService] = dict()
+        self.account_services: dict[Brokerage, AccountService] = dict()
 
         # E*Trade
-        etrade_key: ExchangeName = ExchangeName.ETRADE
-        etrade_connector: ETradeConnector = self.connectors[ExchangeName.ETRADE]
+        etrade_key: Brokerage = Brokerage.ETRADE
+        etrade_connector: ETradeConnector = self.connectors[Brokerage.ETRADE]
 
         etrade_quotes_service = ETradeQuotesService(etrade_connector)
         etrade_portfolio_service = ETradePortfolioService(etrade_connector)
@@ -157,6 +157,5 @@ class QuotesRestService(RestService):
 
 
 if __name__ == "__main__":
-    # Login To Exchange Here
     oex_app = QuotesRestService()
     oex_app.run(host="0.0.0.0", port=8081)

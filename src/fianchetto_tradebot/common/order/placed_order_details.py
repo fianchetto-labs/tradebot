@@ -3,14 +3,14 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from fianchetto_tradebot.common.exchange.market_session import MarketSession
+from fianchetto_tradebot.common.brokerage.market_session import MarketSession
 from fianchetto_tradebot.common.finance.price import Price
 from fianchetto_tradebot.common.order.order_status import OrderStatus
 
 
 class PlacedOrderDetails(BaseModel):
     account_id: str
-    exchange_order_id: str
+    brokerage_order_id: str
     status: OrderStatus
     order_placed_time: datetime.datetime
     current_market_price: Price

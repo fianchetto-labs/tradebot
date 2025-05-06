@@ -18,4 +18,4 @@ class TestOrderUtil:
     ]
     )
     def test_is_market_open(self, ticker, time, outcome):
-        assert outcome == OrderUtil.is_exchange_open(ticker, time)
+        assert outcome == OrderUtil.is_market_open(ticker, time)

@@ -1,6 +1,6 @@
 from abc import ABC
 
-from fianchetto_tradebot.common.exchange.connector import Connector
+from fianchetto_tradebot.common.brokerage.connector import Connector
 
 
 class ApiService(ABC):

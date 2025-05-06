@@ -6,7 +6,7 @@ from rauth import OAuth1Session
 
 from fianchetto_tradebot.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.common.api.orders.get_order_response import GetOrderResponse
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector, DEFAULT_ETRADE_BASE_URL_FILE
+from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector, DEFAULT_ETRADE_BASE_URL_FILE
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.price import Price
 from fianchetto_tradebot.common.order.action import Action
@@ -51,13 +51,13 @@ def order_service(connector):
 def get_equity_order_response(action: Action, current_order_price: Amount, current_market_price_equity: Price):
     equity_order: Order = OrderTestUtil.build_equity_order(action=action, price=current_order_price)
 
-    placed_order_details: PlacedOrderDetails = PlacedOrderDetails(account_id="account1", exchange_order_id="123", status=OrderStatus.OPEN, order_placed_time=datetime.datetime.now(), current_market_price=current_market_price_equity)
+    placed_order_details: PlacedOrderDetails = PlacedOrderDetails(account_id="account1", brokerage_order_id="123", status=OrderStatus.OPEN, order_placed_time=datetime.datetime.now(), current_market_price=current_market_price_equity)
     placed_order: PlacedOrder = PlacedOrder(order=equity_order, placed_order_details=placed_order_details)
     return GetOrderResponse(placed_order=placed_order)
 
 def get_spread_order_response(current_order_price: OrderPrice, current_market_price: Price):
     equity_order: Order = OrderTestUtil.build_spread_order(order_price=current_order_price)
-    placed_order_details: PlacedOrderDetails = PlacedOrderDetails(account_id="account1", exchange_order_id="123", status=OrderStatus.OPEN, order_placed_time=datetime.datetime.now(), current_market_price=current_market_price)
+    placed_order_details: PlacedOrderDetails = PlacedOrderDetails(account_id="account1", brokerage_order_id="123", status=OrderStatus.OPEN, order_placed_time=datetime.datetime.now(), current_market_price=current_market_price)
     placed_order: PlacedOrder = PlacedOrder(order=equity_order, placed_order_details=placed_order_details)
     return GetOrderResponse(placed_order=placed_order)
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Use this library to execute trading strategies across various exchanges, including E*Trade, Schwab, and Interactive Brokers (IKBR).
+Use this library to execute trading strategies across various brokerages, including E*Trade, Schwab, and Interactive Brokers (IKBR).
 
 ## Get Started!
 ### Pull down the package
@@ -42,7 +42,7 @@ Various integration test scripts and utility scripts that are used on a one-off,
 
 ### Common
 
-Contains basic primitives such as financial instrument definitions used throughout TradeBot, libraries for connecting to exchanges, and other shared logic.
+Contains basic primitives such as financial instrument definitions used throughout TradeBot, libraries for connecting to brokerages, and other shared logic.
 
 ## Liability
 This project makes no guarantees of any kind, explicit, or implicit, for its correctness, safety, or even suitability for its purpose. Contributors and users should use their best care and judgement when using this project.

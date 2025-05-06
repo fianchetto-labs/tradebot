@@ -23,7 +23,7 @@ from fianchetto_tradebot.common.api.orders.preview_modify_order_response import 
 from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
 from fianchetto_tradebot.common.api.orders.preview_order_response import PreviewOrderResponse
 from fianchetto_tradebot.common.api.request_status import RequestStatus
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
+from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.order.order import Order
 from fianchetto_tradebot.common.order.order_status import OrderStatus
@@ -42,7 +42,7 @@ class ETradeOrderService(OrderService):
         super().__init__(connector)
         self.session, self.async_session, self.base_url = self.connector.load_connection()
 
-    def list_orders(self, list_orders_request: ListOrdersRequest, exchange_specific_opts: dict[str, str]=None) -> ListOrdersResponse:
+    def list_orders(self, list_orders_request: ListOrdersRequest, brokerage_specific_opts: dict[str, str]=None) -> ListOrdersResponse:
         account_id = list_orders_request.account_id
         path = f"/v1/accounts/{account_id}/orders.json"
         count = list_orders_request.count
@@ -55,8 +55,8 @@ class ETradeOrderService(OrderService):
         if list_orders_request.status is not OrderStatus.ANY:
             params["status"] = list_orders_request.status.name
 
-        if exchange_specific_opts:
-            for k, v in exchange_specific_opts.items():
+        if brokerage_specific_opts:
+            for k, v in brokerage_specific_opts.items():
                 params[k] = v
 
         url = self.base_url + path

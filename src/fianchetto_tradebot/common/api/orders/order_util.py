@@ -58,7 +58,7 @@ class OrderUtil:
         return "".join(choices(string.ascii_uppercase + string.digits, k=15))
 
     @staticmethod
-    def is_exchange_open(symbol: str, current_time=datetime.now()):
+    def is_market_open(symbol: str, current_time=datetime.now()):
 
         # Let's standardize on US Eastern Time
         input_time = current_time
