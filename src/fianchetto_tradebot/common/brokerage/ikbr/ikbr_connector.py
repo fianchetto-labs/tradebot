@@ -2,8 +2,8 @@ import configparser
 import logging
 import os
 
-from fianchetto_tradebot.common.exchange.connector import Connector
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import DEFAULT_SESSION_FILE
+from fianchetto_tradebot.common.brokerage.connector import Connector
+from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import DEFAULT_SESSION_FILE
 
 config = configparser.ConfigParser()
 
@@ -20,7 +20,7 @@ class IkbrConnector(Connector):
         self.config_file = config_file
         self.session_file = session_file
 
-    def get_exchange(self):
+    def get_brokerage(self):
         return "IKBR"
 
 

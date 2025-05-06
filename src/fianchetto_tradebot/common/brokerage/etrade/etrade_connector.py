@@ -9,7 +9,7 @@ from pathlib import Path
 from aioauth_client import OAuth1Client
 from rauth import OAuth1Service, OAuth1Session
 
-from fianchetto_tradebot.common.exchange.connector import Connector
+from fianchetto_tradebot.common.brokerage.connector import Connector
 
 config = configparser.ConfigParser()
 
@@ -28,11 +28,11 @@ OAUTH_TOKEN_SECRET_FILE =os.path.join(os.path.dirname(__file__), '/tmp/fianchett
 
 logger = logging.getLogger(__name__)
 
-EXCHANGE_NAME = "E*TRADE"
+BROKERAGE_NAME = "E*TRADE"
 
 class ETradeConnector(Connector):
     def __init__(self, config_file=DEFAULT_CONFIG_FILE, session_file=DEFAULT_SESSION_FILE, async_session_file=DEFAULT_ASYNC_SESSION_FILE, base_url_file=DEFAULT_ETRADE_BASE_URL_FILE):
-        self.exchange = EXCHANGE_NAME
+        self.brokerage = BROKERAGE_NAME
         self.config_file = config_file
         self.session_file = session_file
         self.async_session_file = async_session_file

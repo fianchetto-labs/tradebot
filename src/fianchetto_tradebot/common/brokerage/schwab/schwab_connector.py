@@ -2,7 +2,7 @@ import configparser
 import logging
 import os
 
-from fianchetto_tradebot.common.exchange.connector import Connector
+from fianchetto_tradebot.common.brokerage.connector import Connector
 
 config = configparser.ConfigParser()
 
@@ -19,7 +19,7 @@ class SchwabConnector(Connector):
         self.config_file = config_file
         self.session_file = session_file
 
-    def get_exchange(self):
+    def get_brokerage(self):
         return "SCHWAB"
 
 

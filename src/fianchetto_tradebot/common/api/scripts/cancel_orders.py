@@ -6,7 +6,7 @@ import pytest
 from fianchetto_tradebot.common.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.common.api.orders.order_service import OrderService
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
+from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
 
 ORDER_IDS_TO_CANCEL = range(81276, 81285)
 

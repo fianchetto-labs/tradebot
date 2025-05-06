@@ -3,7 +3,7 @@ import datetime
 from pandas import DataFrame
 from sortedcontainers import SortedDict
 
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
+from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.chain import ChainBuilder, Chain
 from fianchetto_tradebot.common.finance.equity import Equity

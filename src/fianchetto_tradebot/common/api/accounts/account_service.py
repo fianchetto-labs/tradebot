@@ -4,7 +4,7 @@ from fianchetto_tradebot.common.api.accounts.get_account_balance_response import
 from fianchetto_tradebot.common.api.accounts.get_account_info_request import GetAccountInfoRequest
 from fianchetto_tradebot.common.api.accounts.get_account_info_response import GetAccountInfoResponse
 from fianchetto_tradebot.common.api.api_service import ApiService
-from fianchetto_tradebot.common.exchange.connector import Connector
+from fianchetto_tradebot.common.brokerage.connector import Connector
 
 
 class AccountService(ApiService):

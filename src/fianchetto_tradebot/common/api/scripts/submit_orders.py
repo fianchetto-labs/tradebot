@@ -12,7 +12,7 @@ from fianchetto_tradebot.common.api.orders.place_order_request import PlaceOrder
 from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
 from fianchetto_tradebot.common.api.orders.preview_order_response import PreviewOrderResponse
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
+from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.order.order_type import OrderType
 from tests.common.api.orders.order_test_util import OrderTestUtil
 

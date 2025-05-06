@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fianchetto_tradebot.common.exchange.market_session import MarketSession
+from fianchetto_tradebot.common.brokerage.market_session import MarketSession
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.finance.exercise_style import ExerciseStyle
@@ -62,7 +62,7 @@ class OrderConversionUtil:
 
         current_market_price: Price = Price(bid=bid_price, ask=ask_price, mark=mark_price)
 
-        placed_order_details = PlacedOrderDetails(account_id=account_id, exchange_order_id=str(order_id), status=status, order_placed_time=order_placed_time, current_market_price=current_market_price, market_session=market_session, replaces_order_id=replaces_order_id)
+        placed_order_details = PlacedOrderDetails(account_id=account_id, brokerage_order_id=str(order_id), status=status, order_placed_time=order_placed_time, current_market_price=current_market_price, market_session=market_session, replaces_order_id=replaces_order_id)
 
         return PlacedOrder(order=order, placed_order_details=placed_order_details)
 

@@ -1,11 +1,11 @@
 src/trident/research/scripts/constuct_c_graph.py
 src/common/api/scripts/integration_test_properties.ini
-src/common/exchange/etrade/etrade_session.out
+src/common/brokerage/etrade/etrade_session.out
 src/fianchetto_tradbot.egg-info/*
 src/dist/
-src/fianchetto_tradebot/common/exchange/etrade/config.ini
-src/fianchetto_tradebot/common/exchange/etrade/etrade_base_url.out
-src/fianchetto_tradebot/common/exchange/etrade/etrade_session.out
+src/fianchetto_tradebot/common/brokerage/etrade/config.ini
+src/fianchetto_tradebot/common/brokerage/etrade/etrade_base_url.out
+src/fianchetto_tradebot/common/brokerage/etrade/etrade_session.out
 *.pyc
 *.egg-info
 **/__pycache__

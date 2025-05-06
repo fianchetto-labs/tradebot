@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from fianchetto_tradebot.common.api.orders.order_list_request import ListOrdersRequest
 from fianchetto_tradebot.common.api.orders.order_service import OrderService
-from fianchetto_tradebot.common.exchange.connector import Connector
+from fianchetto_tradebot.common.brokerage.connector import Connector
 from fianchetto_tradebot.common.finance.equity import Equity
 from fianchetto_tradebot.common.order.order_status import OrderStatus
 from fianchetto_tradebot.common.order.placed_order import PlacedOrder

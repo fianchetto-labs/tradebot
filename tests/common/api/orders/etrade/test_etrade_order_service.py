@@ -11,7 +11,7 @@ from fianchetto_tradebot.common.api.orders.order_metadata import OrderMetadata
 from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
 from fianchetto_tradebot.common.api.orders.preview_order_response import PreviewOrderResponse
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector, DEFAULT_ETRADE_BASE_URL_FILE
+from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector, DEFAULT_ETRADE_BASE_URL_FILE
 from fianchetto_tradebot.common.finance.amount import Amount
 from fianchetto_tradebot.common.finance.currency import Currency
 from fianchetto_tradebot.common.finance.equity import Equity

@@ -13,7 +13,7 @@ from fianchetto_tradebot.common.api.orders.order_service import OrderService
 from fianchetto_tradebot.common.api.orders.order_util import OrderUtil
 from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
-from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
+from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.order.executed_order import ExecutedOrder
 from fianchetto_tradebot.common.order.order_status import OrderStatus
 from fianchetto_tradebot.common.order.placed_order import PlacedOrder
@@ -83,14 +83,14 @@ def test_get_specific_order(order_service, account_key, spread_order):
     order_id, order = spread_order
     req: GetOrderRequest = GetOrderRequest(account_key, order_id)
     res: GetOrderResponse = order_service.get_order(req)
-    assert str(res.placed_order.placed_order_details.exchange_order_id) == str(order_id)
+    assert str(res.placed_order.placed_order_details.brokerage_order_id) == str(order_id)
 
 
 def test_get_specific_order_by_id(order_service, account_key):
     order_id = str(82936)
     req: GetOrderRequest = GetOrderRequest(account_key, order_id)
     res: GetOrderResponse = order_service.get_order(req)
-    assert str(res.placed_order.placed_order_details.exchange_order_id) == str(order_id)
+    assert str(res.placed_order.placed_order_details.brokerage_order_id) == str(order_id)
 
 
 

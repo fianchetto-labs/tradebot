@@ -1,5 +1,5 @@
 from fianchetto_tradebot.common.api.api_service import ApiService
-from fianchetto_tradebot.common.exchange.connector import Connector
+from fianchetto_tradebot.common.brokerage.connector import Connector
 from fianchetto_tradebot.common.finance.option import Option
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_request import GetOptionExpireDatesRequest
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_response import GetOptionExpireDatesResponse

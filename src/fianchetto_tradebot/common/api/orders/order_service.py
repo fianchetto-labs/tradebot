@@ -13,14 +13,14 @@ from fianchetto_tradebot.common.api.orders.preview_modify_order_request import P
 from fianchetto_tradebot.common.api.orders.preview_modify_order_response import PreviewModifyOrderResponse
 from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
 from fianchetto_tradebot.common.api.orders.preview_order_response import PreviewOrderResponse
-from fianchetto_tradebot.common.exchange.connector import Connector
+from fianchetto_tradebot.common.brokerage.connector import Connector
 
 
 class OrderService(ApiService):
     def __init__(self, connector: Connector):
         super().__init__(connector)
 
-    def list_orders(self, list_orders_request: ListOrdersRequest, exchange_specific_opts: dict[str, str]=None) -> ListOrdersResponse:
+    def list_orders(self, list_orders_request: ListOrdersRequest, brokerage_specific_opts: dict[str, str]=None) -> ListOrdersResponse:
         pass
 
     def get_order(self, get_order_request: GetOrderRequest) -> GetOrderResponse:
