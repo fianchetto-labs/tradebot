@@ -1,6 +1,7 @@
 from abc import ABC
 from typing import Final
 
+from fastapi import FastAPI
 from flask import Flask
 
 from fianchetto_tradebot.common.api.encoding.custom_json_provider import CustomJSONProvider
@@ -33,9 +34,9 @@ SCHWAB_ONLY_BROKERAGE_CONFIG: Final[dict[Brokerage, str]] = {
 class RestService(ABC):
     def __init__(self, service_key: ServiceKey, credential_config_files: dict[Brokerage, str]):
         self.service_key = service_key
-        self._app = Flask(self.service_key)
-        self._app.json_provider_class = CustomJSONProvider(self._app)  # Tell Flask to use the custom encoder
-        self._app.json = CustomJSONProvider(self._app)
+        self._app = FastAPI()
+        #self._app.json_provider_class = CustomJSONProvider(self._app)  # Tell Flask to use the custom encoder
+        #self._app.json = CustomJSONProvider(self._app)
         self._establish_connections(config_files=credential_config_files)
         self._register_endpoints()
         self._setup_brokerage_services()
