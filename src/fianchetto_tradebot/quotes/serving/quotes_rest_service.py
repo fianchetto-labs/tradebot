@@ -1,12 +1,12 @@
 from dateutil.parser import parse
 
-from fianchetto_tradebot.common.api.accounts.account_list_response import AccountListResponse
+from fianchetto_tradebot.common.api.accounts.account_list_response import ListAccountsResponse
 from fianchetto_tradebot.common.api.accounts.account_service import AccountService
 from fianchetto_tradebot.common.api.accounts.etrade.etrade_account_service import ETradeAccountService
 from fianchetto_tradebot.common.api.accounts.get_account_balance_request import GetAccountBalanceRequest
 from fianchetto_tradebot.common.api.accounts.get_account_balance_response import GetAccountBalanceResponse
-from fianchetto_tradebot.common.api.accounts.get_account_info_request import GetAccountInfoRequest
-from fianchetto_tradebot.common.api.accounts.get_account_info_response import GetAccountInfoResponse
+from fianchetto_tradebot.common.api.accounts.get_account_info_request import GetAccountRequest
+from fianchetto_tradebot.common.api.accounts.get_account_info_response import GetAccountResponse
 from fianchetto_tradebot.common.api.encoding.custom_json_provider import CustomJSONProvider
 from fianchetto_tradebot.common.api.portfolio.etrade_portfolio_service import ETradePortfolioService
 from fianchetto_tradebot.common.api.portfolio.get_portfolio_request import GetPortfolioRequest
@@ -36,8 +36,8 @@ class QuotesRestService(RestService):
         super()._register_endpoints()
 
         # Account endpoints
-        self.app.add_api_route(path='/api/v1/{brokerage}/accounts', endpoint=self.list_accounts, methods=['GET'], response_model=AccountListResponse)
-        self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}', endpoint=self.get_account, methods=['GET'], response_model=GetAccountInfoResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/accounts', endpoint=self.list_accounts, methods=['GET'], response_model=ListAccountsResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}', endpoint=self.get_account, methods=['GET'], response_model=GetAccountResponse)
         self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/balance', endpoint=self.get_account_balance, methods=['GET'], response_model=GetAccountBalanceResponse)
 
         # Portfolio Endpoints
@@ -55,14 +55,14 @@ class QuotesRestService(RestService):
 
     def list_accounts(self, brokerage:str):
         account_service: AccountService = self.account_services[Brokerage[brokerage.upper()]]
-        account_list_response: AccountListResponse = account_service.list_accounts()
+        account_list_response: ListAccountsResponse = account_service.list_accounts()
 
         return account_list_response
 
     def get_account(self, brokerage:str, account_id: str):
         account_service: AccountService = self.account_services[Brokerage[brokerage.upper()]]
-        get_account_info_request: GetAccountInfoRequest = GetAccountInfoRequest(account_id=account_id)
-        get_account_response: GetAccountInfoResponse = account_service.get_account_info(get_account_info_request)
+        get_account_info_request: GetAccountRequest = GetAccountRequest(account_id=account_id)
+        get_account_response: GetAccountResponse = account_service.get_account_info(get_account_info_request)
 
         return get_account_response
 

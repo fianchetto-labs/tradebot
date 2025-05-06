@@ -9,9 +9,9 @@ from flask.json.provider import DefaultJSONProvider
 from pydantic import BaseModel
 from werkzeug.http import http_date
 
-from fianchetto_tradebot.common.api.accounts.account_list_response import AccountListResponse
+from fianchetto_tradebot.common.api.accounts.account_list_response import ListAccountsResponse
 from fianchetto_tradebot.common.api.accounts.get_account_balance_response import GetAccountBalanceResponse
-from fianchetto_tradebot.common.api.accounts.get_account_info_response import GetAccountInfoResponse
+from fianchetto_tradebot.common.api.accounts.get_account_info_response import GetAccountResponse
 from fianchetto_tradebot.common.api.orders.get_order_response import GetOrderResponse
 from fianchetto_tradebot.common.api.orders.order_list_response import ListOrdersResponse
 from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
@@ -71,10 +71,10 @@ class CustomJSONProvider(DefaultJSONProvider):
         if isinstance(o, (PreviewOrderResponse)):
             return o.model_dump()
 
-        if isinstance(o, (AccountListResponse)):
+        if isinstance(o, (ListAccountsResponse)):
             return o.model_dump()
 
-        if isinstance(o, (GetAccountInfoResponse)):
+        if isinstance(o, (GetAccountResponse)):
             return o.model_dump()
 
         if isinstance(o, (GetAccountBalanceResponse)):

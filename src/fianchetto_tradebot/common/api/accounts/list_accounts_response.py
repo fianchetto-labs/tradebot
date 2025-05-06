@@ -2,7 +2,7 @@ from fianchetto_tradebot.common.account.account import Account
 from fianchetto_tradebot.common.api.response import Response
 
 
-class AccountListResponse(Response):
+class ListAccountsResponse(Response):
     account_list: list[Account]
 
     def get_account_list(self):
