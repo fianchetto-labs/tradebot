@@ -5,12 +5,12 @@ from fianchetto_tradebot.common.account.account_balance import AccountBalance
 from fianchetto_tradebot.common.account.brokerage_call import BrokerageCallType, BrokerageCall
 from fianchetto_tradebot.common.account.computed_balance import ComputedBalance
 from fianchetto_tradebot.common.account.etrade.etrade_account import ETradeAccount
-from fianchetto_tradebot.common.api.accounts.account_list_response import AccountListResponse
+from fianchetto_tradebot.common.api.accounts.account_list_response import ListAccountsResponse
 from fianchetto_tradebot.common.api.accounts.account_service import AccountService
 from fianchetto_tradebot.common.api.accounts.get_account_balance_request import GetAccountBalanceRequest
 from fianchetto_tradebot.common.api.accounts.get_account_balance_response import GetAccountBalanceResponse
-from fianchetto_tradebot.common.api.accounts.get_account_info_request import GetAccountInfoRequest
-from fianchetto_tradebot.common.api.accounts.get_account_info_response import GetAccountInfoResponse
+from fianchetto_tradebot.common.api.accounts.get_account_info_request import GetAccountRequest
+from fianchetto_tradebot.common.api.accounts.get_account_info_response import GetAccountResponse
 from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.finance.amount import Amount
 
@@ -21,12 +21,12 @@ class ETradeAccountService(AccountService):
         super().__init__(connector)
         self.session, self.async_session, self.base_url = connector.load_connection()
 
-    def list_accounts(self) -> AccountListResponse:
+    def list_accounts(self) -> ListAccountsResponse:
         path = f"/v1/accounts/list.json"
         url = self.base_url + path
         response = self.session.get(url)
         account_list_response = ETradeAccountService._parse_account_list_response(response)
-        return AccountListResponse(account_list=account_list_response)
+        return ListAccountsResponse(account_list=account_list_response)
 
     def get_account_balance(self, get_account_info_request: GetAccountBalanceRequest) -> GetAccountBalanceResponse:
         account_id = get_account_info_request.account_id
@@ -44,7 +44,7 @@ class ETradeAccountService(AccountService):
 
         return GetAccountBalanceResponse(account_balance=account_balance)
 
-    def get_account_info(self, get_account_info_request: GetAccountInfoRequest) -> GetAccountInfoResponse:
+    def get_account_info(self, get_account_info_request: GetAccountRequest) -> GetAccountResponse:
         path = f"/v1/accounts/list.json"
         url = self.base_url + path
         response = self.session.get(url)
@@ -58,9 +58,9 @@ class ETradeAccountService(AccountService):
             raise Exception("More than one result")
 
         if len(account_list) == 1:
-            return GetAccountInfoResponse(account=account_list[0])
+            return GetAccountResponse(account=account_list[0])
 
-        return GetAccountInfoResponse(None)
+        return GetAccountResponse(None)
 
     @staticmethod
     def _parse_account_list_response(input, f=(lambda a: a)) -> list[Account]:

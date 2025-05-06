@@ -8,7 +8,7 @@ from fianchetto_tradebot.common.account.account import Account
 from fianchetto_tradebot.common.api.accounts.account_service import AccountService
 from fianchetto_tradebot.common.api.accounts.etrade.etrade_account_service import ETradeAccountService
 from fianchetto_tradebot.common.api.accounts.get_account_balance_request import GetAccountBalanceRequest
-from fianchetto_tradebot.common.api.accounts.get_account_info_request import GetAccountInfoRequest
+from fianchetto_tradebot.common.api.accounts.get_account_info_request import GetAccountRequest
 from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
 
 """
@@ -37,7 +37,7 @@ def test_list_accounts(account_service: AccountService):
 
 def test_get_account_info(account_service: AccountService):
     account_id_key: str = config['ETRADE'][ACCOUNT_ID_KEY]
-    account: Account = account_service.get_account_info(GetAccountInfoRequest(account_id_key)).account
+    account: Account = account_service.get_account_info(GetAccountRequest(account_id_key)).account
     print(account)
 
 def test_get_account_balance(account_service: AccountService):
