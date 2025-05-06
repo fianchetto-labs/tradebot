@@ -4,6 +4,8 @@ from time import sleep
 from fianchetto_tradebot.common.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common.api.orders.etrade.converters.order_conversion_util import OrderConversionUtil
+from fianchetto_tradebot.common.api.orders.etrade.etrade_order_cancellation_message import \
+    ETradeOrderCancellationMessage
 from fianchetto_tradebot.common.api.orders.etrade.etrade_order_response_message import ETradeOrderResponseMessage
 from fianchetto_tradebot.common.api.orders.get_order_request import GetOrderRequest
 from fianchetto_tradebot.common.api.orders.get_order_response import GetOrderResponse
@@ -266,18 +268,19 @@ class ETradeOrderService(OrderService):
             error = data['Error']
             code = error['code']
             message = error['message']
-            return CancelOrderResponse(order_id=order_id, cancel_time=None, messages=[OrderCancellationMessage(code, message)], request_status=RequestStatus.OPERATION_FAILED_BUT_NO_LONGER_REQUIRED)
+            return CancelOrderResponse(order_id=order_id, cancel_time=None, messages=[OrderCancellationMessage(code=code, message=message)],
+                                       request_status=RequestStatus.OPERATION_FAILED_BUT_NO_LONGER_REQUIRED)
         cancel_order_response = data["CancelOrderResponse"]
 
-        order_id = cancel_order_response["orderId"]
-        cancel_time = cancel_order_response["cancelTime"]
+        order_id = str(cancel_order_response["orderId"])
+        cancel_time = str(cancel_order_response["cancelTime"])
 
         messages = []
         for message in cancel_order_response['Messages']['Message']:
             description = message['description']
-            code = message['code']
-            message_type = message['type']
-            messages.append(ETradeOrderResponseMessage(code, description, message_type))
+            code = str(message['code'])
+            message_type = str(message['type'])
+            messages.append(ETradeOrderCancellationMessage(code=code, message=description, type=message_type))
 
         return CancelOrderResponse(order_id=order_id, cancel_time=cancel_time, messages=messages)
 
@@ -291,14 +294,14 @@ class ETradeOrderService(OrderService):
                 code = error['code'] if 'code' in error else None
                 message = error['message'] if 'message' in error else None
 
-                order_placement_message: OrderPlacementMessage = ETradeOrderResponseMessage(code=str(code), description=message)
+                order_placement_message: OrderPlacementMessage = ETradeOrderResponseMessage(type=str(code), message=message)
 
                 if NOT_ENOUGH_SHARES_MSG_PORTION in message or code == PARTIAL_EXECUTED_CODE:
                     request_status = RequestStatus.FAILURE_RETRY_SUGGESTED
                 else:
                     request_status = RequestStatus.FAILURE_DO_NOT_RETRY
                 if previous_order_id:
-                    return PreviewModifyOrderResponse(order_metadata, None, previous_order_id, None, request_status=request_status, order_message=order_placement_message)
+                    return PreviewModifyOrderResponse(order_metadata=order_metadata, preview_id=None, preview_order_info=None, request_status=request_status, order_message=order_placement_message, previous_order_id=previous_order_id)
                 else:
                     return PreviewOrderResponse(order_metadata=order_metadata, preview_id=None, preview_order_info=None, request_status=request_status, order_message=order_placement_message)
             else:

@@ -1,12 +1,12 @@
 from dateutil.parser import parse
 
-from fianchetto_tradebot.common.api.accounts.account_list_response import ListAccountsResponse
+from fianchetto_tradebot.common.api.accounts.list_accounts_response import ListAccountsResponse
 from fianchetto_tradebot.common.api.accounts.account_service import AccountService
 from fianchetto_tradebot.common.api.accounts.etrade.etrade_account_service import ETradeAccountService
 from fianchetto_tradebot.common.api.accounts.get_account_balance_request import GetAccountBalanceRequest
 from fianchetto_tradebot.common.api.accounts.get_account_balance_response import GetAccountBalanceResponse
-from fianchetto_tradebot.common.api.accounts.get_account_info_request import GetAccountRequest
-from fianchetto_tradebot.common.api.accounts.get_account_info_response import GetAccountResponse
+from fianchetto_tradebot.common.api.accounts.get_account_request import GetAccountRequest
+from fianchetto_tradebot.common.api.accounts.get_account_response import GetAccountResponse
 from fianchetto_tradebot.common.api.encoding.custom_json_provider import CustomJSONProvider
 from fianchetto_tradebot.common.api.portfolio.etrade_portfolio_service import ETradePortfolioService
 from fianchetto_tradebot.common.api.portfolio.get_portfolio_request import GetPortfolioRequest

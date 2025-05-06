@@ -51,6 +51,7 @@ class OexRestService(RestService):
         self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/preview', endpoint=self.preview_order, methods=['POST'], response_model=PreviewOrderResponse)
         self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/preview/{preview_id}', endpoint=self.place_order, methods=['POST'], response_model=PlaceOrderResponse)
         self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/preview_and_place', endpoint=self.preview_and_place_order, methods=['POST'], response_model=PlaceOrderResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/{order_id}', endpoint=self.cancel_order, methods=['DELETE'], response_model=CancelOrderResponse)
 
     def _setup_brokerage_services(self):
         self.order_services: dict[Brokerage, OrderService] = dict()
@@ -144,10 +145,6 @@ class OexRestService(RestService):
         return place_order_response
 
     def cancel_order(self, brokerage: str, account_id: str, order_id: str):
-        content_type = request.headers.get('Content-Type')
-        if (content_type != 'application/json'):
-            return 'Content-Type not supported!'
-
         cancel_order_request = CancelOrderRequest(account_id=account_id, order_id=order_id)
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
         cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)

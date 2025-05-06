@@ -9,9 +9,9 @@ from flask.json.provider import DefaultJSONProvider
 from pydantic import BaseModel
 from werkzeug.http import http_date
 
-from fianchetto_tradebot.common.api.accounts.account_list_response import ListAccountsResponse
+from fianchetto_tradebot.common.api.accounts.list_accounts_response import ListAccountsResponse
 from fianchetto_tradebot.common.api.accounts.get_account_balance_response import GetAccountBalanceResponse
-from fianchetto_tradebot.common.api.accounts.get_account_info_response import GetAccountResponse
+from fianchetto_tradebot.common.api.accounts.get_account_response import GetAccountResponse
 from fianchetto_tradebot.common.api.orders.get_order_response import GetOrderResponse
 from fianchetto_tradebot.common.api.orders.order_list_response import ListOrdersResponse
 from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
