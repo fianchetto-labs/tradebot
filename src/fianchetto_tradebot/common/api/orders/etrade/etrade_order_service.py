@@ -250,13 +250,13 @@ class ETradeOrderService(OrderService):
             description = message['description']
             code = message['code']
             message_type = message['type']
-            messages.append(ETradeOrderResponseMessage(code=str(code), description=description, message_type=str(message_type)))
+            messages.append(ETradeOrderResponseMessage(code=str(code), message=description, type=str(message_type)))
 
         # TODO: Why isn't this a PlacedOrder? b/c 'OrderDetail' isn't available from order_dict here.
         order: Order = OrderConversionUtil.to_order_from_json(order_dict)
 
         if previous_order_id:
-            return PlaceModifyOrderResponse(order_metadata, preview_id, previous_order_id, order_id, order, messages)
+            return PlaceOrderResponse(order_metadata=order_metadata, preview_id=str(preview_id), order_id=str(order_id), order=order, order_placement_messages=messages, previous_order_id=previous_order_id)
         else:
             return PlaceOrderResponse(order_metadata=order_metadata, preview_id=str(preview_id), order_id=str(order_id), order=order, order_placement_messages=messages)
 

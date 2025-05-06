@@ -1,9 +1,6 @@
 from datetime import datetime
 
-import uvicorn
 from fastapi import FastAPI
-from flask import make_response
-from flask import request
 
 from fianchetto_tradebot.common.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common.api.orders.cancel_order_response import CancelOrderResponse
@@ -12,15 +9,14 @@ from fianchetto_tradebot.common.api.orders.get_order_request import GetOrderRequ
 from fianchetto_tradebot.common.api.orders.get_order_response import GetOrderResponse
 from fianchetto_tradebot.common.api.orders.order_list_request import ListOrdersRequest
 from fianchetto_tradebot.common.api.orders.order_list_response import ListOrdersResponse
-from fianchetto_tradebot.common.api.orders.order_metadata import OrderMetadata
 from fianchetto_tradebot.common.api.orders.order_service import OrderService
 from fianchetto_tradebot.common.api.orders.place_order_request import PlaceOrderRequest
 from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
 from fianchetto_tradebot.common.api.orders.preview_order_response import PreviewOrderResponse
+from fianchetto_tradebot.common.api.request_status import RequestStatus
 from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.brokerage.brokerage import Brokerage
-from fianchetto_tradebot.common.order.order import Order
 from fianchetto_tradebot.common.order.order_status import OrderStatus
 from fianchetto_tradebot.common.service.rest_service import RestService, ETRADE_ONLY_BROKERAGE_CONFIG
 from fianchetto_tradebot.common.service.service_key import ServiceKey
@@ -52,6 +48,7 @@ class OexRestService(RestService):
         self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/preview/{preview_id}', endpoint=self.place_order, methods=['POST'], response_model=PlaceOrderResponse)
         self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/preview_and_place', endpoint=self.preview_and_place_order, methods=['POST'], response_model=PlaceOrderResponse)
         self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/{order_id}', endpoint=self.cancel_order, methods=['DELETE'], response_model=CancelOrderResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/{order_id}', endpoint=self.cancel_order, methods=['PUT'], response_model=PlaceOrderResponse)
 
     def _setup_brokerage_services(self):
         self.order_services: dict[Brokerage, OrderService] = dict()
@@ -81,25 +78,13 @@ class OexRestService(RestService):
         return resp
 
     def get_order(self, brokerage: str, account_id: str, order_id: str):
-        if not order_id:
-            # TODO: Factor this out
-            # TODO: Put HTTP response codes in an eum
-            resp = make_response(f"Order {order_id} not found", 400)
-            resp.headers['X-Something'] = 'A value'
-            return resp
-
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
         get_order_request = GetOrderRequest(account_id=account_id, order_id=order_id)
 
         resp: GetOrderResponse = order_service.get_order(get_order_request)
         return resp
 
-    def preview_order(self, brokerage, account_id: str):
-        content_type = request.headers.get('Content-Type')
-        if (content_type != 'application/json'):
-            return 'Content-Type not supported!'
-
-        preview_order_request = PreviewOrderRequest.model_validate(request.json)
+    def preview_order(self, brokerage, account_id: str, preview_order_request: PreviewOrderRequest):
         if not preview_order_request.order_metadata.account_id:
             preview_order_request.order_metadata.account_id = account_id
 
@@ -108,12 +93,7 @@ class OexRestService(RestService):
 
         return response
 
-    def place_order(self, brokerage, account_id: str, preview_id: str):
-        content_type = request.headers.get('Content-Type')
-        if (content_type != 'application/json'):
-            return 'Content-Type not supported!'
-
-        place_order_request = PlaceOrderRequest.model_validate(request.json)
+    def place_order(self, brokerage, account_id: str, preview_id: str, place_order_request: PlaceOrderRequest):
         if not place_order_request.order_metadata.account_id:
             place_order_request.order_metadata.account_id = account_id
 
@@ -124,24 +104,13 @@ class OexRestService(RestService):
 
         return response
 
-    def preview_and_place_order(self, brokerage, account_id: str):
-        content_type = request.headers.get('Content-Type')
-        if (content_type != 'application/json'):
-            return 'Content-Type not supported!'
-
-        preview_order_request = PreviewOrderRequest.model_validate(request.json)
+    def preview_and_place_order(self, brokerage, account_id: str, preview_order_request: PreviewOrderRequest):
         if not preview_order_request.order_metadata.account_id:
             preview_order_request.order_metadata.account_id = account_id
 
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
-        preview_order_response: PreviewOrderResponse = order_service.preview_order(preview_order_request)
-        preview_id = preview_order_response.preview_id
+        place_order_response: PlaceOrderResponse = order_service.preview_and_place_order(preview_order_request)
 
-        order_metadata: OrderMetadata = preview_order_request.order_metadata
-        order: Order = preview_order_request.order
-        place_order_request: PlaceOrderRequest = PlaceOrderRequest(order_metadata=order_metadata, preview_id=preview_id,
-                                                                   order=order)
-        place_order_response: PlaceOrderResponse = order_service.place_order(place_order_request)
         return place_order_response
 
     def cancel_order(self, brokerage: str, account_id: str, order_id: str):
@@ -150,6 +119,22 @@ class OexRestService(RestService):
         cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
 
         return cancel_order_response
+
+    def modify_order(self, exchange: str, account_id: str, order_id: str, preview_order_request: PreviewOrderRequest):
+        order_service: OrderService = self.order_services[Brokerage[exchange.upper()]]
+
+        # cancel
+        cancel_order_request = CancelOrderRequest(account_id=account_id, order_id=order_id)
+        cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
+
+        # TODO: Validation here in case the response is somehow unsatisfactory
+        if cancel_order_response.request_status is not RequestStatus.SUCCESS:
+            return {"error": "Order not cancelled. Please retry"}, 500
+
+        # preview_and_place
+        place_order_response: PlaceOrderResponse = order_service.preview_and_place_order(preview_order_request)
+        return place_order_response
+
 
 if __name__ == "__main__":
     oex_app = OexRestService()

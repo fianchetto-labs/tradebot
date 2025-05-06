@@ -102,6 +102,7 @@ def adjust_order_until_executed(account_id: str, order_id: str, order_service: O
         order_type: OrderType = placed_order.order.get_order_type()
         order = placed_order.order
 
+        # TODO: This can be condensed using new endpoints to push this down to the server
         while placed_order.placed_order_details.status == OrderStatus.OPEN:
             print("Cancelling old order")
             cancel_order_request: CancelOrderRequest = CancelOrderRequest(account_id=account_id, order_id=order_id)
