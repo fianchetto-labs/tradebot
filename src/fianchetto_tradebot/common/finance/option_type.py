@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class OptionType(str, Enum):
+class OptionType(Enum):
     # make this an enum for PUT or CALL
     PUT = "PUT"
     CALL = "CALL"

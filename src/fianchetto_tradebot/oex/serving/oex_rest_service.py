@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from flask import Flask, jsonify, make_response
+import uvicorn
+from fastapi import FastAPI
+from flask import make_response
 from flask import request
 
 from fianchetto_tradebot.common.api.orders.cancel_order_request import CancelOrderRequest
@@ -35,27 +37,20 @@ class OexRestService(RestService):
         super().__init__(ServiceKey.OEX, credential_config_files)
 
     @property
-    def app(self) -> Flask:
+    def app(self) -> FastAPI:
         return self._app
 
     @app.setter
-    def app(self, app: Flask):
+    def app(self, app: FastAPI):
         self._app = app
 
     def _register_endpoints(self):
         super()._register_endpoints()
-        self.app.add_url_rule(rule='/api/v1/<brokerage>/<account_id>/orders', endpoint='list-orders', view_func=self.list_orders, methods=['GET'])
-        self.app.add_url_rule(rule='/api/v1/<brokerage>/<account_id>/orders/<order_id>', endpoint='get-order',
-                              view_func=self.get_order, methods=['GET'])
-
-        self.app.add_url_rule(rule='/api/v1/<brokerage>/<account_id>/orders/preview', endpoint='preview-order',
-                              view_func=self.preview_order, methods=['POST'])
-
-        self.app.add_url_rule(rule='/api/v1/<brokerage>/<account_id>/orders/preview/<preview_id>', endpoint='place-order',
-                              view_func=self.place_order, methods=['POST'])
-
-        self.app.add_url_rule(rule='/api/v1/<brokerage>/<account_id>/orders/preview_and_place', endpoint='preview-and-place-order',
-                              view_func=self.preview_and_place_order, methods=['POST'])
+        self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders', endpoint=self.list_orders, methods=['GET'], response_model=ListOrdersResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/{order_id}', endpoint=self.get_order, methods=['GET'], response_model=GetOrderResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/preview', endpoint=self.preview_order, methods=['POST'], response_model=PreviewOrderResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/preview/{}preview_id}', endpoint=self.place_order, methods=['POST'], response_model=PlaceOrderResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/preview_and_place', endpoint=self.preview_and_place_order, methods=['POST'], response_model=PlaceOrderResponse)
 
     def _setup_brokerage_services(self):
         self.order_services: dict[Brokerage, OrderService] = dict()
@@ -72,24 +67,17 @@ class OexRestService(RestService):
 
         # TODO: Add for IKBR and Schwab
 
-    def run(self, *args, **kwargs):
-        self.app.run(*args, **kwargs)
+    def list_orders(self, brokerage: str, account_id: str, status: str = None, from_date: str=None, to_date: str=None, count:int=DEFAULT_COUNT):
+        status = OrderStatus.ANY if not status else OrderStatus[status]
 
-    def list_orders(self, brokerage: str, account_id: str):
-        args = request.args
-        status_str = args.get('status')
-        status = OrderStatus.ANY if not status_str else OrderStatus[status_str]
-        from_date = DEFAULT_START_DATE if not 'from_date' in args else datetime.datetime.strptime(args.get('from_date'), '%yyyy-mm-dd').date()
-        to_date = datetime.today().date() if not 'to_date' in args else datetime.datetime.strptime(args.get('to_date'), '%yyyy-mm-dd').date()
-
-        count = args.get('count') if 'count' in args else DEFAULT_COUNT
+        from_date = DEFAULT_START_DATE if not from_date else datetime.datetime.strptime(from_date, '%yyyy-mm-dd').date()
+        to_date = datetime.today().date() if not to_date else datetime.datetime.strptime(to_date, '%yyyy-mm-dd').date()
 
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
         list_order_request = ListOrdersRequest(account_id=account_id, status=status, from_date=from_date, to_date=to_date, count=count)
 
         resp: ListOrdersResponse = order_service.list_orders(list_order_request)
-
-        return jsonify(resp)
+        return resp
 
     def get_order(self, brokerage: str, account_id: str, order_id: str):
         if not order_id:
@@ -103,8 +91,7 @@ class OexRestService(RestService):
         get_order_request = GetOrderRequest(account_id=account_id, order_id=order_id)
 
         resp: GetOrderResponse = order_service.get_order(get_order_request)
-
-        return jsonify(resp)
+        return resp
 
     def preview_order(self, brokerage, account_id: str):
         content_type = request.headers.get('Content-Type')
@@ -118,7 +105,7 @@ class OexRestService(RestService):
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
         response: PreviewOrderResponse = order_service.preview_order(preview_order_request)
 
-        return jsonify(response)
+        return response
 
     def place_order(self, brokerage, account_id: str, preview_id: str):
         content_type = request.headers.get('Content-Type')
@@ -134,7 +121,7 @@ class OexRestService(RestService):
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
         response: PlaceOrderResponse = order_service.place_order(place_order_request)
 
-        return jsonify(response)
+        return response
 
     def preview_and_place_order(self, brokerage, account_id: str):
         content_type = request.headers.get('Content-Type')
@@ -154,7 +141,7 @@ class OexRestService(RestService):
         place_order_request: PlaceOrderRequest = PlaceOrderRequest(order_metadata=order_metadata, preview_id=preview_id,
                                                                    order=order)
         place_order_response: PlaceOrderResponse = order_service.place_order(place_order_request)
-        return jsonify(place_order_response)
+        return place_order_response
 
     def cancel_order(self, brokerage: str, account_id: str, order_id: str):
         content_type = request.headers.get('Content-Type')
@@ -165,7 +152,7 @@ class OexRestService(RestService):
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
         cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
 
-        return jsonify(cancel_order_response)
+        return cancel_order_response
 
 if __name__ == "__main__":
     oex_app = OexRestService()
