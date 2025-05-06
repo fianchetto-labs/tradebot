@@ -1,3 +1,5 @@
-class GetPortfolioRequest:
-    def __init__(self, account_id: str):
-        self.account_id: str = account_id
+from fianchetto_tradebot.common.api.request import Request
+
+
+class GetPortfolioRequest(Request):
+    account_id: str
