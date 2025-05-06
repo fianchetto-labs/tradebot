@@ -49,9 +49,7 @@ class QuotesRestService(RestService):
         self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}/options_chain/expiry', endpoint=self.get_options_chain_expiries, methods=['GET'])
         self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}/options_chain/expiry/{expiry}', endpoint=self.get_options_chain_by_expiry, methods=['GET'])
 
-
         # TODO - add more granular endpoints for options by expiry, strike, etc
-
 
     def list_accounts(self, brokerage:str):
         account_service: AccountService = self.account_services[Brokerage[brokerage.upper()]]
@@ -77,7 +75,7 @@ class QuotesRestService(RestService):
         # TODO - get brokerage-specific options that are now part of the defaults. This is tricky b/c normally we'd want to
         # wrap it up into an object, but for GET requests, we can't have a serialized body
         portfolio_service: PortfolioService = self.portfolio_services[Brokerage[brokerage.upper()]]
-        get_portfolio_request: GetPortfolioRequest = GetPortfolioRequest(account_id)
+        get_portfolio_request: GetPortfolioRequest = GetPortfolioRequest(account_id=account_id)
         get_portfolio_response: GetPortfolioResponse = portfolio_service.get_portfolio_info(get_portfolio_request)
 
         return get_portfolio_response

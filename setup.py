@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='fianchetto-tradebot',
-    version='0.1.10',
+    version='0.1.11',
     author='Fianchetto Labs',
     author_email='aleks@fianchettolabs.com',
     description='Library for implementing API trading integrations with popular brokerages like ETrade, Schwab, and Interactive Brokers',
@@ -22,6 +22,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'aioauth-client',
+        'fastapi',
         'pandas',
         'pydantic',
         'pygments',
