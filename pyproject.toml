@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fianchetto-tradebot"
+version = "0.1.12"
+description = "An algorithmic trading bot framework connecting to brokerages like E*Trade and Schwab"
+readme = "README.md"
+requires-python = ">=3.6"
+
+authors = [
+    { name = "Aleks Shulman", email = "aleks@fianchettolabs.com" }
+]
+
+dependencies = [
+    "aioauth-client>=0.30,<1.0",
+    "annotated-types>=0.7,<1.0",
+    "anyio>=4.9,<5.0",
+    "attrs>=25.3,<26.0",
+    "blinker>=1.9,<2.0",
+    "certifi>=2025.1,<2026.0",
+    "charset-normalizer>=3.4,<4.0",
+    "click>=8.1,<9.0",
+    "exceptiongroup>=1.2,<2.0",
+    "fastapi>=0.115,<1.0",
+    "flasgger>=0.9,<1.0",
+    "Flask>=3.1,<4.0",
+    "h11>=0.16,<1.0",
+    "httpcore>=1.0,<2.0",
+    "httpx>=0.28,<1.0",
+    "idna>=3.10,<4.0",
+    "importlib_metadata>=8.6,<9.0",
+    "itsdangerous>=2.2,<3.0",
+    "Jinja2>=3.1,<4.0",
+    "jsonpickle>=4.0,<5.0",
+    "jsonschema>=4.23,<5.0",
+    "jsonschema-specifications>=2025.4,<2026.0",
+    "MarkupSafe>=3.0,<4.0",
+    "mistune>=3.1,<4.0",
+    "numpy>=2.0,<3.0",
+    "packaging>=24.2,<25.0",
+    "pandas>=2.2,<3.0",
+    "pluggy>=1.5,<2.0",
+    "pydantic>=2.11,<3.0",
+    "pydantic_core>=2.33,<3.0",
+    "Pygments>=2.19,<3.0",
+    "python-dateutil>=2.9,<3.0",
+    "pytz>=2025.2,<2026.0",
+    "PyYAML>=6.0,<7.0",
+    "rauth>=0.7,<1.0",
+    "referencing>=0.36,<1.0",
+    "requests>=2.32,<3.0",
+    "rpds-py>=0.24,<1.0",
+    "six>=1.17,<2.0",
+    "sniffio>=1.3,<2.0",
+    "sortedcontainers>=2.4,<3.0",
+    "starlette>=0.46,<1.0",
+    "tomli>=2.2,<3.0",
+    "typing-inspection>=0.4,<1.0",
+    "typing_extensions>=4.13,<5.0",
+    "tzdata>=2025.2,<2026.0",
+    "urllib3>=2.4,<3.0",
+    "uvicorn[standard]>=0.34,<1.0",
+    "Werkzeug>=3.1,<4.0",
+    "zipp>=3.21,<4.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.2,<2.0",
+    "pyproject_hooks>=1.2,<2.0",
+    "pytest>=8.3,<9.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

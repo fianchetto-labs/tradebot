@@ -4,7 +4,6 @@ from typing import Final
 import uvicorn
 from fastapi import FastAPI, APIRouter
 
-from fianchetto_tradebot.common.api.encoding.custom_json_provider import CustomJSONProvider
 from fianchetto_tradebot.common.brokerage.connector import Connector
 from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector, DEFAULT_CONFIG_FILE
 from fianchetto_tradebot.common.brokerage.brokerage import Brokerage
