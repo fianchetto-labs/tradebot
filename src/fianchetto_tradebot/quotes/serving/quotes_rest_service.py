@@ -7,7 +7,6 @@ from fianchetto_tradebot.common.api.accounts.get_account_balance_request import 
 from fianchetto_tradebot.common.api.accounts.get_account_balance_response import GetAccountBalanceResponse
 from fianchetto_tradebot.common.api.accounts.get_account_request import GetAccountRequest
 from fianchetto_tradebot.common.api.accounts.get_account_response import GetAccountResponse
-from fianchetto_tradebot.common.api.encoding.custom_json_provider import CustomJSONProvider
 from fianchetto_tradebot.common.api.portfolio.etrade_portfolio_service import ETradePortfolioService
 from fianchetto_tradebot.common.api.portfolio.get_portfolio_request import GetPortfolioRequest
 from fianchetto_tradebot.common.api.portfolio.get_portfolio_response import GetPortfolioResponse
@@ -44,10 +43,10 @@ class QuotesRestService(RestService):
         self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/portfolio', endpoint=self.get_account_portfolio, methods=['GET'], response_model=GetPortfolioResponse)
 
         # Quotes Endpoints
-        self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}', endpoint=self.get_equity_quote, methods=['GET'])
-        self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}/options_chain', endpoint=self.get_options_chain, methods=['GET'])
-        self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}/options_chain/expiry', endpoint=self.get_options_chain_expiries, methods=['GET'])
-        self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}/options_chain/expiry/{expiry}', endpoint=self.get_options_chain_by_expiry, methods=['GET'])
+        self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}', endpoint=self.get_equity_quote, methods=['GET'], response_model=GetTradableResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}/options_chain', endpoint=self.get_options_chain, methods=['GET'], response_model=GetOptionsChainResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}/options_chain/expiry', endpoint=self.get_options_chain_expiries, methods=['GET'], response_model=GetOptionExpireDatesResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}/options_chain/expiry/{expiry}', endpoint=self.get_options_chain_by_expiry, methods=['GET'], response_model=GetOptionsChainResponse)
 
         # TODO - add more granular endpoints for options by expiry, strike, etc
 
@@ -94,8 +93,7 @@ class QuotesRestService(RestService):
         get_options_chain_request: GetOptionsChainRequest = GetOptionsChainRequest(ticker=equity)
         get_option_chain_response: GetOptionsChainResponse = quotes_service.get_options_chain(get_options_chain_request)
 
-        with_stringified_keys = CustomJSONProvider.stringify_keys(get_option_chain_response.options_chain)
-        return with_stringified_keys
+        return get_option_chain_response
 
     def get_options_chain_expiries(self, brokerage, equity):
         quotes_service: QuotesService = self.quotes_services[Brokerage[brokerage.upper()]]
@@ -115,8 +113,7 @@ class QuotesRestService(RestService):
         get_options_chain_request: GetOptionsChainRequest = GetOptionsChainRequest(ticker=equity, expiry=expiry_date)
         get_options_chain_response: GetOptionsChainResponse = quotes_service.get_options_chain(get_options_chain_request)
 
-        with_stringified_keys = CustomJSONProvider.stringify_keys(get_options_chain_response)
-        return with_stringified_keys
+        return get_options_chain_response
 
     def _setup_brokerage_services(self):
         # Delegated to subclass
