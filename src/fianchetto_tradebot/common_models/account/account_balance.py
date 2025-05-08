@@ -3,9 +3,9 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from fianchetto_tradebot.common.account.brokerage_call import BrokerageCall
-from fianchetto_tradebot.common.account.computed_balance import ComputedBalance
 from fianchetto_tradebot.common.finance.amount import Amount
+from fianchetto_tradebot.common_models.account.brokerage_call import BrokerageCall
+from fianchetto_tradebot.common_models.account.computed_balance import ComputedBalance
 
 logger = logging.getLogger(__name__)
 

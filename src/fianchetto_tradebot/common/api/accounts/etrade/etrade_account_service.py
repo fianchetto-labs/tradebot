@@ -1,18 +1,18 @@
 from datetime import datetime
 
-from fianchetto_tradebot.common.account.account import Account
-from fianchetto_tradebot.common.account.account_balance import AccountBalance
-from fianchetto_tradebot.common.account.brokerage_call import BrokerageCallType, BrokerageCall
-from fianchetto_tradebot.common.account.computed_balance import ComputedBalance
-from fianchetto_tradebot.common.account.etrade.etrade_account import ETradeAccount
-from fianchetto_tradebot.common.api.accounts.list_accounts_response import ListAccountsResponse
 from fianchetto_tradebot.common.api.accounts.account_service import AccountService
-from fianchetto_tradebot.common.api.accounts.get_account_balance_request import GetAccountBalanceRequest
-from fianchetto_tradebot.common.api.accounts.get_account_balance_response import GetAccountBalanceResponse
-from fianchetto_tradebot.common.api.accounts.get_account_request import GetAccountRequest
-from fianchetto_tradebot.common.api.accounts.get_account_response import GetAccountResponse
 from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common.finance.amount import Amount
+from fianchetto_tradebot.common_models.account.account import Account
+from fianchetto_tradebot.common_models.account.account_balance import AccountBalance
+from fianchetto_tradebot.common_models.account.brokerage_call import BrokerageCall, BrokerageCallType
+from fianchetto_tradebot.common_models.account.computed_balance import ComputedBalance
+from fianchetto_tradebot.common_models.account.etrade.etrade_account import ETradeAccount
+from fianchetto_tradebot.common_models.api.account.get_account_balance_request import GetAccountBalanceRequest
+from fianchetto_tradebot.common_models.api.account.get_account_balance_response import GetAccountBalanceResponse
+from fianchetto_tradebot.common_models.api.account.get_account_request import GetAccountRequest
+from fianchetto_tradebot.common_models.api.account.get_account_response import GetAccountResponse
+from fianchetto_tradebot.common_models.api.account.list_accounts_response import ListAccountsResponse
 
 DEFAULT_INST_TYPE = "BROKERAGE"
 
