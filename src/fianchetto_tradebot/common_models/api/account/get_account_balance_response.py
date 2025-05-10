@@ -1,4 +1,4 @@
-from fianchetto_tradebot.server.common import AccountBalance
+from fianchetto_tradebot.common_models.account.account_balance import AccountBalance
 from fianchetto_tradebot.common_models.api.response import Response
 
 

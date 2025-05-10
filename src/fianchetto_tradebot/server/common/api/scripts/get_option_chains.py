@@ -9,7 +9,7 @@ from fianchetto_tradebot.server.quotes import QuoteService
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common_models.finance.equity import Equity
 from fianchetto_tradebot.server.quotes import GetOptionExpireDatesRequest
-from fianchetto_tradebot.server.quotes.api.get_option_expire_dates_response import GetOptionExpireDatesResponse
+from fianchetto_tradebot.common_models.api.quotes.get_option_expire_dates_response import GetOptionExpireDatesResponse
 from fianchetto_tradebot.server.quotes import GetOptionsChainRequest
 from fianchetto_tradebot.server.quotes import GetOptionsChainResponse
 

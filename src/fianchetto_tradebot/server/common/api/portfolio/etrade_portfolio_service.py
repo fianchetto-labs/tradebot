@@ -11,7 +11,7 @@ from fianchetto_tradebot.common_models.finance.exercise_style import ExerciseSty
 from fianchetto_tradebot.common_models.finance.option import Option
 from fianchetto_tradebot.common_models.finance.option_type import OptionType
 from fianchetto_tradebot.common_models.finance.tradable import Tradable
-from fianchetto_tradebot.common_models.portfolio import PortfolioBuilder
+from fianchetto_tradebot.common_models.portfolio.portfolio_builder import PortfolioBuilder
 
 DEFAULT_SORT_BY = "DAYS_EXPIRATION"
 DEFAULT_SORT_ORDER = "ASC"

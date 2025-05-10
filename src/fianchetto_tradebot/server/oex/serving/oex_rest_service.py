@@ -21,7 +21,7 @@ from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.server.common.service.rest_service import RestService, ETRADE_ONLY_BROKERAGE_CONFIG
 from fianchetto_tradebot.server.common.service.service_key import ServiceKey
 from fianchetto_tradebot.server.quotes.etrade.etrade_quotes_service import ETradeQuotesService
-from fianchetto_tradebot.server.quotes import QuotesService
+from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
 JAN_1_2024 = datetime(2024,1,1).date()
 DEFAULT_START_DATE = JAN_1_2024

@@ -4,8 +4,8 @@ from fianchetto_tradebot.server.quotes import QuoteService
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common_models.finance.equity import Equity
 from fianchetto_tradebot.common_models.finance.option import Option
-from fianchetto_tradebot.server.quotes.api.get_tradable_request import GetTradableRequest
-from fianchetto_tradebot.server.quotes.api.get_tradable_response import GetTradableResponse
+from fianchetto_tradebot.common_models.api.quotes.get_tradable_request import GetTradableRequest
+from fianchetto_tradebot.common_models.api.quotes.get_tradable_response import GetTradableResponse
 from tests.common.util.test_object_util import get_sample_equity, get_sample_option
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from fianchetto_tradebot.common_models.api.quotes.get_tradable_request import GetTradableRequest
 from fianchetto_tradebot.server.common.brokerage.connector import Connector
 from fianchetto_tradebot.common_models.finance.amount import Amount
 from fianchetto_tradebot.common_models.finance.equity import Equity
@@ -16,9 +17,8 @@ from fianchetto_tradebot.common_models.order.order_line import OrderLine
 from fianchetto_tradebot.common_models.order.order_price import OrderPrice
 from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceType
 from fianchetto_tradebot.server.oex.trade_execution_util import TradeExecutionUtil
-from fianchetto_tradebot.server.quotes import GetTradableRequest
-from fianchetto_tradebot.server.quotes.api.get_tradable_response import GetTradableResponse
-from fianchetto_tradebot.server.quotes import QuotesService
+from fianchetto_tradebot.common_models.api.quotes.get_tradable_response import GetTradableResponse
+from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
 equity = Equity(ticker="GE", company_name="General Electric")
 

@@ -1,9 +1,9 @@
+from fianchetto_tradebot.common_models.api.quotes.get_tradable_request import GetTradableRequest
 from fianchetto_tradebot.common_models.finance.price import Price
 from fianchetto_tradebot.common_models.order.action import Action
 from fianchetto_tradebot.common_models.order.order import Order
-from fianchetto_tradebot.server.quotes import GetTradableRequest
-from fianchetto_tradebot.server.quotes.api.get_tradable_response import GetTradableResponse
-from fianchetto_tradebot.server.quotes import QuotesService
+from fianchetto_tradebot.common_models.api.quotes.get_tradable_response import GetTradableResponse
+from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
 ADJUSTED_NO_BIDS_WIDE_SPREAD_ASK = .03
 

@@ -3,17 +3,17 @@ import datetime
 from pandas import DataFrame
 from sortedcontainers import SortedDict
 
+from fianchetto_tradebot.common_models.api.quotes.get_option_expire_dates_request import GetOptionExpireDatesRequest
+from fianchetto_tradebot.common_models.api.quotes.get_options_chain_request import GetOptionsChainRequest
+from fianchetto_tradebot.common_models.api.quotes.get_options_chain_response import GetOptionsChainResponse
+from fianchetto_tradebot.common_models.api.quotes.get_tradable_request import GetTradableRequest
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common_models.finance.amount import Amount
 from fianchetto_tradebot.common_models.finance.chain import ChainBuilder, Chain
 from fianchetto_tradebot.common_models.finance.equity import Equity
 from fianchetto_tradebot.common_models.finance.price import Price
-from fianchetto_tradebot.server.quotes import GetOptionExpireDatesRequest
-from fianchetto_tradebot.server.quotes import GetOptionsChainRequest
-from fianchetto_tradebot.server.quotes import GetOptionsChainResponse
-from fianchetto_tradebot.server.quotes import GetTradableRequest
 from fianchetto_tradebot.server.quotes.etrade.etrade_quotes_service import ETradeQuotesService
-from fianchetto_tradebot.server.quotes import QuotesService
+from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
 DEFAULT_NUM_STRIKES = 15
 DEFAULT_DELTA_FROM_CURRENT_PRICE = 5

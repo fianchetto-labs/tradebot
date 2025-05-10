@@ -1,12 +1,12 @@
 from dateutil.parser import parse
 
-from fianchetto_tradebot.server.common import ListAccountsResponse
+from fianchetto_tradebot.common_models.api.account.get_account_balance_request import GetAccountBalanceRequest
+from fianchetto_tradebot.common_models.api.account.get_account_balance_response import GetAccountBalanceResponse
+from fianchetto_tradebot.common_models.api.account.get_account_request import GetAccountRequest
+from fianchetto_tradebot.common_models.api.account.get_account_response import GetAccountResponse
+from fianchetto_tradebot.common_models.api.account.list_accounts_response import ListAccountsResponse
 from fianchetto_tradebot.server.common.api.accounts.account_service import AccountService
 from fianchetto_tradebot.server.common.api.accounts.etrade.etrade_account_service import ETradeAccountService
-from fianchetto_tradebot.server.common import GetAccountBalanceRequest
-from fianchetto_tradebot.server.common import GetAccountBalanceResponse
-from fianchetto_tradebot.server.common import GetAccountRequest
-from fianchetto_tradebot.server.common import GetAccountResponse
 from fianchetto_tradebot.server.common.api.portfolio.etrade_portfolio_service import ETradePortfolioService
 from fianchetto_tradebot.common_models.api.portfolio.get_portfolio_request import GetPortfolioRequest
 from fianchetto_tradebot.common_models.api.portfolio.get_portfolio_response import GetPortfolioResponse
@@ -17,12 +17,12 @@ from fianchetto_tradebot.common_models.finance.equity import Equity
 from fianchetto_tradebot.common_models.finance.tradable import Tradable
 from fianchetto_tradebot.server.common.service.rest_service import RestService, ETRADE_ONLY_BROKERAGE_CONFIG
 from fianchetto_tradebot.server.common.service.service_key import ServiceKey
-from fianchetto_tradebot.server.quotes.api.get_option_expire_dates_request import GetOptionExpireDatesRequest
-from fianchetto_tradebot.server.quotes.api.get_option_expire_dates_response import GetOptionExpireDatesResponse
-from fianchetto_tradebot.server.quotes.api.get_options_chain_request import GetOptionsChainRequest
-from fianchetto_tradebot.server.quotes.api.get_options_chain_response import GetOptionsChainResponse
-from fianchetto_tradebot.server.quotes.api.get_tradable_request import GetTradableRequest
-from fianchetto_tradebot.server.quotes.api.get_tradable_response import GetTradableResponse
+from fianchetto_tradebot.common_models.api.quotes.get_option_expire_dates_request import GetOptionExpireDatesRequest
+from fianchetto_tradebot.common_models.api.quotes.get_option_expire_dates_response import GetOptionExpireDatesResponse
+from fianchetto_tradebot.common_models.api.quotes.get_options_chain_request import GetOptionsChainRequest
+from fianchetto_tradebot.common_models.api.quotes.get_options_chain_response import GetOptionsChainResponse
+from fianchetto_tradebot.common_models.api.quotes.get_tradable_request import GetTradableRequest
+from fianchetto_tradebot.common_models.api.quotes.get_tradable_response import GetTradableResponse
 from fianchetto_tradebot.server.quotes.etrade.etrade_quotes_service import ETradeQuotesService
 from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
