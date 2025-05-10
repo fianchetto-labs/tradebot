@@ -1,7 +1,7 @@
 import datetime
 
-from fianchetto_tradebot.common.finance.amount import Amount
-from fianchetto_tradebot.common.finance.option import Option
+from fianchetto_tradebot.common_models.finance.amount import Amount
+from fianchetto_tradebot.common_models.finance.option import Option
 
 
 class OptionPricer:

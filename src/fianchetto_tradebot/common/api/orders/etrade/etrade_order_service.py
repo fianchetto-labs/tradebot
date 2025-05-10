@@ -1,36 +1,36 @@
 import json
 from time import sleep
 
-from fianchetto_tradebot.common.api.orders.cancel_order_request import CancelOrderRequest
-from fianchetto_tradebot.common.api.orders.cancel_order_response import CancelOrderResponse
+from fianchetto_tradebot.common_models.api.orders.cancel_order_request import CancelOrderRequest
+from fianchetto_tradebot.common_models.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common.api.orders.etrade.converters.order_conversion_util import OrderConversionUtil
-from fianchetto_tradebot.common.api.orders.etrade.etrade_order_cancellation_message import \
+from fianchetto_tradebot.common_models.api.orders.etrade.etrade_order_cancellation_message import \
     ETradeOrderCancellationMessage
-from fianchetto_tradebot.common.api.orders.etrade.etrade_order_response_message import ETradeOrderResponseMessage
-from fianchetto_tradebot.common.api.orders.get_order_request import GetOrderRequest
-from fianchetto_tradebot.common.api.orders.get_order_response import GetOrderResponse
-from fianchetto_tradebot.common.api.orders.order_cancellation_message import OrderCancellationMessage
-from fianchetto_tradebot.common.api.orders.order_list_request import ListOrdersRequest
-from fianchetto_tradebot.common.api.orders.order_list_response import ListOrdersResponse
-from fianchetto_tradebot.common.api.orders.order_metadata import OrderMetadata
-from fianchetto_tradebot.common.api.orders.order_placement_message import OrderPlacementMessage
-from fianchetto_tradebot.common.api.orders.order_preview import OrderPreview
+from fianchetto_tradebot.common_models.api.orders.etrade.etrade_order_response_message import ETradeOrderResponseMessage
+from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
+from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
+from fianchetto_tradebot.common_models.api.orders.order_cancellation_message import OrderCancellationMessage
+from fianchetto_tradebot.common_models.api.orders.order_list_request import ListOrdersRequest
+from fianchetto_tradebot.common_models.api.orders.order_list_response import ListOrdersResponse
+from fianchetto_tradebot.common_models.api.orders.order_metadata import OrderMetadata
+from fianchetto_tradebot.common_models.api.orders.order_placement_message import OrderPlacementMessage
+from fianchetto_tradebot.common_models.api.orders.order_preview import OrderPreview
 from fianchetto_tradebot.common.api.orders.order_service import OrderService
-from fianchetto_tradebot.common.api.orders.place_modify_order_request import PlaceModifyOrderRequest
-from fianchetto_tradebot.common.api.orders.place_modify_order_response import PlaceModifyOrderResponse
-from fianchetto_tradebot.common.api.orders.place_order_request import PlaceOrderRequest
-from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
-from fianchetto_tradebot.common.api.orders.preview_modify_order_request import PreviewModifyOrderRequest
-from fianchetto_tradebot.common.api.orders.preview_modify_order_response import PreviewModifyOrderResponse
-from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
-from fianchetto_tradebot.common.api.orders.preview_order_response import PreviewOrderResponse
-from fianchetto_tradebot.common.api.request_status import RequestStatus
+from fianchetto_tradebot.common_models.api.orders.place_modify_order_request import PlaceModifyOrderRequest
+from fianchetto_tradebot.common_models.api.orders.place_modify_order_response import PlaceModifyOrderResponse
+from fianchetto_tradebot.common_models.api.orders.place_order_request import PlaceOrderRequest
+from fianchetto_tradebot.common_models.api.orders.place_order_response import PlaceOrderResponse
+from fianchetto_tradebot.common_models.api.orders.preview_modify_order_request import PreviewModifyOrderRequest
+from fianchetto_tradebot.common_models.api.orders.preview_modify_order_response import PreviewModifyOrderResponse
+from fianchetto_tradebot.common_models.api.orders.preview_order_request import PreviewOrderRequest
+from fianchetto_tradebot.common_models.api.orders.preview_order_response import PreviewOrderResponse
+from fianchetto_tradebot.common_models.api.request_status import RequestStatus
 from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
-from fianchetto_tradebot.common.finance.amount import Amount
-from fianchetto_tradebot.common.order.order import Order
-from fianchetto_tradebot.common.order.order_status import OrderStatus
-from fianchetto_tradebot.common.order.order_type import OrderType
-from fianchetto_tradebot.common.order.placed_order import PlacedOrder
+from fianchetto_tradebot.common_models.finance.amount import Amount
+from fianchetto_tradebot.common_models.order.order import Order
+from fianchetto_tradebot.common_models.order.order_status import OrderStatus
+from fianchetto_tradebot.common_models.order.order_type import OrderType
+from fianchetto_tradebot.common_models.order.placed_order import PlacedOrder
 
 NOT_ENOUGH_SHARES_MSG_PORTION = "We did not find enough available shares of this security in your account"
 DEFAULT_RETRY_SLEEP_SECONDS = 10

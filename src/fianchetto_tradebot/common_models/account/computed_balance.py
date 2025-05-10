@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from fianchetto_tradebot.common.finance.amount import Amount
-from fianchetto_tradebot.common.finance.currency import Currency
+from fianchetto_tradebot.common_models.finance.amount import Amount
+from fianchetto_tradebot.common_models.finance.currency import Currency
 
 ZERO_AMOUNT = Amount(whole=0, part=0, currency=Currency.US_DOLLARS)
 

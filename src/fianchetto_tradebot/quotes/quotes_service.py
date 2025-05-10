@@ -1,6 +1,6 @@
 from fianchetto_tradebot.common.api.api_service import ApiService
 from fianchetto_tradebot.common.brokerage.connector import Connector
-from fianchetto_tradebot.common.finance.option import Option
+from fianchetto_tradebot.common_models.finance.option import Option
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_request import GetOptionExpireDatesRequest
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_response import GetOptionExpireDatesResponse
 from fianchetto_tradebot.quotes.api.get_options_chain_request import GetOptionsChainRequest

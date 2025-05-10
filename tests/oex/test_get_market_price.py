@@ -4,17 +4,17 @@ from unittest.mock import MagicMock
 import pytest
 
 from fianchetto_tradebot.common.brokerage.connector import Connector
-from fianchetto_tradebot.common.finance.amount import Amount
-from fianchetto_tradebot.common.finance.equity import Equity
-from fianchetto_tradebot.common.finance.option import Option
-from fianchetto_tradebot.common.finance.option_type import OptionType
-from fianchetto_tradebot.common.finance.price import Price
-from fianchetto_tradebot.common.order.action import Action
-from fianchetto_tradebot.common.order.expiry.good_for_day import GoodForDay
-from fianchetto_tradebot.common.order.order import Order
-from fianchetto_tradebot.common.order.order_line import OrderLine
-from fianchetto_tradebot.common.order.order_price import OrderPrice
-from fianchetto_tradebot.common.order.order_price_type import OrderPriceType
+from fianchetto_tradebot.common_models.finance.amount import Amount
+from fianchetto_tradebot.common_models.finance.equity import Equity
+from fianchetto_tradebot.common_models.finance.option import Option
+from fianchetto_tradebot.common_models.finance.option_type import OptionType
+from fianchetto_tradebot.common_models.finance.price import Price
+from fianchetto_tradebot.common_models.order.action import Action
+from fianchetto_tradebot.common_models.order.expiry.good_for_day import GoodForDay
+from fianchetto_tradebot.common_models.order.order import Order
+from fianchetto_tradebot.common_models.order.order_line import OrderLine
+from fianchetto_tradebot.common_models.order.order_price import OrderPrice
+from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceType
 from fianchetto_tradebot.oex.trade_execution_util import TradeExecutionUtil
 from fianchetto_tradebot.quotes.api.get_tradable_request import GetTradableRequest
 from fianchetto_tradebot.quotes.api.get_tradable_response import GetTradableResponse

@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-from fianchetto_tradebot.common.account.account import Account
+from fianchetto_tradebot.common_models.account.account import Account
 
 print(sys.path)
 

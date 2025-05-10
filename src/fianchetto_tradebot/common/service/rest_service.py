@@ -6,7 +6,7 @@ from fastapi import FastAPI, APIRouter
 
 from fianchetto_tradebot.common.brokerage.connector import Connector
 from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector, DEFAULT_CONFIG_FILE
-from fianchetto_tradebot.common.brokerage.brokerage import Brokerage
+from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
 from fianchetto_tradebot.common.brokerage.ikbr.ikbr_connector import IkbrConnector, DEFAULT_IKBR_CONFIG_FILE
 from fianchetto_tradebot.common.brokerage.schwab.schwab_connector import SchwabConnector, DEFAULT_SCHWAB_CONFIG_FILE
 from fianchetto_tradebot.common.service.service_key import ServiceKey

@@ -4,16 +4,16 @@ import os
 import pytest
 
 from fianchetto_tradebot.common.api.orders.etrade.etrade_order_service import ETradeOrderService
-from fianchetto_tradebot.common.api.orders.get_order_request import GetOrderRequest
-from fianchetto_tradebot.common.api.orders.order_metadata import OrderMetadata
+from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
+from fianchetto_tradebot.common_models.api.orders.order_metadata import OrderMetadata
 from fianchetto_tradebot.common.api.orders.order_service import OrderService
 from fianchetto_tradebot.common.api.orders.order_util import OrderUtil
-from fianchetto_tradebot.common.api.orders.place_order_request import PlaceOrderRequest
-from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
-from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
-from fianchetto_tradebot.common.api.orders.preview_order_response import PreviewOrderResponse
+from fianchetto_tradebot.common_models.api.orders.place_order_request import PlaceOrderRequest
+from fianchetto_tradebot.common_models.api.orders.place_order_response import PlaceOrderResponse
+from fianchetto_tradebot.common_models.api.orders.preview_order_request import PreviewOrderRequest
+from fianchetto_tradebot.common_models.api.orders.preview_order_response import PreviewOrderResponse
 from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
-from fianchetto_tradebot.common.order.order_type import OrderType
+from fianchetto_tradebot.common_models.order.order_type import OrderType
 from tests.common.api.orders.order_test_util import OrderTestUtil
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'integration_test_properties.ini')

@@ -1,6 +1,6 @@
-from fianchetto_tradebot.common.api.orders.get_order_request import GetOrderRequest
+from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
 from fianchetto_tradebot.common.exchange.etrade.etrade_connector import ETradeConnector
-from fianchetto_tradebot.oex.serving.oex_rest_service import OexRestService
+
 
 # TODO: Finish this
 

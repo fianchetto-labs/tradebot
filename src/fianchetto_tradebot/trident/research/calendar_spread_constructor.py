@@ -4,10 +4,10 @@ from pandas import DataFrame
 from sortedcontainers import SortedDict
 
 from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
-from fianchetto_tradebot.common.finance.amount import Amount
-from fianchetto_tradebot.common.finance.chain import ChainBuilder, Chain
-from fianchetto_tradebot.common.finance.equity import Equity
-from fianchetto_tradebot.common.finance.price import Price
+from fianchetto_tradebot.common_models.finance.amount import Amount
+from fianchetto_tradebot.common_models.finance.chain import ChainBuilder, Chain
+from fianchetto_tradebot.common_models.finance.equity import Equity
+from fianchetto_tradebot.common_models.finance.price import Price
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_request import GetOptionExpireDatesRequest
 from fianchetto_tradebot.quotes.api.get_options_chain_request import GetOptionsChainRequest
 from fianchetto_tradebot.quotes.api.get_options_chain_response import GetOptionsChainResponse

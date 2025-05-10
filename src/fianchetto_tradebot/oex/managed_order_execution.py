@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from fianchetto_tradebot.common.order.order_price import OrderPrice
-from fianchetto_tradebot.common.order.order_status import OrderStatus
+from fianchetto_tradebot.common_models.order.order_price import OrderPrice
+from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 
 
 class ManagedOrderExecution(BaseModel):

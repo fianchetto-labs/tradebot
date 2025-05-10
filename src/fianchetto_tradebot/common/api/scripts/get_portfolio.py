@@ -5,8 +5,8 @@ from fianchetto_tradebot.quotes.etrade.etrade_quote_service import ETradeQuoteSe
 from fianchetto_tradebot.quotes.quote_service import QuoteService
 
 from fianchetto_tradebot.common.api.portfolio.etrade_portfolio_service import ETradePortfolioService
-from fianchetto_tradebot.common.api.portfolio.get_portfolio_request import GetPortfolioRequest
-from fianchetto_tradebot.common.api.portfolio.get_portfolio_response import GetPortfolioResponse
+from fianchetto_tradebot.common_models.api.portfolio.get_portfolio_request import GetPortfolioRequest
+from fianchetto_tradebot.common_models.api.portfolio.get_portfolio_response import GetPortfolioResponse
 from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
 
 """

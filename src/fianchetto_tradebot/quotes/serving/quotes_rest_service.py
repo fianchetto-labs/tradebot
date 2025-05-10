@@ -8,13 +8,13 @@ from fianchetto_tradebot.common.api.accounts.get_account_balance_response import
 from fianchetto_tradebot.common.api.accounts.get_account_request import GetAccountRequest
 from fianchetto_tradebot.common.api.accounts.get_account_response import GetAccountResponse
 from fianchetto_tradebot.common.api.portfolio.etrade_portfolio_service import ETradePortfolioService
-from fianchetto_tradebot.common.api.portfolio.get_portfolio_request import GetPortfolioRequest
-from fianchetto_tradebot.common.api.portfolio.get_portfolio_response import GetPortfolioResponse
+from fianchetto_tradebot.common_models.api.portfolio.get_portfolio_request import GetPortfolioRequest
+from fianchetto_tradebot.common_models.api.portfolio.get_portfolio_response import GetPortfolioResponse
 from fianchetto_tradebot.common.api.portfolio.portfolio_service import PortfolioService
 from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
-from fianchetto_tradebot.common.brokerage.brokerage import Brokerage
-from fianchetto_tradebot.common.finance.equity import Equity
-from fianchetto_tradebot.common.finance.tradable import Tradable
+from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
+from fianchetto_tradebot.common_models.finance.equity import Equity
+from fianchetto_tradebot.common_models.finance.tradable import Tradable
 from fianchetto_tradebot.common.service.rest_service import RestService, ETRADE_ONLY_BROKERAGE_CONFIG
 from fianchetto_tradebot.common.service.service_key import ServiceKey
 from fianchetto_tradebot.quotes.api.get_option_expire_dates_request import GetOptionExpireDatesRequest

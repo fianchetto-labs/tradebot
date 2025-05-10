@@ -2,7 +2,7 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from fianchetto_tradebot.common.finance.amount import Amount
+from fianchetto_tradebot.common_models.finance.amount import Amount
 
 
 class BrokerageCallType(str, Enum):

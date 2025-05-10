@@ -5,17 +5,17 @@ import pytest
 from rauth import OAuth1Session
 
 from fianchetto_tradebot.common.api.orders.etrade.etrade_order_service import ETradeOrderService
-from fianchetto_tradebot.common.api.orders.get_order_response import GetOrderResponse
+from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
 from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector, DEFAULT_ETRADE_BASE_URL_FILE
-from fianchetto_tradebot.common.finance.amount import Amount
-from fianchetto_tradebot.common.finance.price import Price
-from fianchetto_tradebot.common.order.action import Action
-from fianchetto_tradebot.common.order.order import Order
-from fianchetto_tradebot.common.order.order_price import OrderPrice
-from fianchetto_tradebot.common.order.order_price_type import OrderPriceType
-from fianchetto_tradebot.common.order.order_status import OrderStatus
-from fianchetto_tradebot.common.order.placed_order import PlacedOrder
-from fianchetto_tradebot.common.order.placed_order_details import PlacedOrderDetails
+from fianchetto_tradebot.common_models.finance.amount import Amount
+from fianchetto_tradebot.common_models.finance.price import Price
+from fianchetto_tradebot.common_models.order.action import Action
+from fianchetto_tradebot.common_models.order.order import Order
+from fianchetto_tradebot.common_models.order.order_price import OrderPrice
+from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceType
+from fianchetto_tradebot.common_models.order.order_status import OrderStatus
+from fianchetto_tradebot.common_models.order.placed_order import PlacedOrder
+from fianchetto_tradebot.common_models.order.placed_order_details import PlacedOrderDetails
 from fianchetto_tradebot.oex.tactics.incremental_price_delta_execution_tactic import \
     IncrementalPriceDeltaExecutionTactic
 from tests.common.api.orders.order_test_util import OrderTestUtil

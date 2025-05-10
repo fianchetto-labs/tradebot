@@ -2,7 +2,7 @@ from datetime import datetime
 
 from fianchetto_tradebot.common.api.accounts.account_service import AccountService
 from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector
-from fianchetto_tradebot.common.finance.amount import Amount
+from fianchetto_tradebot.common_models.finance.amount import Amount
 from fianchetto_tradebot.common_models.account.account import Account
 from fianchetto_tradebot.common_models.account.account_balance import AccountBalance
 from fianchetto_tradebot.common_models.account.brokerage_call import BrokerageCall, BrokerageCallType

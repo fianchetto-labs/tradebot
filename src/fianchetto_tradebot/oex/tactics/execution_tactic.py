@@ -1,7 +1,7 @@
 from abc import ABC
 
-from fianchetto_tradebot.common.finance.amount import Amount
-from fianchetto_tradebot.common.order.placed_order import PlacedOrder
+from fianchetto_tradebot.common_models.finance.amount import Amount
+from fianchetto_tradebot.common_models.order.placed_order import PlacedOrder
 
 
 class ExecutionTactic(ABC):

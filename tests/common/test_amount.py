@@ -1,5 +1,5 @@
-from fianchetto_tradebot.common.finance.amount import Amount
-from fianchetto_tradebot.common.finance.currency import Currency
+from fianchetto_tradebot.common_models.finance.amount import Amount
+from fianchetto_tradebot.common_models.finance.currency import Currency
 
 
 def test_add_two_amounts():

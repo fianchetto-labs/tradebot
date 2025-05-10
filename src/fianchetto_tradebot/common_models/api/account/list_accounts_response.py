@@ -1,5 +1,5 @@
 from fianchetto_tradebot.common.account.account import Account
-from fianchetto_tradebot.common.api.response import Response
+from fianchetto_tradebot.common_models.api.response import Response
 
 
 class ListAccountsResponse(Response):
