@@ -4,9 +4,9 @@ from unittest.mock import patch, MagicMock
 import pytest
 from rauth import OAuth1Session
 
-from fianchetto_tradebot.common.api.orders.etrade.etrade_order_service import ETradeOrderService
+from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
-from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector, DEFAULT_ETRADE_BASE_URL_FILE
+from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector, DEFAULT_ETRADE_BASE_URL_FILE
 from fianchetto_tradebot.common_models.finance.amount import Amount
 from fianchetto_tradebot.common_models.finance.price import Price
 from fianchetto_tradebot.common_models.order.action import Action
@@ -16,7 +16,7 @@ from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceT
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.common_models.order.placed_order import PlacedOrder
 from fianchetto_tradebot.common_models.order.placed_order_details import PlacedOrderDetails
-from fianchetto_tradebot.oex.tactics.incremental_price_delta_execution_tactic import \
+from fianchetto_tradebot.server.oex.tactics.incremental_price_delta_execution_tactic import \
     IncrementalPriceDeltaExecutionTactic
 from tests.common.api.orders.order_test_util import OrderTestUtil
 

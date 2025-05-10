@@ -3,7 +3,7 @@ import datetime
 from fianchetto_tradebot.common_models.finance.amount import Amount
 from fianchetto_tradebot.common_models.finance.currency import Currency
 from fianchetto_tradebot.common_models.finance.equity import Equity
-from fianchetto_tradebot.trident.research.calendar_spread_constructor import CalendarSpreadCell
+from fianchetto_tradebot.server.trident.research.calendar_spread_constructor import CalendarSpreadCell
 
 expiry_1 = datetime.datetime(2024, 11, 18).date()
 expiry_2 = datetime.datetime(2024, 11, 22).date()

@@ -1,4 +1,4 @@
-from fianchetto_tradebot.common.io.rate_limiter import API, RATE_LIMIT_OK, TOO_MANY_REQUESTS_STR, THRESHOLD_COUNT
+from fianchetto_tradebot.server.common.io.rate_limiter import API, RATE_LIMIT_OK, TOO_MANY_REQUESTS_STR, THRESHOLD_COUNT
 
 DEFAULT_CUSTOMER_NAME = "customer1"
 

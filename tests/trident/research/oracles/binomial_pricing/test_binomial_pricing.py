@@ -1,6 +1,6 @@
 import pytest
 
-from fianchetto_tradebot.trident.research.oracles.binomial_pricing.binomial_pricing import binomial_call_option
+from fianchetto_tradebot.server.trident.research.oracles import binomial_call_option
 
 
 # Test cases

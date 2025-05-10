@@ -8,7 +8,7 @@ from fianchetto_tradebot.common_models.finance.exercise_style import ExerciseSty
 from fianchetto_tradebot.common_models.finance.option_type import OptionType
 from fianchetto_tradebot.common_models.finance.tradable import Tradable
 from fianchetto_tradebot.common_models.order.tradable_type import TradableType
-from fianchetto_tradebot.common.utils.local_ticker_lookup import LocalTickerLookup
+from fianchetto_tradebot.server.common.utils.local_ticker_lookup import LocalTickerLookup
 
 
 class Option(Tradable):

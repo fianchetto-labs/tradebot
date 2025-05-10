@@ -4,7 +4,7 @@ import os
 from fianchetto_tradebot.common_models.finance.equity import Equity
 from fianchetto_tradebot.common_models.finance.option import Option
 from fianchetto_tradebot.common_models.portfolio.portfolio_builder import PortfolioBuilder
-from fianchetto_tradebot.common.utils import parsing
+from fianchetto_tradebot.server.common.utils import parsing
 
 mara = Equity(ticker="MARA", company_name="Marathon Digital")
 sfix = Equity(ticker="SFIX", company_name="StitchFix")
