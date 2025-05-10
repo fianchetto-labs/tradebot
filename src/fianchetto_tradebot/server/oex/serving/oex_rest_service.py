@@ -42,13 +42,13 @@ class OexRestService(RestService):
 
     def _register_endpoints(self):
         super()._register_endpoints()
-        self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders', endpoint=self.list_orders, methods=['GET'], response_model=ListOrdersResponse)
-        self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/{order_id}', endpoint=self.get_order, methods=['GET'], response_model=GetOrderResponse)
-        self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/preview', endpoint=self.preview_order, methods=['POST'], response_model=PreviewOrderResponse)
-        self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/preview/{preview_id}', endpoint=self.place_order, methods=['POST'], response_model=PlaceOrderResponse)
-        self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/preview_and_place', endpoint=self.preview_and_place_order, methods=['POST'], response_model=PlaceOrderResponse)
-        self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/{order_id}', endpoint=self.cancel_order, methods=['DELETE'], response_model=CancelOrderResponse)
-        self.app.add_api_route(path='/api/v1/{brokerage}/{account_id}/orders/{order_id}', endpoint=self.cancel_order, methods=['PUT'], response_model=PlaceOrderResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders', endpoint=self.list_orders, methods=['GET'], response_model=ListOrdersResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders/{order_id}', endpoint=self.get_order, methods=['GET'], response_model=GetOrderResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders/preview', endpoint=self.preview_order, methods=['POST'], response_model=PreviewOrderResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders/preview/{preview_id}', endpoint=self.place_order, methods=['POST'], response_model=PlaceOrderResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders/preview_and_place', endpoint=self.preview_and_place_order, methods=['POST'], response_model=PlaceOrderResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders/{order_id}', endpoint=self.cancel_order, methods=['DELETE'], response_model=CancelOrderResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders/{order_id}', endpoint=self.cancel_order, methods=['PUT'], response_model=PlaceOrderResponse)
 
     def _setup_brokerage_services(self):
         self.order_services: dict[Brokerage, OrderService] = dict()
