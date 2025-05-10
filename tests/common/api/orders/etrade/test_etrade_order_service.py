@@ -6,22 +6,22 @@ import pytest
 from aioauth_client import OAuth1Client
 from rauth import OAuth1Session
 
-from fianchetto_tradebot.common.api.orders.etrade.etrade_order_service import ETradeOrderService
-from fianchetto_tradebot.common.api.orders.order_metadata import OrderMetadata
-from fianchetto_tradebot.common.api.orders.place_order_response import PlaceOrderResponse
-from fianchetto_tradebot.common.api.orders.preview_order_request import PreviewOrderRequest
-from fianchetto_tradebot.common.api.orders.preview_order_response import PreviewOrderResponse
-from fianchetto_tradebot.common.brokerage.etrade.etrade_connector import ETradeConnector, DEFAULT_ETRADE_BASE_URL_FILE
-from fianchetto_tradebot.common.finance.amount import Amount
-from fianchetto_tradebot.common.finance.currency import Currency
-from fianchetto_tradebot.common.finance.equity import Equity
-from fianchetto_tradebot.common.order.action import Action
-from fianchetto_tradebot.common.order.expiry.good_for_day import GoodForDay
-from fianchetto_tradebot.common.order.order import Order
-from fianchetto_tradebot.common.order.order_line import OrderLine
-from fianchetto_tradebot.common.order.order_price import OrderPrice
-from fianchetto_tradebot.common.order.order_price_type import OrderPriceType
-from fianchetto_tradebot.common.order.order_type import OrderType
+from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
+from fianchetto_tradebot.common_models.api.orders.order_metadata import OrderMetadata
+from fianchetto_tradebot.common_models.api.orders.place_order_response import PlaceOrderResponse
+from fianchetto_tradebot.common_models.api.orders.preview_order_request import PreviewOrderRequest
+from fianchetto_tradebot.common_models.api.orders.preview_order_response import PreviewOrderResponse
+from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector, DEFAULT_ETRADE_BASE_URL_FILE
+from fianchetto_tradebot.common_models.finance.amount import Amount
+from fianchetto_tradebot.common_models.finance.currency import Currency
+from fianchetto_tradebot.common_models.finance.equity import Equity
+from fianchetto_tradebot.common_models.order.action import Action
+from fianchetto_tradebot.common_models.order.expiry.good_for_day import GoodForDay
+from fianchetto_tradebot.common_models.order.order import Order
+from fianchetto_tradebot.common_models.order.order_line import OrderLine
+from fianchetto_tradebot.common_models.order.order_price import OrderPrice
+from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceType
+from fianchetto_tradebot.common_models.order.order_type import OrderType
 from tests.common.api.orders.order_test_util import OrderTestUtil
 
 # TODO: Adjust this suite to do both XML and JSON inputs ..

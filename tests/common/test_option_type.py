@@ -1,4 +1,4 @@
-from fianchetto_tradebot.common.finance.option_type import OptionType
+from fianchetto_tradebot.common_models.finance.option_type import OptionType
 
 
 def test_get_parse_from_string_put():

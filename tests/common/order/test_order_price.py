@@ -1,6 +1,6 @@
-from fianchetto_tradebot.common.finance.amount import ZERO, Amount
-from fianchetto_tradebot.common.order.order_price import OrderPrice
-from fianchetto_tradebot.common.order.order_price_type import OrderPriceType
+from fianchetto_tradebot.common_models.finance.amount import ZERO, Amount
+from fianchetto_tradebot.common_models.order.order_price import OrderPrice
+from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceType
 
 
 class TestOrderPrice:

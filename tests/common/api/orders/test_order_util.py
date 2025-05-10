@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 from dateutil.tz import tz
 
-from fianchetto_tradebot.common.api.orders.order_util import OrderUtil
+from fianchetto_tradebot.server.common.api.orders.order_util import OrderUtil
 
 
 class TestOrderUtil:

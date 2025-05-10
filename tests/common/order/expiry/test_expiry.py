@@ -1,7 +1,7 @@
 import datetime
 
-from fianchetto_tradebot.common.order.expiry.fill_or_kill import FillOrKill
-from fianchetto_tradebot.common.order.expiry.good_for_sixty_days import GoodForSixtyDays
+from fianchetto_tradebot.common_models.order.expiry.fill_or_kill import FillOrKill
+from fianchetto_tradebot.common_models.order.expiry.good_for_sixty_days import GoodForSixtyDays
 
 
 def test_fill_or_kill_is_all_or_nothing():

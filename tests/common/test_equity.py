@@ -1,6 +1,6 @@
 import pytest as pytest
 
-from fianchetto_tradebot.common.finance.equity import Equity
+from fianchetto_tradebot.common_models.finance.equity import Equity
 
 
 def test_equity_string():

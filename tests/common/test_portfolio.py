@@ -1,7 +1,7 @@
-from fianchetto_tradebot.common.finance.amount import Amount
-from fianchetto_tradebot.common.finance.currency import Currency
-from fianchetto_tradebot.common.finance.option_type import OptionType
-from fianchetto_tradebot.common.portfolio.portfolio_builder import PortfolioBuilder, Portfolio
+from fianchetto_tradebot.common_models.finance.amount import Amount
+from fianchetto_tradebot.common_models.finance.currency import Currency
+from fianchetto_tradebot.common_models.finance.option_type import OptionType
+from fianchetto_tradebot.common_models.portfolio.portfolio_builder import PortfolioBuilder, Portfolio
 from tests.common import test_option
 from tests.common.util.test_object_util import get_sample_option, get_sample_equity
 
