@@ -1,3 +1,5 @@
+from datetime import date
+
 from dateutil.parser import parse
 
 from fianchetto_tradebot.common_models.api.account.get_account_balance_request import GetAccountBalanceRequest
@@ -5,6 +7,9 @@ from fianchetto_tradebot.common_models.api.account.get_account_balance_response 
 from fianchetto_tradebot.common_models.api.account.get_account_request import GetAccountRequest
 from fianchetto_tradebot.common_models.api.account.get_account_response import GetAccountResponse
 from fianchetto_tradebot.common_models.api.account.list_accounts_response import ListAccountsResponse
+from fianchetto_tradebot.common_models.finance.amount import Amount
+from fianchetto_tradebot.common_models.finance.option import Option
+from fianchetto_tradebot.common_models.finance.option_type import OptionType
 from fianchetto_tradebot.server.common.api.accounts.account_service import AccountService
 from fianchetto_tradebot.server.common.api.accounts.etrade.etrade_account_service import ETradeAccountService
 from fianchetto_tradebot.server.common.api.portfolio.etrade_portfolio_service import ETradePortfolioService
@@ -43,7 +48,7 @@ class QuotesRestService(RestService):
         self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/portfolio', endpoint=self.get_account_portfolio, methods=['GET'], response_model=GetPortfolioResponse)
 
         # Quotes Endpoints
-        self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}', endpoint=self.get_equity_quote, methods=['GET'], response_model=GetTradableResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/quotes/tradable/{symbol}', endpoint=self.get_tradable_quote, methods=['GET'], response_model=GetTradableResponse)
         self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}/options_chain', endpoint=self.get_options_chain, methods=['GET'], response_model=GetOptionsChainResponse)
         self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}/options_chain/expiry', endpoint=self.get_options_chain_expiries, methods=['GET'], response_model=GetOptionExpireDatesResponse)
         self.app.add_api_route(path='/api/v1/{brokerage}/quotes/equity/{equity}/options_chain/expiry/{expiry}', endpoint=self.get_options_chain_by_expiry, methods=['GET'], response_model=GetOptionsChainResponse)
@@ -79,9 +84,22 @@ class QuotesRestService(RestService):
 
         return get_portfolio_response
 
-    def get_equity_quote(self, brokerage, equity):
+    def get_tradable_quote(self, brokerage:str, symbol:str):
+        parsed = symbol.split(':')
+        if len(parsed) == 1:
+            ticker = parsed[0]
+            tradable: Tradable = Equity(ticker=ticker)
+        elif len(parsed) == 6:
+            ticker, year, month, day, option_type, strike_price = parsed
+            option_type: OptionType = OptionType[option_type]
+            expiry = date(year=int(year), month=int(month), day=int(day))
+            tradable: Tradable = Option(equity=Equity(ticker=ticker), type=option_type, strike=Amount.from_string(strike_price),
+                                        expiry=expiry)
+        else:
+            raise Exception(f"Malformed symbol {symbol}")
+
         quotes_service: QuotesService = self.quotes_services[Brokerage[brokerage.upper()]]
-        tradable: Tradable = Equity(ticker=equity)
+
         tradeable_request: GetTradableRequest = GetTradableRequest(tradable=tradable)
         get_tradable_response: GetTradableResponse = quotes_service.get_tradable_quote(tradeable_request)
 
