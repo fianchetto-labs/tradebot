@@ -54,6 +54,10 @@ class Order(BaseModel):
 
         # Only Options
         # Now we need more info
+        if len(self.order_lines) == 1:
+            return OrderType.OPTN
+
+        # Some kind of option spread
         options: list[(Option, Action)] = [(order_line.tradable, order_line.action) for order_line in self.order_lines]
 
         # TODO: Be clever here, maybe. Otherwise, just enumerate the types
@@ -62,8 +66,6 @@ class Order(BaseModel):
         # TODO: This is for the ratios. Finish later.
         num_puts = sum(1 for option in option_types if option[0].type == OptionType.PUT)
         num_calls = sum(1 for option in option_types if option[0].type == OptionType.CALL)
-
-
 
         return OrderType.SPREADS
 
