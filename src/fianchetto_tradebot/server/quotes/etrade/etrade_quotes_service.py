@@ -39,7 +39,7 @@ class ETradeQuotesService(QuotesService):
             expiry = as_option.expiry
             strike = as_option.strike
             option_type = as_option.type
-            symbols = f"{ticker}:{expiry.year}:{expiry.month}:{expiry.day}:{option_type}:{strike}"
+            symbols = f"{ticker}:{expiry.year}:{expiry.month}:{expiry.day}:{option_type.value}:{strike.to_float()}"
         elif isinstance(tradable, Equity):
             as_option: Equity = tradable
             symbols = as_option.ticker

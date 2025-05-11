@@ -15,20 +15,22 @@ config = configparser.ConfigParser()
 
 DEFAULT_CONFIG_FILE = os.path.join(os.path.dirname(__file__), './config.ini')
 
-DEFAULT_SESSION_FILE = os.path.join(os.path.dirname(__file__), '/tmp/fianchetto_serialized/etrade_session.out')
-DEFAULT_ASYNC_SESSION_FILE = os.path.join(os.path.dirname(__file__), '/tmp/fianchetto_serialized/serialized/async_etrade_session.out')
+BROKERAGE_NAME = "ETRADE"
+BROKERAGE_DIR = f"{BROKERAGE_NAME}_fianchetto_serialized"
 
-DEFAULT_ETRADE_BASE_URL_FILE = os.path.join(os.path.dirname(__file__), '/tmp/fianchetto_serialized/etrade_base_url.out')
+# TODO: Generalize this across all exchanges
+DEFAULT_SESSION_FILE = os.path.join(os.path.dirname(__file__), f'/tmp/{BROKERAGE_DIR}/session.out')
+DEFAULT_ASYNC_SESSION_FILE = os.path.join(os.path.dirname(__file__), f'/tmp/{BROKERAGE_DIR}/async_session.out')
+DEFAULT_ETRADE_BASE_URL_FILE = os.path.join(os.path.dirname(__file__), f'/tmp/{BROKERAGE_DIR}/base_url.out')
 
 # For debugging
-REQUEST_TOKEN_FILE = os.path.join(os.path.dirname(__file__), '/tmp/fianchetto_serialized/etrade_request_token.out')
-REQUEST_TOKEN_SECRET_FILE =os.path.join(os.path.dirname(__file__), '/tmp/fianchetto_serialized/etrade_request_token_secret.out')
-OAUTH_TOKEN_FILE = os.path.join(os.path.dirname(__file__), '/tmp/fianchetto_serialized/etrade_oauth_token.out')
-OAUTH_TOKEN_SECRET_FILE =os.path.join(os.path.dirname(__file__), '/tmp/fianchetto_serialized/etrade_auth_token_secret.out')
+REQUEST_TOKEN_FILE = os.path.join(os.path.dirname(__file__), f'/tmp/{BROKERAGE_DIR}/request_token.out')
+REQUEST_TOKEN_SECRET_FILE =os.path.join(os.path.dirname(__file__), f'/tmp/{BROKERAGE_DIR}/request_token_secret.out')
+OAUTH_TOKEN_FILE = os.path.join(os.path.dirname(__file__), f'/tmp/{BROKERAGE_DIR}/oauth_token.out')
+OAUTH_TOKEN_SECRET_FILE =os.path.join(os.path.dirname(__file__), f'/tmp/{BROKERAGE_DIR}/auth_token_secret.out')
 
 logger = logging.getLogger(__name__)
 
-BROKERAGE_NAME = "E*TRADE"
 
 class ETradeConnector(Connector):
     def __init__(self, config_file=DEFAULT_CONFIG_FILE, session_file=DEFAULT_SESSION_FILE, async_session_file=DEFAULT_ASYNC_SESSION_FILE, base_url_file=DEFAULT_ETRADE_BASE_URL_FILE):
