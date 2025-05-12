@@ -121,6 +121,10 @@ class ETradeOrderService(OrderService):
         order_type = order_metadata.order_type
         account_id = order_metadata.account_id
         client_order_id = order_metadata.client_order_id
+        if hasattr(preview_order_request, 'previous_order_id'):
+            previous_order_id = preview_order_request['previous_order_id']
+        else:
+            previous_order_id = None
 
         headers = {"Content-Type": "application/xml", "consumerKey": account_id}
         path = f"/v1/accounts/{account_id}/orders/preview.json"
@@ -128,9 +132,9 @@ class ETradeOrderService(OrderService):
         payload = ETradeOrderService._build_preview_order_xml(preview_order_request.order, order_type, client_order_id)
 
         url = self.base_url + path
-        return self._preview_order_resiliently(url, headers, payload, order_metadata)
+        return self._preview_order_resiliently(url, headers, payload, order_metadata, previous_order_id)
 
-    def _preview_order_resiliently(self, url: object, headers: object, payload: object, order_metadata: object, previous_order_id = None,
+    def _preview_order_resiliently(self, url: object, headers: object, payload: object, order_metadata: object, previous_order_id: str = None,
                                    num_retries: int = DEFAULT_NUM_RETRIES) -> PreviewOrderResponse:
         if num_retries < 0:
             raise Exception(f"Retry count must not be negative! - {num_retries} provided")
@@ -228,7 +232,7 @@ class ETradeOrderService(OrderService):
         order_metadata = preview_order_request.order_metadata
         preview_order_response: PreviewOrderResponse = self.preview_order(preview_order_request)
         preview_id = preview_order_response.preview_id
-        place_order_request: PlaceOrderRequest = PlaceOrderRequest(order_metadata, preview_id, preview_order_request.order)
+        place_order_request: PlaceOrderRequest = PlaceOrderRequest(order_metadata=order_metadata, preview_id=preview_id, order=preview_order_request.order)
         place_order_response: PlaceOrderResponse = self.place_order(place_order_request)
 
         return place_order_response

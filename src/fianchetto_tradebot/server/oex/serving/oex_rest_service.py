@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from fianchetto_tradebot.common_models.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common_models.api.orders.cancel_order_response import CancelOrderResponse
+from fianchetto_tradebot.common_models.api.orders.preview_modify_order_request import PreviewModifyOrderRequest
 from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
 from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
@@ -120,10 +121,11 @@ class OexRestService(RestService):
 
         return cancel_order_response
 
-    def modify_order(self, exchange: str, account_id: str, order_id: str, preview_order_request: PreviewOrderRequest):
-        order_service: OrderService = self.order_services[Brokerage[exchange.upper()]]
+    def modify_order(self, brokerage: str, account_id: str, order_id: str, preview_modify_order_request: PreviewModifyOrderRequest):
+        order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
 
         # cancel
+        print(f"oex-service-modify: Cancelling order {order_id}")
         cancel_order_request = CancelOrderRequest(account_id=account_id, order_id=order_id)
         cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
 
@@ -131,8 +133,10 @@ class OexRestService(RestService):
         if cancel_order_response.request_status is not RequestStatus.SUCCESS:
             return {"error": "Order not cancelled. Please retry"}, 500
 
+        print(f"oex-service-modify: Cancelled order {order_id}")
+
         # preview_and_place
-        place_order_response: PlaceOrderResponse = order_service.preview_and_place_order(preview_order_request)
+        place_order_response: PlaceOrderResponse = order_service.preview_and_place_order(preview_modify_order_request)
         return place_order_response
 
 

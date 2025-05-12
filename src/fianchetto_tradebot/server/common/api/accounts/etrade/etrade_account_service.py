@@ -69,6 +69,9 @@ class ETradeAccountService(AccountService):
             code = data['error']['code']
             message = data['error']['message']
             raise Exception(f"Error from E*Trade: {code}: {message}")
+        if "AccountListResponse" not in data:
+            raise Exception(f"AccountListResponse could not be parsed - {data}")
+
         account_list_response = data["AccountListResponse"]
         accounts: list = account_list_response["Accounts"]
 
