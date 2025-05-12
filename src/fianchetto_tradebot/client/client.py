@@ -265,10 +265,11 @@ if __name__ == "__main__":
     account_id = '1XRq48Mv_HUiP8xmEZRPnA'
     etrade_client: Client = Client(Brokerage.ETRADE)
     a: Account = etrade_client.get_account(account_id)
-    p: Portfolio = etrade_client.get_portfolio(account_id)
     print(a)
+    p: Portfolio = etrade_client.get_portfolio(account_id)
     print(p)
 
+    # This can be hidden behind some factory methods, as this is a little overly detailed.
     ol: OrderLine = OrderLine(tradable=Equity(ticker="GE"), action=Action.BUY, quantity=2)
     order_price: OrderPrice = OrderPrice(order_price_type=OrderPriceType.LIMIT, price=Amount(whole=100, part=1))
     o: Order = Order(expiry=GoodUntilCancelled(), order_lines = [ol], order_price=order_price)
@@ -283,10 +284,11 @@ if __name__ == "__main__":
     order_id = pl_or.order_id
     print(f"Order id: {order_id} placed.")
 
-    #c: CancelOrderResponse = etrade_client.cancel_order(account_id, order_id)
-    #print(c)
-
     o.order_price.price += Amount(whole=0, part=1)
     print(f"About to modify order {order_id}")
     m_or: PlaceOrderResponse = etrade_client.modify_order(account_id, o, order_id)
-    print(f"New order: {m_or.order_id}")
+    new_order_id = m_or.order_id
+    print(f"New order: {new_order_id}")
+
+    c: CancelOrderResponse = etrade_client.cancel_order(account_id, new_order_id)
+    print(c)
