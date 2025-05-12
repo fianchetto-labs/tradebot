@@ -236,6 +236,8 @@ class ETradeOrderService(OrderService):
     @staticmethod
     def _parse_place_order_response(response, order_metadata: OrderMetadata, preview_id: str, previous_order_id=None)-> PlaceOrderResponse:
         data = json.loads(response.text)
+        if "PlaceOrderResponse" not in data:
+            raise Exception(f"PlaceOrderResponse not present in data: {data}")
         place_order_response = data["PlaceOrderResponse"]
         order_type = place_order_response['orderType'] if 'orderType' in place_order_response else None
 
@@ -294,7 +296,7 @@ class ETradeOrderService(OrderService):
                 code = error['code'] if 'code' in error else None
                 message = error['message'] if 'message' in error else None
 
-                order_placement_message: OrderPlacementMessage = ETradeOrderResponseMessage(type=str(code), message=message)
+                order_placement_message: OrderPlacementMessage = ETradeOrderResponseMessage(code=str(code), message=message)
 
                 if NOT_ENOUGH_SHARES_MSG_PORTION in message or code == PARTIAL_EXECUTED_CODE:
                     request_status = RequestStatus.FAILURE_RETRY_SUGGESTED

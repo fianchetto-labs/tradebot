@@ -12,4 +12,4 @@ class PreviewOrderResponse(Response):
     preview_id: Optional[str]
     preview_order_info: Optional[OrderPreview]
     request_status: RequestStatus = RequestStatus.SUCCESS
-    order_message: Optional[OrderPlacementMessage] = []
+    order_message: Optional[list[OrderPlacementMessage]] = []

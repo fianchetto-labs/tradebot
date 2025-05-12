@@ -112,7 +112,9 @@ class Amount(BaseModel):
         return f"{self.to_float():.2f} {self.currency.value}"
 
     def __repr__(self):
-        return f"Amount(whole={self.whole}, part={self.part}, currency={self.currency}, negative={self.negative})"
+        # The currency field is hacky. This is due to the fact that the enum inherits from `str`, which
+        # helps with Pydantic, but has this very odd side-effect.
+        return f"Amount(whole={self.whole}, part={self.part}, currency=Currency.{self.currency.name}, negative={self.negative})"
 
     def __abs__(self):
         return Amount.from_float(abs(self.to_float()))

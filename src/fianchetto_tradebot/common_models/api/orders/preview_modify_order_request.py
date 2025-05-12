@@ -3,6 +3,4 @@ from fianchetto_tradebot.common_models.api.orders.preview_order_request import P
 from fianchetto_tradebot.common_models.order.order import Order
 
 class PreviewModifyOrderRequest(PreviewOrderRequest):
-    def __init__(self, order_metadata: OrderMetadata, order_id: str, order: Order):
-        super().__init__(order_metadata, order)
-        self.order_id_to_modify = order_id
+    order_id_to_modify: str
