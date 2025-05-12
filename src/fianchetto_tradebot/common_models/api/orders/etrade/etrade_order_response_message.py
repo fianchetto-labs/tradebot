@@ -2,5 +2,4 @@ from fianchetto_tradebot.common_models.api.orders.order_placement_message import
 
 
 class ETradeOrderResponseMessage(OrderPlacementMessage):
-    type: str
     code: str

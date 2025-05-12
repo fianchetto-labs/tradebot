@@ -90,7 +90,7 @@ class ETradeQuotesService(QuotesService):
     def get_options_chain(self, get_options_chain_request: GetOptionsChainRequest)->GetOptionsChainResponse:
         ticker = get_options_chain_request.ticker
 
-        if get_options_chain_request.expiry:
+        if hasattr(get_options_chain_request, 'expiry'):
             expiries = [get_options_chain_request.expiry]
         else:
             expiries: list[date] = self.get_option_expire_dates(GetOptionExpireDatesRequest(ticker=ticker)).expire_dates

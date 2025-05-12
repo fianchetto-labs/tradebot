@@ -7,6 +7,8 @@ from fianchetto_tradebot.common_models.api.account.get_account_balance_response 
 from fianchetto_tradebot.common_models.api.account.get_account_request import GetAccountRequest
 from fianchetto_tradebot.common_models.api.account.get_account_response import GetAccountResponse
 from fianchetto_tradebot.common_models.api.account.list_accounts_response import ListAccountsResponse
+from fianchetto_tradebot.common_models.api.quotes.get_options_chain_at_expiry_request import \
+    GetOptionsChainAtExpiryRequest
 from fianchetto_tradebot.common_models.finance.amount import Amount
 from fianchetto_tradebot.common_models.finance.option import Option
 from fianchetto_tradebot.common_models.finance.option_type import OptionType
@@ -106,6 +108,9 @@ class QuotesRestService(RestService):
         return get_tradable_response
 
     def get_options_chain(self, brokerage, equity):
+        # TODO: Noticing a strange pattern of converting from the (extends Request) into path params,
+        # back into (extends Request), etc.
+        # I feel like we should decide in which contexts we use which and possible avoid unnecessary and confusing conversions.
         quotes_service: QuotesService = self.quotes_services[Brokerage[brokerage.upper()]]
 
         get_options_chain_request: GetOptionsChainRequest = GetOptionsChainRequest(ticker=equity)
@@ -128,7 +133,7 @@ class QuotesRestService(RestService):
         # Document for format in which to get this (yyyy_mm_dd)
         expiry_date = parse(expiry)
 
-        get_options_chain_request: GetOptionsChainRequest = GetOptionsChainRequest(ticker=equity, expiry=expiry_date)
+        get_options_chain_request: GetOptionsChainAtExpiryRequest = GetOptionsChainAtExpiryRequest(ticker=equity, expiry=expiry_date)
         get_options_chain_response: GetOptionsChainResponse = quotes_service.get_options_chain(get_options_chain_request)
 
         return get_options_chain_response

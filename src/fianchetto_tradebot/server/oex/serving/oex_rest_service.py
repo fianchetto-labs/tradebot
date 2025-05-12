@@ -48,7 +48,7 @@ class OexRestService(RestService):
         self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders/preview/{preview_id}', endpoint=self.place_order, methods=['POST'], response_model=PlaceOrderResponse)
         self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders/preview_and_place', endpoint=self.preview_and_place_order, methods=['POST'], response_model=PlaceOrderResponse)
         self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders/{order_id}', endpoint=self.cancel_order, methods=['DELETE'], response_model=CancelOrderResponse)
-        self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders/{order_id}', endpoint=self.cancel_order, methods=['PUT'], response_model=PlaceOrderResponse)
+        self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders/{order_id}', endpoint=self.modify_order, methods=['PUT'], response_model=PlaceOrderResponse)
 
     def _setup_brokerage_services(self):
         self.order_services: dict[Brokerage, OrderService] = dict()
