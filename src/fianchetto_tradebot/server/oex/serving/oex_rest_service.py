@@ -75,24 +75,20 @@ class OexRestService(RestService):
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
         list_order_request = ListOrdersRequest(account_id=account_id, status=status, from_date=from_date, to_date=to_date, count=count)
 
-        resp: ListOrdersResponse = order_service.list_orders(list_order_request)
-        return resp
+        return order_service.list_orders(list_order_request)
 
     def get_order(self, brokerage: str, account_id: str, order_id: str):
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
         get_order_request = GetOrderRequest(account_id=account_id, order_id=order_id)
 
-        resp: GetOrderResponse = order_service.get_order(get_order_request)
-        return resp
+        return order_service.get_order(get_order_request)
 
     def preview_order(self, brokerage, account_id: str, preview_order_request: PreviewOrderRequest):
         if not preview_order_request.order_metadata.account_id:
             preview_order_request.order_metadata.account_id = account_id
 
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
-        response: PreviewOrderResponse = order_service.preview_order(preview_order_request)
-
-        return response
+        return order_service.preview_order(preview_order_request)
 
     def place_order(self, brokerage, account_id: str, preview_id: str, place_order_request: PlaceOrderRequest):
         if not place_order_request.order_metadata.account_id:
@@ -101,44 +97,24 @@ class OexRestService(RestService):
         place_order_request.preview_id = preview_id
 
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
-        response: PlaceOrderResponse = order_service.place_order(place_order_request)
-
-        return response
+        return order_service.place_order(place_order_request)
 
     def preview_and_place_order(self, brokerage, account_id: str, preview_order_request: PreviewOrderRequest):
         if not preview_order_request.order_metadata.account_id:
             preview_order_request.order_metadata.account_id = account_id
 
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
-        place_order_response: PlaceOrderResponse = order_service.preview_and_place_order(preview_order_request)
-
-        return place_order_response
+        return  order_service.preview_and_place_order(preview_order_request)
 
     def cancel_order(self, brokerage: str, account_id: str, order_id: str):
         cancel_order_request = CancelOrderRequest(account_id=account_id, order_id=order_id)
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
-        cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
+        return order_service.cancel_order(cancel_order_request)
 
-        return cancel_order_response
-
-    def modify_order(self, brokerage: str, account_id: str, order_id: str, preview_modify_order_request: PreviewModifyOrderRequest):
+    def modify_order(self, brokerage: str, preview_modify_order_request: PreviewModifyOrderRequest):
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
 
-        # cancel
-        print(f"oex-service-modify: Cancelling order {order_id}")
-        cancel_order_request = CancelOrderRequest(account_id=account_id, order_id=order_id)
-        cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
-
-        # TODO: Validation here in case the response is somehow unsatisfactory
-        if cancel_order_response.request_status is not RequestStatus.SUCCESS:
-            return {"error": "Order not cancelled. Please retry"}, 500
-
-        print(f"oex-service-modify: Cancelled order {order_id}")
-
-        # preview_and_place
-        place_order_response: PlaceOrderResponse = order_service.preview_and_place_order(preview_modify_order_request)
-        return place_order_response
-
+        return order_service.modify_order(preview_modify_order_request)
 
 if __name__ == "__main__":
     oex_app = OexRestService()
