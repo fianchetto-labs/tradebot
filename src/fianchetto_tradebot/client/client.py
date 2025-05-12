@@ -3,7 +3,6 @@ from random import choice
 from typing import Optional, Type
 
 import requests
-from pandas.io.clipboard import clipboard_get
 from pydantic import BaseModel
 
 from fianchetto_tradebot.common_models.account.account import Account
@@ -19,6 +18,7 @@ from fianchetto_tradebot.common_models.api.orders.order_metadata import OrderMet
 from fianchetto_tradebot.common_models.api.orders.place_modify_order_request import PlaceModifyOrderRequest
 from fianchetto_tradebot.common_models.api.orders.place_order_request import PlaceOrderRequest
 from fianchetto_tradebot.common_models.api.orders.place_order_response import PlaceOrderResponse
+from fianchetto_tradebot.common_models.api.orders.preview_modify_order_request import PreviewModifyOrderRequest
 from fianchetto_tradebot.common_models.api.orders.preview_order_request import PreviewOrderRequest
 from fianchetto_tradebot.common_models.api.orders.preview_order_response import PreviewOrderResponse
 from fianchetto_tradebot.common_models.api.orders.preview_place_order_request import PreviewPlaceOrderRequest
@@ -35,14 +35,13 @@ from fianchetto_tradebot.common_models.finance.amount import Amount
 from fianchetto_tradebot.common_models.finance.equity import Equity
 from fianchetto_tradebot.common_models.order.action import Action
 from fianchetto_tradebot.common_models.order.expiry.good_until_cancelled import GoodUntilCancelled
-from fianchetto_tradebot.common_models.order.expiry.order_expiry import OrderExpiry
 from fianchetto_tradebot.common_models.order.order import Order
 from fianchetto_tradebot.common_models.order.order_line import OrderLine
 from fianchetto_tradebot.common_models.order.order_price import OrderPrice
 from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceType
 from fianchetto_tradebot.common_models.portfolio.portfolio_builder import Portfolio
 
-DEFAULT_TIMEOUT_SECS = 500
+DEFAULT_TIMEOUT_SECS = 300
 DEFAULT_OEX_URL = "http://localhost:8080"
 DEFAULT_QUOTES_URL = "http://localhost:8081"
 
@@ -131,6 +130,20 @@ class Client:
                                                  path_params=path_params)
         return response
 
+    def modify_order(self, account_id: str, order: Order, order_id_to_modify: str, client_order_id: str=None)->PlaceOrderResponse:
+        if not client_order_id:
+            client_order_id = Client.generate_random_alphanumeric()
+
+        order_metadata: OrderMetadata = OrderMetadata(order_type=order.get_order_type(),
+                                                      account_id=account_id, client_order_id=client_order_id)
+        request = PreviewModifyOrderRequest(order_metadata=order_metadata, order=order, order_id_to_modify=order_id_to_modify)
+        path, base_uri = self.get_path(request)
+        path_params = {"brokerage": str(self.brokerage.value), "account_id": account_id, "order_id": order_id}
+
+        response: PlaceOrderResponse = self.put(path=path, base_uri=base_uri, request_body=request, response_model=PlaceOrderResponse,
+                                                 path_params=path_params)
+        return response
+
     def cancel_order(self, account_id: str, order_id: str):
         request: CancelOrderRequest = CancelOrderRequest(account_id=account_id, order_id=order_id)
         path, base_uri = self.get_path(request)
@@ -196,6 +209,26 @@ class Client:
         response.raise_for_status()
         return response_model.model_validate(response.json())
 
+    def put(
+        self,
+        path: str,
+        base_uri: str,
+        request_body: BaseModel,
+        response_model: Type[BaseModel],
+        path_params: Optional[dict] = None,
+    ) -> BaseModel:
+        url = self._format_path(path, base_uri, path_params)
+        if hasattr(self, 'session'):
+            response = self.session.put(
+                url, json=request_body.model_dump(), timeout=self.timeout
+            )
+        else:
+            response = requests.put(
+                url, json=request_body.model_dump(), timeout=self.timeout
+            )
+        response.raise_for_status()
+        return response_model.model_validate(response.json())
+
     def _format_path(self, path: str, base_uri:str, path_params: Optional[dict]) -> str:
         if path_params:
             path = path.format(**path_params)
@@ -220,7 +253,7 @@ class Client:
             PreviewOrderRequest: ("/api/v1/{brokerage}/accounts/{account_id}/orders/preview", DEFAULT_OEX_URL),
             PreviewPlaceOrderRequest: ("/api/v1/{brokerage}/accounts/{account_id}/orders/preview_and_place", DEFAULT_OEX_URL),
             # TODO: Add PlaceModifyOrderRequest once FIA-57 is complete
-            PlaceModifyOrderRequest: ("/api/v1/{brokerage}/accounts/{account_id}/orders/{order_id}", DEFAULT_OEX_URL)
+            PreviewModifyOrderRequest: ("/api/v1/{brokerage}/accounts/{account_id}/orders/{order_id}", DEFAULT_OEX_URL)
         }
 
     @staticmethod
@@ -248,6 +281,12 @@ if __name__ == "__main__":
     pl_or: PlaceOrderResponse = etrade_client.place_order(account_id, o, preview_id, client_id)
     print(pl_or)
     order_id = pl_or.order_id
+    print(f"Order id: {order_id} placed.")
 
-    c: CancelOrderResponse = etrade_client.cancel_order(account_id, order_id)
-    print(c)
+    #c: CancelOrderResponse = etrade_client.cancel_order(account_id, order_id)
+    #print(c)
+
+    o.order_price.price += Amount(whole=0, part=1)
+    print(f"About to modify order {order_id}")
+    m_or: PlaceOrderResponse = etrade_client.modify_order(account_id, o, order_id)
+    print(f"New order: {m_or.order_id}")
