@@ -15,7 +15,6 @@ from fianchetto_tradebot.common_models.api.orders.place_order_request import Pla
 from fianchetto_tradebot.common_models.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common_models.api.orders.preview_order_request import PreviewOrderRequest
 from fianchetto_tradebot.common_models.api.orders.preview_order_response import PreviewOrderResponse
-from fianchetto_tradebot.common_models.api.request_status import RequestStatus
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus

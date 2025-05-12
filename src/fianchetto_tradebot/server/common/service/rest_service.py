@@ -35,8 +35,6 @@ class RestService(ABC):
         self.service_key = service_key
         self.app = FastAPI()
         self.router = APIRouter()
-        #self._app.json_provider_class = CustomJSONProvider(self._app)  # Tell Flask to use the custom encoder
-        #self._app.json = CustomJSONProvider(self._app)
         self._establish_connections(config_files=credential_config_files)
         self._register_endpoints()
         self._setup_brokerage_services()
