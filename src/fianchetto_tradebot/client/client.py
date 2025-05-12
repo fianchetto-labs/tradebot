@@ -96,7 +96,7 @@ class Client:
 
     def preview_order(self, account_id: str, order: Order, client_order_id: str=None)->PreviewOrderResponse:
         if not client_order_id:
-            client_order_id = self.generate_random_alphanumeric()
+            client_order_id = Client.generate_random_alphanumeric()
         order_metadata: OrderMetadata = OrderMetadata(order_type=order.get_order_type(),
                                                       account_id=account_id, client_order_id=client_order_id)
         request = PreviewOrderRequest(order_metadata=order_metadata, order=order)
@@ -109,7 +109,7 @@ class Client:
 
     def preview_and_place_order(self, account_id: str, order: Order, client_order_id: str=None)->PlaceOrderResponse:
         if not client_order_id:
-            client_order_id = self.generate_random_alphanumeric()
+            client_order_id = Client.generate_random_alphanumeric()
         order_metadata: OrderMetadata = OrderMetadata(order_type=order.get_order_type(),
                                                       account_id=account_id, client_order_id=client_order_id)
         request = PreviewPlaceOrderRequest(order_metadata=order_metadata, order=order)
@@ -223,17 +223,18 @@ class Client:
             PlaceModifyOrderRequest: ("/api/v1/{brokerage}/accounts/{account_id}/orders/{order_id}", DEFAULT_OEX_URL)
         }
 
-    def generate_random_alphanumeric(self, length=15):
+    @staticmethod
+    def generate_random_alphanumeric(length=15):
         characters = string.ascii_letters + string.digits
         return ''.join(choice(characters) for _ in range(length))
 
 if __name__ == "__main__":
     account_id = '1XRq48Mv_HUiP8xmEZRPnA'
     etrade_client: Client = Client(Brokerage.ETRADE)
-    #a: Account = etrade_client.get_account(account_id)
-    #p: Portfolio = etrade_client.get_portfolio(account_id)
-    #print(a)
-    #print(p)
+    a: Account = etrade_client.get_account(account_id)
+    p: Portfolio = etrade_client.get_portfolio(account_id)
+    print(a)
+    print(p)
 
     ol: OrderLine = OrderLine(tradable=Equity(ticker="GE"), action=Action.BUY, quantity=2)
     order_price: OrderPrice = OrderPrice(order_price_type=OrderPriceType.LIMIT, price=Amount(whole=100, part=1))
