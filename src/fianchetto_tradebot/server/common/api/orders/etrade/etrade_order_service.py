@@ -25,6 +25,7 @@ from fianchetto_tradebot.common_models.api.orders.preview_modify_order_response 
 from fianchetto_tradebot.common_models.api.orders.preview_order_request import PreviewOrderRequest
 from fianchetto_tradebot.common_models.api.orders.preview_order_response import PreviewOrderResponse
 from fianchetto_tradebot.common_models.api.request_status import RequestStatus
+from fianchetto_tradebot.server.common.api.orders.order_util import OrderUtil
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common_models.finance.amount import Amount
 from fianchetto_tradebot.common_models.order.order import Order
@@ -236,6 +237,18 @@ class ETradeOrderService(OrderService):
         place_order_response: PlaceOrderResponse = self.place_order(place_order_request)
 
         return place_order_response
+
+    def modify_order(self, preview_modify_order_request: PreviewModifyOrderRequest) -> PlaceOrderResponse:
+        # Cancel
+        account_id = preview_modify_order_request.order_metadata.account_id
+        order_id = preview_modify_order_request.order_id_to_modify
+        self.cancel_order(CancelOrderRequest(account_id, order_id))
+
+        # Preview
+        new_order_metadata: OrderMetadata = preview_modify_order_request.order_metadata
+        new_order_metadata.client_order_id = OrderUtil.generate_random_client_order_id()
+        new_order_response: PlaceOrderResponse = self.preview_and_place_order(PreviewOrderRequest(order_metadata=new_order_metadata, order=preview_modify_order_request.order))
+        return new_order_response
 
     @staticmethod
     def _parse_place_order_response(response, order_metadata: OrderMetadata, preview_id: str, previous_order_id=None)-> PlaceOrderResponse:

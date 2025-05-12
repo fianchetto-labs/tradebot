@@ -43,3 +43,6 @@ class OrderService(ApiService):
 
     def preview_and_place_order(self, preview_order_request: PreviewOrderRequest) -> PlaceOrderResponse:
         pass
+
+    def modify_order(self, preview_modify_order_request: PreviewModifyOrderRequest) -> PlaceOrderResponse:
+        pass
