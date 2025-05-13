@@ -242,7 +242,7 @@ class ETradeOrderService(OrderService):
         # Cancel
         account_id = preview_modify_order_request.order_metadata.account_id
         order_id = preview_modify_order_request.order_id_to_modify
-        self.cancel_order(CancelOrderRequest(account_id, order_id))
+        self.cancel_order(CancelOrderRequest(account_id=account_id, order_id=order_id))
 
         # Preview
         new_order_metadata: OrderMetadata = preview_modify_order_request.order_metadata

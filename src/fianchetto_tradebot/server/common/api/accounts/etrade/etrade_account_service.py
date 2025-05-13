@@ -113,7 +113,7 @@ class ETradeAccountService(AccountService):
             if call_value < 0:
                 brokerage_call_type: BrokerageCallType = BrokerageCallType.from_string(call_type)
                 amount: Amount = Amount.from_float(call_value)
-                brokerage_calls.append(BrokerageCall(brokerage_call_type, amount))
+                brokerage_calls.append(BrokerageCall(call_type=brokerage_call_type, call_amount=amount))
 
         # TODO: Update these with real values
         computed_balance: ComputedBalance = ComputedBalance(cash_available_for_investment=cash_available_for_investment,
