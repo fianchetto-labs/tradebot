@@ -1,5 +1,5 @@
 from fianchetto_tradebot.common_models.api.response import Response
-from fianchetto_tradebot.server.oex.managed_order_execution import ManagedExecution
+from fianchetto_tradebot.server.orders.managed_order_execution import ManagedExecution
 
 
 class ListManagedExecutionsResponse(Response):

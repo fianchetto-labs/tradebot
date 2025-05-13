@@ -16,7 +16,7 @@ from fianchetto_tradebot.common_models.order.order import Order
 from fianchetto_tradebot.common_models.order.order_line import OrderLine
 from fianchetto_tradebot.common_models.order.order_price import OrderPrice
 from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceType
-from fianchetto_tradebot.server.oex.trade_execution_util import TradeExecutionUtil
+from fianchetto_tradebot.server.orders.trade_execution_util import TradeExecutionUtil
 from fianchetto_tradebot.common_models.api.quotes.get_tradable_response import GetTradableResponse
 from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 

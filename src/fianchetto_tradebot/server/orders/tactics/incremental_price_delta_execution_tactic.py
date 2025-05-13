@@ -6,8 +6,8 @@ from fianchetto_tradebot.common_models.order.order_price import OrderPrice
 from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceType
 from fianchetto_tradebot.common_models.order.order_type import OrderType
 from fianchetto_tradebot.common_models.order.placed_order import PlacedOrder
-from fianchetto_tradebot.server.oex.tactics.execution_tactic import ExecutionTactic
-from fianchetto_tradebot.server.oex.trade_execution_util import TradeExecutionUtil
+from fianchetto_tradebot.server.orders.tactics.execution_tactic import ExecutionTactic
+from fianchetto_tradebot.server.orders.trade_execution_util import TradeExecutionUtil
 from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
 GAP_REDUCTION_RATIO = 1/3

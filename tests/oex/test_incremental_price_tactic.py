@@ -16,7 +16,7 @@ from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceT
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.common_models.order.placed_order import PlacedOrder
 from fianchetto_tradebot.common_models.order.placed_order_details import PlacedOrderDetails
-from fianchetto_tradebot.server.oex.tactics.incremental_price_delta_execution_tactic import \
+from fianchetto_tradebot.server.orders.tactics.incremental_price_delta_execution_tactic import \
     IncrementalPriceDeltaExecutionTactic
 from tests.common.api.orders.order_test_util import OrderTestUtil
 

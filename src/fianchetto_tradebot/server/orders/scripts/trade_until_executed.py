@@ -25,9 +25,9 @@ from fianchetto_tradebot.common_models.order.action import Action
 from fianchetto_tradebot.common_models.order import OrderPriceType
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.common_models.order.order_type import OrderType
-from fianchetto_tradebot.server.oex.tactics.incremental_price_delta_execution_tactic import \
+from fianchetto_tradebot.server.orders.tactics.incremental_price_delta_execution_tactic import \
     IncrementalPriceDeltaExecutionTactic
-from fianchetto_tradebot.server.oex.trade_execution_util import TradeExecutionUtil
+from fianchetto_tradebot.server.orders.trade_execution_util import TradeExecutionUtil
 from tests.common.api.orders.order_test_util import OrderTestUtil
 
 DEFAULT_WAIT: datetime.timedelta = datetime.timedelta(seconds=8)
