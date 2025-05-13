@@ -5,6 +5,20 @@ from fastapi import FastAPI
 from fianchetto_tradebot.common_models.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common_models.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common_models.api.orders.preview_modify_order_request import PreviewModifyOrderRequest
+from fianchetto_tradebot.common_models.managed_executions.cancel_managed_execution_request import \
+    CancelManagedExecutionRequest
+from fianchetto_tradebot.common_models.managed_executions.cancel_managed_execution_response import \
+    CancelManagedExecutionResponse
+from fianchetto_tradebot.common_models.managed_executions.create_managed_execution_request import \
+    CreateManagedExecutionRequest
+from fianchetto_tradebot.common_models.managed_executions.create_managed_execution_response import \
+    CreateManagedExecutionResponse
+from fianchetto_tradebot.common_models.managed_executions.get_managed_execution_response import \
+    GetManagedExecutionResponse
+from fianchetto_tradebot.common_models.managed_executions.list_managed_executions_request import \
+    ListManagedExecutionsRequest
+from fianchetto_tradebot.common_models.managed_executions.list_managed_executions_response import \
+    ListManagedExecutionsResponse
 from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
 from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
@@ -20,6 +34,7 @@ from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.server.common.service.rest_service import RestService, ETRADE_ONLY_BROKERAGE_CONFIG
 from fianchetto_tradebot.server.common.service.service_key import ServiceKey
+from fianchetto_tradebot.server.oex.managed_order_execution import ManagedExecution
 from fianchetto_tradebot.server.quotes.etrade.etrade_quotes_service import ETradeQuotesService
 from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
@@ -49,6 +64,21 @@ class OexRestService(RestService):
         self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders/preview_and_place', endpoint=self.preview_and_place_order, methods=['POST'], response_model=PlaceOrderResponse)
         self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders/{order_id}', endpoint=self.cancel_order, methods=['DELETE'], response_model=CancelOrderResponse)
         self.app.add_api_route(path='/api/v1/{brokerage}/accounts/{account_id}/orders/{order_id}', endpoint=self.modify_order, methods=['PUT'], response_model=PlaceOrderResponse)
+
+        # Managed Orders (to be cleaved off into separate service)
+        self.app.add_api_route(
+            path='/api/v1/{brokerage}/accounts/{account_id}/managed-executions/',
+            endpoint=self.list_managed_executions, methods=['GET'], response_model=ListManagedExecutionsResponse)
+        self.app.add_api_route(
+            path='/api/v1/{brokerage}/accounts/{account_id}/managed-executions/{managed_execution_id}',
+            endpoint=self.get_managed_execution, methods=['GET'], response_model=GetManagedExecutionResponse)
+        self.app.add_api_route(
+            path='/api/v1/{brokerage}/accounts/{account_id}/managed-executions',
+            endpoint=self.created_managed_execution, methods=['POST'], response_model=CreateManagedExecutionResponse)
+        self.app.add_api_route(
+            path='/api/v1/{brokerage}/accounts/{account_id}/managed-executions/{managed_execution_id}',
+            endpoint=self.cancel_managed_execution, methods=['DELETE'], response_model=CancelManagedExecutionResponse)
+
 
     def _setup_brokerage_services(self):
         self.order_services: dict[Brokerage, OrderService] = dict()
@@ -114,6 +144,20 @@ class OexRestService(RestService):
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
 
         return order_service.modify_order(preview_modify_order_request)
+
+    ### Managed Executions - to be cleaved off into a separate service
+    def list_managed_executions(self, brokerage: str, account_id: str, status: str = None, from_date: str=None, to_date: str=None, count:int=DEFAULT_COUNT):
+        return ListManagedExecutionsResponse()
+
+    def get_managed_execution(self, brokerage: str, account_id: str, managed_execution_id: str)->GetManagedExecutionResponse:
+        return GetManagedExecutionResponse()
+
+    def create_managed_execution(self, brokerage: str, account_id: str, create_managed_execution_request: CreateManagedExecutionRequest):
+        return CreateManagedExecutionResponse()
+
+    def cancel_managed_execution(self, brokerage: str, account_id: str):
+        return CancelManagedExecutionResponse()
+
 
 if __name__ == "__main__":
     oex_app = OexRestService()
