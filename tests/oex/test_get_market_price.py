@@ -54,7 +54,7 @@ def quote_service():
 def test_put_credit_spread(quote_service):
     order: Order = Order(expiry=GoodForDay(), order_lines=put_credit_spread_orderlines, order_price=OrderPrice(order_price_type=OrderPriceType.NET_CREDIT, price=Amount(whole=3, part=18)))
 
-    market_price: Price = TradeExecutionUtil.get_market_price(order, quote_service)
+    market_price: Price = TradeExecutionUtil.get_cost_or_proceeds_to_establish_position(order, quote_service)
 
     assert market_price.bid == 2.30
     assert market_price.ask == 4.05
@@ -63,7 +63,7 @@ def test_put_credit_spread(quote_service):
 def test_call_credit_spread(quote_service):
     order: Order = Order(expiry=GoodForDay(), order_lines=call_credit_spread_orderlines, order_price=OrderPrice(order_price_type=OrderPriceType.NET_CREDIT, price=Amount(whole=5, part=28)))
 
-    market_price: Price = TradeExecutionUtil.get_market_price(order, quote_service)
+    market_price: Price = TradeExecutionUtil.get_cost_or_proceeds_to_establish_position(order, quote_service)
 
     assert market_price.bid == 4.65
     assert market_price.ask == 5.90
@@ -78,7 +78,7 @@ def test_put_debit_spread(quote_service):
     order: Order = Order(expiry=GoodForDay(), order_lines=call_debit_spread_order_lines,
                          order_price=OrderPrice(order_price_type=OrderPriceType.NET_CREDIT, price=Amount(whole=0, part=7)))
 
-    market_price: Price = TradeExecutionUtil.get_market_price(order, quote_service)
+    market_price: Price = TradeExecutionUtil.get_cost_or_proceeds_to_establish_position(order, quote_service)
 
     assert market_price.bid == .42
     assert market_price.ask == -.29

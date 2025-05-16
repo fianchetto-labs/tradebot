@@ -46,7 +46,7 @@ DEFAULT_COUNT = 100
 
 class MoexRestService(RestService):
     def __init__(self, credential_config_files: dict[Brokerage, str]=ETRADE_ONLY_BROKERAGE_CONFIG):
-        super().__init__(ServiceKey.ORDERS, credential_config_files)
+        super().__init__(ServiceKey.MOEX, credential_config_files)
 
     @property
     def app(self) -> FastAPI:
@@ -96,7 +96,7 @@ class MoexRestService(RestService):
         return GetManagedExecutionResponse()
 
     def create_managed_execution(self, brokerage: str, account_id: str, create_managed_execution_request: CreateManagedExecutionRequest):
-        return CreateManagedExecutionResponse()
+        return self.moex_service.create_managed_execution(create_managed_execution_request=create_managed_execution_request)
 
     def cancel_managed_execution(self, brokerage: str, account_id: str):
         return CancelManagedExecutionResponse()
