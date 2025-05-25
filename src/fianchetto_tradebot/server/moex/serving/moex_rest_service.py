@@ -66,7 +66,7 @@ class MoexRestService(RestService):
             endpoint=self.get_managed_execution, methods=['GET'], response_model=GetManagedExecutionResponse)
         self.app.add_api_route(
             path='/api/v1/{brokerage}/accounts/{account_id}/managed-executions',
-            endpoint=self.created_managed_execution, methods=['POST'], response_model=CreateManagedExecutionResponse)
+            endpoint=self.create_managed_execution, methods=['POST'], response_model=CreateManagedExecutionResponse)
         self.app.add_api_route(
             path='/api/v1/{brokerage}/accounts/{account_id}/managed-executions/{managed_execution_id}',
             endpoint=self.cancel_managed_execution, methods=['DELETE'], response_model=CancelManagedExecutionResponse)
@@ -104,4 +104,4 @@ class MoexRestService(RestService):
 
 if __name__ == "__main__":
     oex_app = MoexRestService()
-    oex_app.run(host="0.0.0.0", port=8080)
+    oex_app.run(host="0.0.0.0", port=8082)

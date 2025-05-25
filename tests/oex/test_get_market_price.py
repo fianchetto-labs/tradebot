@@ -22,24 +22,35 @@ from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
 equity = Equity(ticker="GE", company_name="General Electric")
 
-short_put = Option(equity=equity, type=OptionType.PUT, strike=Amount(whole=195, part=0), expiry=datetime(2025, 5, 16).date())
-long_put = Option(equity=equity, type=OptionType.PUT, strike=Amount(whole=185, part=0), expiry=datetime(2025, 5, 16).date())
+near_put = Option(equity=equity, type=OptionType.PUT, strike=Amount(whole=195, part=0), expiry=datetime(2025, 5, 16).date())
+far_put = Option(equity=equity, type=OptionType.PUT, strike=Amount(whole=185, part=0), expiry=datetime(2025, 5, 16).date())
 
 cs_short_put = Option(equity=equity, type=OptionType.PUT, strike=Amount(whole=202, part=50), expiry=datetime(2025, 2, 14).date())
 cs_long_put = Option(equity=equity, type=OptionType.PUT, strike=Amount(whole=197, part=50), expiry=datetime(2025, 2, 21).date())
 cs_long_put_2 = Option(equity=equity, type=OptionType.PUT, strike=Amount(whole=195, part=0), expiry=datetime(2025, 5, 14).date())
 
-short_call = Option(equity=equity, type=OptionType.CALL, strike=Amount(whole=200, part=0), expiry=datetime(2025, 5, 16).date())
-long_call = Option(equity=equity, type=OptionType.CALL, strike=Amount(whole=210, part=0), expiry=datetime(2025, 5, 16).date())
+near_call = Option(equity=equity, type=OptionType.CALL, strike=Amount(whole=200, part=0), expiry=datetime(2025, 5, 16).date())
+far_call = Option(equity=equity, type=OptionType.CALL, strike=Amount(whole=210, part=0), expiry=datetime(2025, 5, 16).date())
 
-sell_put_order_line = OrderLine(tradable=short_put, action=Action.SELL_OPEN, quantity=1)
-buy_put_order_line = OrderLine(tradable=long_put, action=Action.BUY_OPEN, quantity=1)
+sell_near_put_order_line = OrderLine(tradable=near_put, action=Action.SELL_OPEN, quantity=1)
+buy_2x_near_put_order_line = OrderLine(tradable=near_put, action=Action.BUY_OPEN, quantity=2)
 
-sell_call_order_line = OrderLine(tradable=short_call, action=Action.SELL_OPEN, quantity=1)
-buy_call_order_line = OrderLine(tradable=long_call, action=Action.BUY_OPEN, quantity=1)
+buy_far_put_order_line = OrderLine(tradable=far_put, action=Action.BUY_OPEN, quantity=1)
 
-put_credit_spread_orderlines = [sell_put_order_line, buy_put_order_line]
-call_credit_spread_orderlines = [sell_call_order_line, buy_call_order_line]
+sell_3x_far_put_order_line = OrderLine(tradable=far_put, action=Action.SELL_OPEN, quantity=3)
+
+sell_near_call_order_line = OrderLine(tradable=near_call, action=Action.SELL_OPEN, quantity=1)
+buy_near_call_order_line = OrderLine(tradable=near_call, action=Action.BUY_OPEN, quantity=1)
+
+sell_far_call_order_line = OrderLine(tradable=far_call, action=Action.SELL_CLOSE, quantity=1)
+buy_far_call_order_line = OrderLine(tradable=far_call, action=Action.BUY_OPEN, quantity=1)
+
+put_credit_spread_orderlines = [sell_near_put_order_line, buy_far_put_order_line]
+call_credit_spread_orderlines = [sell_near_call_order_line, buy_far_call_order_line]
+
+call_debit_spread_orderlines = [buy_near_call_order_line, sell_far_call_order_line]
+
+call_mixed_credit_debit_orderlines = [buy_2x_near_put_order_line, sell_3x_far_put_order_line]
 
 
 @pytest.fixture
@@ -69,6 +80,26 @@ def test_call_credit_spread(quote_service):
     assert market_price.ask == 5.90
     assert market_price.mark == 5.28
 
+def test_bid_credit_ask_debit(quote_service):
+    order: Order = Order(expiry=GoodForDay(), order_lines=call_mixed_credit_debit_orderlines,
+                         order_price=OrderPrice(order_price_type=OrderPriceType.NET_DEBIT,
+                                                price=Amount(whole=1, part=80)))
+
+    market_price: Price = TradeExecutionUtil.get_cost_or_proceeds_to_establish_position(order, quote_service)
+
+    assert market_price.bid == .25
+    assert market_price.ask == -3.85
+    assert market_price.mark == -1.8
+
+def test_call_debit_spread(quote_service):
+    order: Order = Order(expiry=GoodForDay(), order_lines=call_debit_spread_orderlines, order_price=OrderPrice(order_price_type=OrderPriceType.NET_DEBIT, price=Amount(whole=5, part=28)))
+
+    market_price: Price = TradeExecutionUtil.get_cost_or_proceeds_to_establish_position(order, quote_service)
+
+    assert market_price.bid == -4.65
+    assert market_price.ask == -5.90
+    assert market_price.mark == -5.28
+
 def test_put_debit_spread(quote_service):
     cs_short_put_order_line = OrderLine(tradable=cs_short_put, action=Action.SELL_OPEN, quantity=1)
     cs_long_put_order_line = OrderLine(tradable=cs_long_put, action=Action.BUY_OPEN, quantity=1)
@@ -87,13 +118,13 @@ def test_put_debit_spread(quote_service):
 
 # If python had a proper mocking framework, this contrivance wouldn't be necessary
 def return_market_prices(get_tradable_request: GetTradableRequest)->GetTradableResponse:
-    if get_tradable_request == GetTradableRequest(tradable=short_put):
+    if get_tradable_request == GetTradableRequest(tradable=near_put):
         return GetTradableResponse(tradable=get_tradable_request.tradable, response_time=None, current_price=Price(bid=Amount(whole=7, part=15).to_float(), ask=Amount(whole=8, part=30).to_float()), volume=5)
-    elif get_tradable_request == GetTradableRequest(tradable=long_put):
+    elif get_tradable_request == GetTradableRequest(tradable=far_put):
         return GetTradableResponse(tradable=get_tradable_request.tradable, response_time=None, current_price=Price(bid=Amount(whole=4, part=25).to_float(), ask=Amount(whole=4, part=85).to_float()), volume=5)
-    elif get_tradable_request == GetTradableRequest(tradable=short_call):
+    elif get_tradable_request == GetTradableRequest(tradable=near_call):
         return GetTradableResponse(tradable=get_tradable_request.tradable, response_time=None, current_price=Price(bid=Amount(whole=15, part=20).to_float(), ask=Amount(whole=15, part=75).to_float()), volume=5)
-    elif get_tradable_request == GetTradableRequest(tradable=long_call):
+    elif get_tradable_request == GetTradableRequest(tradable=far_call):
         return GetTradableResponse(tradable=get_tradable_request.tradable, response_time=None, current_price=Price(bid=Amount(whole=9, part=85).to_float(), ask=Amount(whole=10, part=55).to_float()), volume=5)
     elif get_tradable_request == GetTradableRequest(tradable=cs_short_put):
         return GetTradableResponse(tradable=get_tradable_request.tradable, response_time=None, current_price=Price(bid=Amount(whole=3, part=20).to_float(), ask=Amount(whole=3, part=50).to_float()), volume=5)

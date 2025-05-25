@@ -18,33 +18,33 @@ class IncrementalPriceDeltaExecutionTactic(ExecutionTactic):
     @staticmethod
     def new_price(order: Order, quotes_service: QuotesService=None)->(OrderPrice, int):
 
-        # This'll always be positive. We'd need to normalize it WRT to the price type..where do we get the rest of the info?
+        # This'll positive for NET_CREDIT and negative for NET_DEBIT
         current_order_price: float = order.order_price.price.to_float()
         current_market_mark_to_market_price: float = TradeExecutionUtil.get_cost_or_proceeds_to_establish_position(order, quotes_service).mark
 
-        # TODO: Make this calculation more precise with OrderPrice arithmetic, FIA-104
-        # Changed to positive...
-        delta = current_order_price + current_market_mark_to_market_price
+        # Delta always positive. We will decrement in either case.
+        if current_order_price > current_market_mark_to_market_price:
+            # 5 - 2 = 3
+            delta = current_order_price - current_market_mark_to_market_price
+        else:
+            # -2 - (-5) = 3
+            delta = current_market_mark_to_market_price - current_order_price
 
         if order.get_order_type() == OrderType.EQ:
             return IncrementalPriceDeltaExecutionTactic.get_equity_new_price(delta, current_order_price, order)
         else:
-            return IncrementalPriceDeltaExecutionTactic.get_spread_new_price(delta, current_order_price, order)
+            return IncrementalPriceDeltaExecutionTactic.get_spread_new_price(delta, current_order_price)
 
     @staticmethod
     # TODO: This should be tested w/bids and asks that are negative to positive
     def get_spread_new_price(delta, current_order_price):
-        if delta > 0:
-            new_delta = delta * (1 - GAP_REDUCTION_RATIO)
-            adjustment = round(min(new_delta - delta, -.01), 2)
-        else:
-            # If below the mark, adjust incrementally
-            adjustment = -.01
+        adjustment = round(delta * GAP_REDUCTION_RATIO, 2)
 
-        proposed_new_amount_float: float = round(current_order_price + adjustment, 2)
+        # Adjustments go in one direction -- less credit or more debit.
+        proposed_new_amount_float: float = round(current_order_price - adjustment, 2)
         proposed_new_amount = Amount.from_float(proposed_new_amount_float)
         if proposed_new_amount == ZERO_AMOUNT:
-            return OrderPrice(OrderPriceType.NET_EVEN, Amount(0,0)), DEFAULT_WAIT_SEC
+            return OrderPrice(order_price_type=OrderPriceType.NET_EVEN, price=Amount(whole=0, part=0)), DEFAULT_WAIT_SEC
         elif proposed_new_amount < ZERO_AMOUNT:
             return OrderPrice(order_price_type=OrderPriceType.NET_DEBIT, price=abs(proposed_new_amount)), DEFAULT_WAIT_SEC
         else:
