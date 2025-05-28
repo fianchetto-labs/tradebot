@@ -25,9 +25,9 @@ from fianchetto_tradebot.common_models.order.action import Action
 from fianchetto_tradebot.common_models.order import OrderPriceType
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.common_models.order.order_type import OrderType
-from fianchetto_tradebot.server.oex.tactics.incremental_price_delta_execution_tactic import \
+from fianchetto_tradebot.server.orders.tactics.incremental_price_delta_execution_tactic import \
     IncrementalPriceDeltaExecutionTactic
-from fianchetto_tradebot.server.oex.trade_execution_util import TradeExecutionUtil
+from fianchetto_tradebot.server.orders.trade_execution_util import TradeExecutionUtil
 from tests.common.api.orders.order_test_util import OrderTestUtil
 
 DEFAULT_WAIT: datetime.timedelta = datetime.timedelta(seconds=8)
@@ -78,7 +78,7 @@ def test_lower_until_executed(account_id: str, quote_service: QuoteService, orde
     # The pattern is we'll put in the order, to get a sense of the actual price, once the response returns. From there, we'll keep getting new prices until it's clsoed.
     # Get a sense of what it may be worth
     order = OrderTestUtil.build_equity_order(equity=SFIX, action=Action.BUY)
-    order_market_price: Price = TradeExecutionUtil.get_market_price(order, quote_service)
+    order_market_price: Price = TradeExecutionUtil.get_cost_or_proceeds_to_establish_position(order, quote_service)
     print(f"Security currently at: {order_market_price}")
 
     # Find a price that's reasonable

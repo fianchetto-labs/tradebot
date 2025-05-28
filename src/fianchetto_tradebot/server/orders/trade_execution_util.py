@@ -10,7 +10,10 @@ ADJUSTED_NO_BIDS_WIDE_SPREAD_ASK = .03
 class TradeExecutionUtil:
     # This can also be done via order Bid-Ask - advantage is fewer API calls. Downside is relying on ETrade's order service
     # This would be necessary to establish a first price for the order. Other issue is it wouldn't adjust for very wide spreads
-    def get_market_price(order: Order, quote_service: QuotesService, adjust_excessive_spreads=True) -> Price:
+
+    # This is a bit unintuitive for Equity orders, but this returns affect on cash to actuate the position.
+    @staticmethod
+    def get_cost_or_proceeds_to_establish_position(order: Order, quote_service: QuotesService, adjust_excessive_spreads=True) -> Price:
         mark_to_market_price: float = 0
         best_price: float = 0
         worst_price: float = 0
@@ -20,7 +23,7 @@ class TradeExecutionUtil:
             get_tradable_response: GetTradableResponse = quote_service.get_tradable_quote(get_tradable_request)
             quantity = order_line.quantity
 
-            current_price = get_tradable_response.current_price
+            current_price: Price = get_tradable_response.current_price
 
             if adjust_excessive_spreads and get_tradable_response.current_price.bid == 0 and get_tradable_response.current_price.ask > .04:
                 current_price.ask = ADJUSTED_NO_BIDS_WIDE_SPREAD_ASK

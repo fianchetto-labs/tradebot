@@ -8,5 +8,6 @@ class PlaceOrderResponse(Response):
     order_metadata: OrderMetadata
     preview_id: str
     order_id: str
+    # Why isn't this a PlacedOrder? Likely b/c some fields aren't available
     order: Order
     order_placement_messages: list[OrderPlacementMessage] = []

@@ -5,6 +5,16 @@ from fastapi import FastAPI
 from fianchetto_tradebot.common_models.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common_models.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common_models.api.orders.preview_modify_order_request import PreviewModifyOrderRequest
+from fianchetto_tradebot.common_models.managed_executions.cancel_managed_execution_response import \
+    CancelManagedExecutionResponse
+from fianchetto_tradebot.common_models.managed_executions.create_managed_execution_request import \
+    CreateManagedExecutionRequest
+from fianchetto_tradebot.common_models.managed_executions.create_managed_execution_response import \
+    CreateManagedExecutionResponse
+from fianchetto_tradebot.common_models.managed_executions.get_managed_execution_response import \
+    GetManagedExecutionResponse
+from fianchetto_tradebot.common_models.managed_executions.list_managed_executions_response import \
+    ListManagedExecutionsResponse
 from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
 from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
@@ -28,9 +38,9 @@ DEFAULT_START_DATE = JAN_1_2024
 DEFAULT_COUNT = 100
 
 
-class OexRestService(RestService):
+class OrdersRestService(RestService):
     def __init__(self, credential_config_files: dict[Brokerage, str]=ETRADE_ONLY_BROKERAGE_CONFIG):
-        super().__init__(ServiceKey.OEX, credential_config_files)
+        super().__init__(ServiceKey.ORDERS, credential_config_files)
 
     @property
     def app(self) -> FastAPI:
@@ -115,6 +125,9 @@ class OexRestService(RestService):
 
         return order_service.modify_order(preview_modify_order_request)
 
+    ### Managed Executions - to be cleaved off into a separate service
+
+
 if __name__ == "__main__":
-    oex_app = OexRestService()
+    oex_app = OrdersRestService()
     oex_app.run(host="0.0.0.0", port=8080)

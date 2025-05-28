@@ -29,3 +29,12 @@ class Price(BaseModel):
         if hasattr(self, 'last'):
             return Price(bid=self.bid, ask=self.ask, last=self.last)
         return Price(bid=self.bid, ask=self.ask)
+
+    def __add__(self, other):
+        return Price(bid=self.bid + other.bid, ask=self.ask + other.ask)
+
+    def __sub__(self, other):
+        return Price(bid=self.bid - other.ask, ask=self.ask - other.bid)
+
+    def __mul__(self, factor):
+        return Price(bid=self.bid * factor, ask=self.ask * factor)
