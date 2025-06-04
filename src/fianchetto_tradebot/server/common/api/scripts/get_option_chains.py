@@ -3,15 +3,15 @@ import datetime
 import os
 
 import pytest
-from fianchetto_tradebot.server.quotes.etrade import ETradeQuoteService
-from fianchetto_tradebot.server.quotes import QuoteService
 
+from fianchetto_tradebot.common_models.api.quotes.get_option_expire_dates_request import GetOptionExpireDatesRequest
+from fianchetto_tradebot.common_models.api.quotes.get_options_chain_request import GetOptionsChainRequest
+from fianchetto_tradebot.common_models.api.quotes.get_options_chain_response import GetOptionsChainResponse
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common_models.finance.equity import Equity
-from fianchetto_tradebot.server.quotes import GetOptionExpireDatesRequest
 from fianchetto_tradebot.common_models.api.quotes.get_option_expire_dates_response import GetOptionExpireDatesResponse
-from fianchetto_tradebot.server.quotes import GetOptionsChainRequest
-from fianchetto_tradebot.server.quotes import GetOptionsChainResponse
+from fianchetto_tradebot.server.quotes.etrade.etrade_quotes_service import ETradeQuotesService
+from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
 """
 NOTE - To test in real life, it's necessary to include an `integration_test_properties.ini` file.
@@ -35,15 +35,15 @@ def q():
     config.read(CONFIG_FILE)
 
     connector: ETradeConnector = ETradeConnector()
-    return ETradeQuoteService(connector)
+    return ETradeQuotesService(connector)
 
-def test_option_expirations(q: QuoteService):
+def test_option_expirations(q: QuotesService):
     req: GetOptionExpireDatesRequest = GetOptionExpireDatesRequest(ticker=ticker)
     resp: GetOptionExpireDatesResponse = q.get_option_expire_dates(req)
 
     print(resp.expire_dates)
 
-def test_options_chains(q: QuoteService):
+def test_options_chains(q: QuotesService):
 
     expiry = datetime.datetime(2025, 3, 21).date()
 

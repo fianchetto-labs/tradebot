@@ -1,4 +1,3 @@
-
 from fianchetto_tradebot.server.common.api.api_service import ApiService
 from fianchetto_tradebot.server.common.brokerage.connector import Connector
 from fianchetto_tradebot.common_models.api.account.get_account_balance_request import GetAccountBalanceRequest

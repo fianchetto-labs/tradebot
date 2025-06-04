@@ -15,7 +15,6 @@ from fianchetto_tradebot.common_models.api.account.list_accounts_response import
 from fianchetto_tradebot.common_models.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common_models.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common_models.api.orders.order_metadata import OrderMetadata
-from fianchetto_tradebot.common_models.api.orders.place_modify_order_request import PlaceModifyOrderRequest
 from fianchetto_tradebot.common_models.api.orders.place_order_request import PlaceOrderRequest
 from fianchetto_tradebot.common_models.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common_models.api.orders.preview_modify_order_request import PreviewModifyOrderRequest

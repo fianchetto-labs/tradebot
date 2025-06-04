@@ -4,11 +4,11 @@ import sys
 
 import pytest
 
-from fianchetto_tradebot.server.common import Account
+from fianchetto_tradebot.common_models.account.account import Account
+from fianchetto_tradebot.common_models.api.account.get_account_balance_request import GetAccountBalanceRequest
+from fianchetto_tradebot.common_models.api.account.get_account_request import GetAccountRequest
 from fianchetto_tradebot.server.common.api.accounts.account_service import AccountService
 from fianchetto_tradebot.server.common.api.accounts.etrade.etrade_account_service import ETradeAccountService
-from fianchetto_tradebot.server.common import GetAccountBalanceRequest
-from fianchetto_tradebot.server.common import GetAccountRequest
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
 
 """
