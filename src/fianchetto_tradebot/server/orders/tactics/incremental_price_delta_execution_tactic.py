@@ -1,6 +1,5 @@
 from fianchetto_tradebot.common_models.account.computed_balance import ZERO_AMOUNT
 from fianchetto_tradebot.common_models.finance.amount import Amount
-from fianchetto_tradebot.common_models.finance.price import Price
 from fianchetto_tradebot.common_models.order.action import Action
 from fianchetto_tradebot.common_models.order.order import Order
 from fianchetto_tradebot.common_models.order.order_price import OrderPrice

@@ -41,8 +41,6 @@ from fianchetto_tradebot.server.orders.managed_order_execution import ManagedExe
 from fianchetto_tradebot.server.orders.tactics.execution_tactic import ExecutionTactic
 from fianchetto_tradebot.server.quotes.etrade.etrade_quotes_service import ETradeQuotesService
 from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
-from oex.test_get_market_price import quote_service
-
 
 class ManagedExecutionWorker:
     def __init__(self, moex: ManagedExecution, moex_id: str, quotes_services: dict[Brokerage, QuotesService], orders_services: dict[Brokerage, OrderService]):

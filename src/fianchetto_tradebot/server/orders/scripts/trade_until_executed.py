@@ -4,11 +4,10 @@ import os
 from time import sleep
 
 import pytest
-from fianchetto_tradebot.server.quotes.etrade import ETradeQuoteService
-from fianchetto_tradebot.server.quotes import QuoteService
 
 from fianchetto_tradebot.common_models.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common_models.api.orders.cancel_order_response import CancelOrderResponse
+from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceType
 from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
 from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
@@ -22,12 +21,13 @@ from fianchetto_tradebot.common_models.finance.amount import Amount
 from fianchetto_tradebot.common_models.finance.equity import Equity
 from fianchetto_tradebot.common_models.finance.price import Price
 from fianchetto_tradebot.common_models.order.action import Action
-from fianchetto_tradebot.common_models.order import OrderPriceType
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.common_models.order.order_type import OrderType
 from fianchetto_tradebot.server.orders.tactics.incremental_price_delta_execution_tactic import \
     IncrementalPriceDeltaExecutionTactic
 from fianchetto_tradebot.server.orders.trade_execution_util import TradeExecutionUtil
+from fianchetto_tradebot.server.quotes.etrade.etrade_quotes_service import ETradeQuotesService
+from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 from tests.common.api.orders.order_test_util import OrderTestUtil
 
 DEFAULT_WAIT: datetime.timedelta = datetime.timedelta(seconds=8)
@@ -58,7 +58,7 @@ def quote_service(connector):
     return get_quote_service(connector)
 
 def get_quote_service(connector):
-    q: QuoteService = ETradeQuoteService(connector)
+    q: QuotesService = ETradeQuotesService(connector)
     return q
 
 @pytest.fixture
@@ -73,7 +73,7 @@ def get_order_service(connector):
 def account_id()->str:
     return config['ETRADE'][ACCOUNT_ID_KEY]
 
-def test_lower_until_executed(account_id: str, quote_service: QuoteService, order_service: OrderService):
+def test_lower_until_executed(account_id: str, quote_service: QuotesService, order_service: OrderService):
 
     # The pattern is we'll put in the order, to get a sense of the actual price, once the response returns. From there, we'll keep getting new prices until it's clsoed.
     # Get a sense of what it may be worth
@@ -95,7 +95,7 @@ def test_lower_until_executed(account_id: str, quote_service: QuoteService, orde
 
     adjust_order_until_executed(account_id, order_id, order_service, quote_service)
 
-def adjust_order_until_executed(account_id: str, order_id: str, order_service: OrderService, quote_service: QuoteService):
+def adjust_order_until_executed(account_id: str, order_id: str, order_service: OrderService, quote_service: QuotesService):
         # Get information about the order
         get_order_response: GetOrderResponse = order_service.get_order(GetOrderRequest(account_id=account_id, order_id=order_id))
         placed_order = get_order_response.placed_order
