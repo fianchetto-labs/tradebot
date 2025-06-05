@@ -136,20 +136,28 @@ class MoexService:
     ### Managed Executions - to be cleaved off into a separate service
     def list_managed_executions(self, list_managed_executions_request: ListManagedExecutionsRequest)->ListManagedExecutionsResponse:
         account_ids: dict[Brokerage, str] = list_managed_executions_request.accounts
-        output_list: list[ManagedExecution] = list[ManagedExecution]()
+        output_list: list[(str, ManagedExecution)] = list[(str, ManagedExecution)]()
 
+        # TODO: Write unit test for this
         for brokerage, account_id in account_ids.items():
-            managed_executions_to_futures = self.managed_executions.values()
-            managed_executions_to_futures_for_account = filter(lambda p: p[0].account_id == account_id and p[0].brokerage == brokerage, list(managed_executions_to_futures))
-            managed_executions_to_futures_for_account = map(lambda managed_execution: managed_execution[0], managed_executions_to_futures_for_account)
-            exec_list = list(managed_executions_to_futures_for_account)
+            managed_executions_to_futures: list[(str, (ManagedExecution, Future))] = list(self.managed_executions.items())
+
+            managed_executions_to_futures_for_account: list[(str, (ManagedExecution, Future))] = list(filter(lambda p: p[1][0].account_id == account_id and p[1][0].brokerage == brokerage, list(managed_executions_to_futures)))
+
+            exec_list: list[(str, ManagedExecution)] = list(map(lambda managed_execution: (str(managed_execution[0]), managed_execution[1][0]), managed_executions_to_futures_for_account))
             output_list += exec_list
 
         return ListManagedExecutionsResponse(managed_executions_list=output_list)
 
     def get_managed_execution(self, get_managed_execution_request: GetManagedExecutionRequest)->GetManagedExecutionResponse:
-
-        return None
+        # TODO: Try := form
+        managed_execution_id = get_managed_execution_request.managed_execution_id
+        if managed_execution_id in self.managed_executions:
+            managed_execution: ManagedExecution = self.managed_executions[managed_execution_id][0]
+            if managed_execution.account_id != get_managed_execution_request.account_id:
+                print(f"Warning: Mismatch between account in request {get_managed_execution_request.account_id} and account id owner of execution, {managed_execution.account_id}.")
+                return GetManagedExecutionResponse()
+            return GetManagedExecutionResponse(managed_execution=managed_execution)
 
     def shutdown(self):
         print("...shutting down...")
@@ -214,6 +222,11 @@ if __name__ == "__main__":
     list_managed_executions_request = ListManagedExecutionsRequest(accounts = brokerage_to_accounts)
     executions = moex_service.list_managed_executions(list_managed_executions_request=list_managed_executions_request)
     print(executions.managed_executions_list)
+
+    exec_id = executions.managed_executions_list[0][0]
+    get_managed_execution_response: GetManagedExecutionResponse = moex_service.get_managed_execution(GetManagedExecutionRequest(account_id=account_id, managed_execution_id=exec_id))
+    print(get_managed_execution_response.managed_execution)
+
     moex_service.shutdown()
 
 
