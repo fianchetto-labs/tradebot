@@ -18,12 +18,16 @@ from fianchetto_tradebot.common_models.managed_executions.cancel_managed_executi
     CancelManagedExecutionResponse
 from fianchetto_tradebot.common_models.managed_executions.create_managed_execution_request import \
     CreateManagedExecutionRequest
+from fianchetto_tradebot.common_models.managed_executions.create_managed_execution_response import \
+    CreateManagedExecutionResponse
 from fianchetto_tradebot.common_models.managed_executions.get_managed_execution_request import \
     GetManagedExecutionRequest
 from fianchetto_tradebot.common_models.managed_executions.get_managed_execution_response import \
     GetManagedExecutionResponse
 from fianchetto_tradebot.common_models.managed_executions.list_managed_executions_request import \
     ListManagedExecutionsRequest
+from fianchetto_tradebot.common_models.managed_executions.list_managed_executions_response import \
+    ListManagedExecutionsResponse
 from fianchetto_tradebot.common_models.order.action import Action
 from fianchetto_tradebot.common_models.order.expiry.good_until_cancelled import GoodUntilCancelled
 from fianchetto_tradebot.common_models.order.order import Order
@@ -105,7 +109,7 @@ class MoexService:
         self.quotes_services: dict[Brokerage, QuotesService] = quotes_services
         self.orders_services: dict[Brokerage, OrderService] = orders_services
 
-        # todo - figureout a way to keep this running until it's explicitly closed
+        # todo - figure out a way to keep this running until it's explicitly closed
         self.thread_pool_executor = PersistentThreadPool(max_workers=10)
 
         # Managed data structure
@@ -129,10 +133,19 @@ class MoexService:
             print("Shutting down application...")
             self.shutdown()
 
-
     ### Managed Executions - to be cleaved off into a separate service
-    def list_managed_executions(self, list_managed_executions_request: ListManagedExecutionsRequest):
-        return None
+    def list_managed_executions(self, list_managed_executions_request: ListManagedExecutionsRequest)->ListManagedExecutionsResponse:
+        account_ids: dict[Brokerage, str] = list_managed_executions_request.accounts
+        output_list: list[ManagedExecution] = list[ManagedExecution]()
+
+        for brokerage, account_id in account_ids.items():
+            managed_executions_to_futures = self.managed_executions.values()
+            managed_executions_to_futures_for_account = filter(lambda p: p[0].account_id == account_id and p[0].brokerage == brokerage, list(managed_executions_to_futures))
+            managed_executions_to_futures_for_account = map(lambda managed_execution: managed_execution[0], managed_executions_to_futures_for_account)
+            exec_list = list(managed_executions_to_futures_for_account)
+            output_list += exec_list
+
+        return ListManagedExecutionsResponse(managed_executions_list=output_list)
 
     def get_managed_execution(self, get_managed_execution_request: GetManagedExecutionRequest)->GetManagedExecutionResponse:
 
@@ -142,10 +155,10 @@ class MoexService:
         print("...shutting down...")
         self._shutdown_engage = True
 
-    def create_managed_execution(self, create_managed_execution_request: CreateManagedExecutionRequest)->GetManagedExecutionResponse:
+    def create_managed_execution(self, create_managed_execution_request: CreateManagedExecutionRequest)->CreateManagedExecutionResponse:
         new_id = self._increment_id()
 
-        managed_execution = create_managed_execution_request.managed_execution
+        managed_execution: ManagedExecution = create_managed_execution_request.managed_execution
         worker: ManagedExecutionWorker = ManagedExecutionWorker(moex=managed_execution, moex_id=str(new_id), quotes_services=self.quotes_services, orders_services=self.orders_services)
         future: Future = self.thread_pool_executor.submit(worker)
 
@@ -153,8 +166,7 @@ class MoexService:
             self.managed_executions[str(new_id)] = (managed_execution,  future)
         print(f"Added new execution {new_id}")
 
-        res = future.result()
-        print(res)
+        return CreateManagedExecutionResponse(managed_execution_id = str(new_id))
 
     def cancel_managed_execution(self, cancel_managed_executions_request: CancelManagedExecutionRequest)->CancelManagedExecutionResponse:
         # Let's assume that it has not yet been executed
@@ -196,7 +208,12 @@ if __name__ == "__main__":
     create_managed_execution_request = CreateManagedExecutionRequest(account_id=account_id, managed_execution=managed_execution)
 
     moex_service.create_managed_execution(create_managed_execution_request=create_managed_execution_request)
+    brokerage_to_accounts: dict[Brokerage, str] = dict[Brokerage, str]()
+    brokerage_to_accounts[Brokerage.ETRADE] = account_id
 
+    list_managed_executions_request = ListManagedExecutionsRequest(accounts = brokerage_to_accounts)
+    executions = moex_service.list_managed_executions(list_managed_executions_request=list_managed_executions_request)
+    print(executions.managed_executions_list)
     moex_service.shutdown()
 
 
