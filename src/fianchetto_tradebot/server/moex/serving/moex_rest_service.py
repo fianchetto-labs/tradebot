@@ -2,14 +2,20 @@ from datetime import datetime
 
 from fastapi import FastAPI
 
+from fianchetto_tradebot.common_models.managed_executions.cancel_managed_execution_request import \
+    CancelManagedExecutionRequest
 from fianchetto_tradebot.common_models.managed_executions.cancel_managed_execution_response import \
     CancelManagedExecutionResponse
 from fianchetto_tradebot.common_models.managed_executions.create_managed_execution_request import \
     CreateManagedExecutionRequest
 from fianchetto_tradebot.common_models.managed_executions.create_managed_execution_response import \
     CreateManagedExecutionResponse
+from fianchetto_tradebot.common_models.managed_executions.get_managed_execution_request import \
+    GetManagedExecutionRequest
 from fianchetto_tradebot.common_models.managed_executions.get_managed_execution_response import \
     GetManagedExecutionResponse
+from fianchetto_tradebot.common_models.managed_executions.list_managed_executions_request import \
+    ListManagedExecutionsRequest
 from fianchetto_tradebot.common_models.managed_executions.list_managed_executions_response import \
     ListManagedExecutionsResponse
 from fianchetto_tradebot.server.common.api.moex.moex_service import MoexService
@@ -41,17 +47,18 @@ class MoexRestService(RestService):
 
     def _register_endpoints(self):
         super()._register_endpoints()
+        # TODO: See FIA-115 to endpoint consolidation
         self.app.add_api_route(
             path='/api/v1/{brokerage}/accounts/{account_id}/managed-executions/',
             endpoint=self.list_managed_executions, methods=['GET'], response_model=ListManagedExecutionsResponse)
         self.app.add_api_route(
-            path='/api/v1/{brokerage}/accounts/{account_id}/managed-executions/{managed_execution_id}',
+            path='/api/v1/managed-executions/{managed_execution_id}',
             endpoint=self.get_managed_execution, methods=['GET'], response_model=GetManagedExecutionResponse)
         self.app.add_api_route(
-            path='/api/v1/{brokerage}/accounts/{account_id}/managed-executions',
+            path='/api/v1/managed-executions',
             endpoint=self.create_managed_execution, methods=['POST'], response_model=CreateManagedExecutionResponse)
         self.app.add_api_route(
-            path='/api/v1/{brokerage}/accounts/{account_id}/managed-executions/{managed_execution_id}',
+            path='/api/v1/managed-executions/{managed_execution_id}',
             endpoint=self.cancel_managed_execution, methods=['DELETE'], response_model=CancelManagedExecutionResponse)
 
 
@@ -71,18 +78,28 @@ class MoexRestService(RestService):
         # TODO: Add for IKBR and Schwab
         self.moex_service = MoexService(self.quotes_services, self.order_services)
 
-    ### Managed Executions - to be cleaved off into a separate service
-    def list_managed_executions(self, brokerage: str, account_id: str, status: str = None, from_date: str=None, to_date: str=None, count:int=DEFAULT_COUNT):
-        return ListManagedExecutionsResponse()
+    def list_managed_executions(self, brokerage: str, account_id: str):
+        # TODO - FIA-114:
+        #  Add filtering on managed executions, e.g: status: str = None, from_date: str=None, to_date: str=None, count:int=DEFAULT_COUNT
+        as_brokerage: Brokerage = Brokerage(brokerage)
+        accounts_dict = dict[Brokerage, str]()
+        accounts_dict[as_brokerage] = account_id
+        list_managed_executions_request: ListManagedExecutionsRequest = ListManagedExecutionsRequest(accounts=accounts_dict)
+        list_managed_executions_response = self.moex_service.list_managed_executions(list_managed_executions_request=list_managed_executions_request)
+        return list_managed_executions_response
 
-    def get_managed_execution(self, brokerage: str, account_id: str, managed_execution_id: str)->GetManagedExecutionResponse:
+    def get_managed_execution(self, managed_execution_id: str)->GetManagedExecutionResponse:
+        get_managed_executions_request: GetManagedExecutionRequest = GetManagedExecutionRequest(managed_execution_id=managed_execution_id)
+        self.moex_service.get_managed_execution(get_managed_executions_request)
         return GetManagedExecutionResponse()
 
-    def create_managed_execution(self, brokerage: str, account_id: str, create_managed_execution_request: CreateManagedExecutionRequest):
+    def create_managed_execution(self, create_managed_execution_request: CreateManagedExecutionRequest):
         return self.moex_service.create_managed_execution(create_managed_execution_request=create_managed_execution_request)
 
-    def cancel_managed_execution(self, brokerage: str, account_id: str):
-        return CancelManagedExecutionResponse()
+    def cancel_managed_execution(self, managed_execution_id: str):
+        cancel_managed_execution_request: CancelManagedExecutionRequest = CancelManagedExecutionRequest(managed_execution_id=managed_execution_id)
+        return self.moex_service.cancel_managed_execution(
+            CancelManagedExecutionResponse(cancel_managed_execution_request=cancel_managed_execution_request))
 
 
 if __name__ == "__main__":
