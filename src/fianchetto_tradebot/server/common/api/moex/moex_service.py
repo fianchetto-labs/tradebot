@@ -5,6 +5,8 @@ from threading import Lock
 
 from fastapi import HTTPException
 
+from fianchetto_tradebot.common_models.api.orders.cancel_order_request import CancelOrderRequest
+from fianchetto_tradebot.common_models.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
 from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
 from fianchetto_tradebot.common_models.api.orders.order_metadata import OrderMetadata
@@ -82,10 +84,12 @@ class ManagedExecutionWorker:
                 order_id = place_order_response.order_id
 
             # Get order status
+            self.moex.current_brokerage_order_id = order_id
             get_order_request = GetOrderRequest(account_id=account_id, order_id=order_id)
             get_order_response : GetOrderResponse = orders_service.get_order(get_order_request)
 
             current_status = get_order_response.placed_order.placed_order_details.status
+            self.moex.status = current_status
             current_price = get_order_response.placed_order.placed_order_details.current_market_price
 
             while current_status != OrderStatus.EXECUTED and self.continue_processing:
@@ -97,6 +101,8 @@ class ManagedExecutionWorker:
 
                 order_id = place_order_response.order_id
                 print(f"Successfully placed {place_order_response.order_id} for price {place_order_response.order.order_price}")
+                self.moex.current_brokerage_order_id = order_id
+                self.moex.status = OrderStatus.OPEN
 
                 print(f"Sleeping {wait_time} seconds")
                 time.sleep(wait_time)
@@ -107,7 +113,10 @@ class ManagedExecutionWorker:
                 current_status = get_order_response.placed_order.placed_order_details.status
                 current_price = get_order_response.placed_order.order.order_price
 
-            print(f"Order {order_id} executed at price {current_price}!")
+            if not self.continue_processing:
+                print(f"Moex id {self.moex_id} cancelled with latest order-id {order_id} at price {current_price}!")
+            else:
+                print(f"Moex id {self.moex_id} executed with latest order-id {order_id} at price {current_price}!")
         except Exception as e:
             print(f"Error occurred: {e}")
 
@@ -123,7 +132,7 @@ class MoexService:
 
         # Managed data structure
         # TODO: Replace with `ThreadSafeDict`
-        self.managed_executions: dict[str, (ManagedExecution, Future)] = dict[str, (ManagedExecution, Future)]()
+        self.managed_executions: dict[str, (ManagedExecution, ManagedExecutionWorker, Future)] = dict[str, (ManagedExecution, ManagedExecutionWorker, Future)]()
 
         self.managed_executions_lock: Lock = Lock()
         self.id_generation_lock: Lock = Lock()
@@ -149,9 +158,9 @@ class MoexService:
 
         # TODO: Write unit test for this
         for brokerage, account_id in account_ids.items():
-            managed_executions_to_futures: list[(str, (ManagedExecution, Future))] = list(self.managed_executions.items())
+            managed_executions_to_futures: list[(str, (ManagedExecution, ManagedExecutionWorker, Future))] = list(self.managed_executions.items())
 
-            managed_executions_to_futures_for_account: list[(str, (ManagedExecution, Future))] = list(filter(lambda p: p[1][0].account_id == account_id and p[1][0].brokerage == brokerage, list(managed_executions_to_futures)))
+            managed_executions_to_futures_for_account: list[(str, (ManagedExecution, ManagedExecutionWorker, Future))] = list(filter(lambda p: p[1][0].account_id == account_id and p[1][0].brokerage == brokerage, list(managed_executions_to_futures)))
 
             exec_list: list[(str, ManagedExecution)] = list(map(lambda managed_execution: (str(managed_execution[0]), managed_execution[1][0]), managed_executions_to_futures_for_account))
             output_list += exec_list
@@ -180,7 +189,7 @@ class MoexService:
         future: Future = self.thread_pool_executor.submit(worker)
 
         with self.managed_executions_lock:
-            self.managed_executions[str(new_id)] = (managed_execution,  future)
+            self.managed_executions[str(new_id)] = (managed_execution, worker, future)
         print(f"Added new execution {new_id}")
 
         return CreateManagedExecutionResponse(managed_execution_id = str(new_id))
@@ -193,20 +202,23 @@ class MoexService:
         # Let's assume that it has not yet been executed
         managed_execution_id: str = cancel_managed_executions_request.managed_execution_id
         with self.managed_executions_lock:
-            managed_execution, future = self.managed_executions[managed_execution_id]
+            managed_execution, worker, future = self.managed_executions[managed_execution_id]
 
             # Cancel the future first so it doesn't create a new order after-the-fact
-            future: Future = future
-            # TODO: Test this
-            future.cancel()
+            worker: ManagedExecutionWorker = worker
+            worker.stop()
 
             # cancel the order
             managed_execution : ManagedExecution = managed_execution
             order_service: OrderService = self.orders_services[managed_execution.brokerage]
             if managed_execution.current_brokerage_order_id:
-                order_service.cancel_order(managed_execution.current_brokerage_order_id)
+                cancel_order_request: CancelOrderRequest = CancelOrderRequest(account_id=managed_execution.account_id, order_id=managed_execution.current_brokerage_order_id)
+                cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
+                print(f"Moex id: {managed_execution_id} - cancelled order {cancel_order_response.order_id} at {cancel_order_response.cancel_time}")
             else:
                 print(f"There is currently no open order for {managed_execution_id}, so nothing to cancel.")
+
+            return CancelManagedExecutionResponse(managed_execution=managed_execution)
 
     def _increment_id(self):
         with self.id_generation_lock:
@@ -240,6 +252,7 @@ if __name__ == "__main__":
 
     managed_execution_as_json = create_managed_execution_request.managed_execution.model_dump_json()
     as_json = create_managed_execution_request.model_dump_json()
+    print(as_json)
 
     moex_service.create_managed_execution(create_managed_execution_request=create_managed_execution_request)
     brokerage_to_accounts: dict[Brokerage, str] = dict[Brokerage, str]()
@@ -254,6 +267,9 @@ if __name__ == "__main__":
     print(get_managed_execution_response.managed_execution)
 
     cancel_managed_execution_request: CancelManagedExecutionRequest = CancelManagedExecutionRequest(managed_execution_id=exec_id)
+    cancel_managed_execution_response: CancelManagedExecutionResponse = moex_service.cancel_managed_execution(cancel_managed_execution_request)
+
+    print(cancel_managed_execution_response)
 
     moex_service.shutdown()
 

@@ -4,3 +4,4 @@ from fianchetto_tradebot.server.orders.managed_order_execution import ManagedExe
 
 class CancelManagedExecutionResponse(Response):
     managed_execution: ManagedExecution
+    # TODO: Consider adding a timestamp or maybe some kind of audit history
