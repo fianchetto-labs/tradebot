@@ -12,7 +12,7 @@ from fianchetto_tradebot.server.orders.trade_execution_util import TradeExecutio
 from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
 GAP_REDUCTION_RATIO = 1/3
-DEFAULT_WAIT_SEC = 3
+DEFAULT_WAIT_SEC = 15
 VERY_CLOSE_TO_MARKET_PRICE_WAIT = 30
 
 @register_tactic

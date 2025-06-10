@@ -98,8 +98,7 @@ class MoexRestService(RestService):
 
     def cancel_managed_execution(self, managed_execution_id: str):
         cancel_managed_execution_request: CancelManagedExecutionRequest = CancelManagedExecutionRequest(managed_execution_id=managed_execution_id)
-        return self.moex_service.cancel_managed_execution(
-            CancelManagedExecutionResponse(cancel_managed_execution_request=cancel_managed_execution_request))
+        return self.moex_service.cancel_managed_execution(cancel_managed_execution_request)
 
 
 if __name__ == "__main__":

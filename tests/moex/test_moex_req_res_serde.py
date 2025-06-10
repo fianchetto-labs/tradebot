@@ -73,3 +73,9 @@ def test_create_managed_execution_request_json_serde(managed_execution, account_
 
     assert reserialized_from_json.account_id == account_id
     assert reserialized_from_json.managed_execution.tactic == IncrementalPriceDeltaExecutionTactic
+
+def test_deserialization_from_string():
+    input = '{"account_id":"ABC123","managed_execution":{"brokerage":"etrade","account_id":"ABC123","current_brokerage_order_id":null,"past_brokerage_order_ids":[],"original_order":{"expiry":{"expiry_date":null,"all_or_none":false},"order_lines":[{"tradable":{"__type__":"Equity","price":null,"ticker":"GE","company_name":null},"action":"BUY","quantity":1,"quantity_filled":-1}],"order_price":{"order_price_type":"LIMIT","price":{"whole":100,"part":1,"currency":"USD","negative":false}}},"status":"PRE_SUBMISSION","latest_order_price":{"order_price_type":"LIMIT","price":{"whole":100,"part":1,"currency":"USD","negative":false}},"reserve_order_price":{"order_price_type":"LIMIT","price":{"whole":120,"part":1,"currency":"USD","negative":false}},"tactic":"IncrementalPriceDeltaExecutionTactic"}}'
+    create_managed_execution_request: CreateManagedExecutionRequest = CreateManagedExecutionRequest.model_validate_json(input)
+    assert create_managed_execution_request.account_id == "ABC123"
+
