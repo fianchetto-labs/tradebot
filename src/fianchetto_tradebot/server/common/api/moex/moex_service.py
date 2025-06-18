@@ -1,6 +1,8 @@
+import string
 import threading
 import time
 from asyncio import Future
+from random import choice
 from threading import Lock
 from venv import create
 
@@ -77,6 +79,7 @@ class ManagedExecutionWorker:
             # If the order is submitted, check its status. If it's not submitted, submit it.
 
             order_id = self.moex.current_brokerage_order_id
+            order_metadata = None
             if not order_id:
                 order_type = self.moex.original_order.get_order_type()
                 client_order_id = OrderUtil.generate_random_client_order_id()
@@ -101,8 +104,17 @@ class ManagedExecutionWorker:
             self.moex.status = current_status
             current_price = get_order_response.placed_order.placed_order_details.current_market_price
 
+            order = get_order_response.placed_order.order
+            if not order_metadata:
+                length = 15
+                characters = string.ascii_letters + string.digits
+                new_client_order_id = ''.join(choice(characters) for _ in range(length))
+                order_metadata: OrderMetadata = OrderMetadata(order_type=order.get_order_type(), account_id=account_id, client_order_id=new_client_order_id)
+
             while current_status != OrderStatus.EXECUTED and self.continue_processing:
-                new_price, wait_time = self.tactic.new_price(place_order_response.order, quotes_service)
+                new_price, wait_time = self.tactic.new_price(get_order_response.placed_order.order, quotes_service)
+
+                # Need to populate this --
                 order.order_price = new_price
 
                 preview_modify_order_request: PreviewModifyOrderRequest = PreviewModifyOrderRequest(order_id_to_modify=order_id, order_metadata=order_metadata, order=order)
@@ -130,6 +142,11 @@ class ManagedExecutionWorker:
             print(f"Error occurred: {e}")
 
         print(f"Moex_id_thread {self.moex_id}: Finished")
+
+    @staticmethod
+    def generate_random_alphanumeric(length=15):
+        characters = string.ascii_letters + string.digits
+        return ''.join(choice(characters) for _ in range(length))
 
 class MoexService:
     def __init__(self, quotes_services: dict[Brokerage, QuotesService], orders_services: dict[Brokerage, OrderService]):
@@ -243,7 +260,7 @@ class MoexService:
 
         return self.current_id
 
-if __name__ == "__main__":
+def create_moex_with_new_order_list_and_cancel(existing_order_id: str = None):
     quotes_services = dict[Brokerage, QuotesService]()
     orders_services = dict[Brokerage, OrderService]()
 
@@ -252,21 +269,26 @@ if __name__ == "__main__":
     orders_services[Brokerage.ETRADE] = ETradeOrderService(connector)
 
     moex_service: MoexService = MoexService(quotes_services, orders_services)
-
     app_thread = threading.Thread(target=moex_service.run)
     app_thread.start()
 
     account_id = "1XRq48Mv_HUiP8xmEZRPnA"
-    ol: OrderLine = OrderLine(tradable=Equity(ticker="GE"), action=Action.BUY, quantity=1)
-    order_price: OrderPrice = OrderPrice(order_price_type=OrderPriceType.LIMIT, price=Amount(whole=100, part=1))
-    reserve_price: OrderPrice = OrderPrice(order_price_type=OrderPriceType.LIMIT, price=Amount(whole=120, part=1))
-    o: Order = Order(expiry=GoodUntilCancelled(), order_lines=[ol], order_price=order_price)
+    if not existing_order_id:
+        ol: OrderLine = OrderLine(tradable=Equity(ticker="GE"), action=Action.BUY, quantity=1)
+        order_price: OrderPrice = OrderPrice(order_price_type=OrderPriceType.LIMIT, price=Amount(whole=100, part=1))
+        o: Order = Order(expiry=GoodUntilCancelled(), order_lines=[ol], order_price=order_price)
 
-    managed_execution_creation_params = ManagedExecutionCreationParams(managed_execution_creation_type=ManagedExecutionCreationType.AS_NEW_ORDER, brokerage=Brokerage.ETRADE, account_id=account_id, creation_order=o)
+        managed_execution_creation_params = ManagedExecutionCreationParams(
+            managed_execution_creation_type=ManagedExecutionCreationType.AS_NEW_ORDER, brokerage=Brokerage.ETRADE,
+            account_id=account_id, creation_order=o)
+    else:
+        managed_execution_creation_params = ManagedExecutionCreationParams(
+            managed_execution_creation_type=ManagedExecutionCreationType.FROM_EXISTING_ORDER, brokerage=Brokerage.ETRADE,
+            account_id=account_id, creation_order_id=existing_order_id)
 
-    create_managed_execution_request = CreateManagedExecutionRequest(managed_execution_creation_params=managed_execution_creation_params)
+    create_managed_execution_request = CreateManagedExecutionRequest(
+        managed_execution_creation_params=managed_execution_creation_params)
 
-    managed_execution_as_json = create_managed_execution_request.model_dump_json()
     as_json = create_managed_execution_request.model_dump_json()
     print(as_json)
 
@@ -274,20 +296,35 @@ if __name__ == "__main__":
     brokerage_to_accounts: dict[Brokerage, str] = dict[Brokerage, str]()
     brokerage_to_accounts[Brokerage.ETRADE] = account_id
 
-    list_managed_executions_request = ListManagedExecutionsRequest(accounts = brokerage_to_accounts)
-    executions = moex_service.list_managed_executions(list_managed_executions_request=list_managed_executions_request)
+    list_managed_executions_request = ListManagedExecutionsRequest(accounts=brokerage_to_accounts)
+    executions = moex_service.list_managed_executions(
+        list_managed_executions_request=list_managed_executions_request)
     print(executions.managed_executions_list)
 
     exec_id = executions.managed_executions_list[0][0]
-    get_managed_execution_response: GetManagedExecutionResponse = moex_service.get_managed_execution(GetManagedExecutionRequest(account_id=account_id, managed_execution_id=exec_id))
+    get_managed_execution_response: GetManagedExecutionResponse = moex_service.get_managed_execution(
+        GetManagedExecutionRequest(account_id=account_id, managed_execution_id=exec_id))
     print(get_managed_execution_response.managed_execution)
 
-    cancel_managed_execution_request: CancelManagedExecutionRequest = CancelManagedExecutionRequest(managed_execution_id=exec_id)
-    cancel_managed_execution_response: CancelManagedExecutionResponse = moex_service.cancel_managed_execution(cancel_managed_execution_request)
-
-    print(cancel_managed_execution_response)
-
+    #cancel_managed_execution_request: CancelManagedExecutionRequest = CancelManagedExecutionRequest(
+    #    managed_execution_id=exec_id)
+    #cancel_managed_execution_response: CancelManagedExecutionResponse = moex_service.cancel_managed_execution(
+    #    cancel_managed_execution_request)
+    #print(cancel_managed_execution_response)
     moex_service.shutdown()
+
+if __name__ == "__main__":
+    #print("Testing with new order:")
+    #create_moex_with_new_order_list_and_cancel()
+    #print("End test with new order")
+
+    existing_order_id = 91212
+    print(f"Testing with new order: {existing_order_id}")
+    create_moex_with_new_order_list_and_cancel(str(existing_order_id))
+    print("End test with new order")
+
+
+
 
 
 
