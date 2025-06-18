@@ -1,5 +1,7 @@
 import datetime
+import math
 from collections import Counter
+from functools import reduce
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -44,6 +46,7 @@ DEBIT_SIXTY_CENTS = OrderPrice(order_price_type=OrderPriceType.NET_DEBIT, price=
 NINETY_CENTS_MARKET_PRICE: Price = Price(bid=-.85, ask=-.95)
 
 option_expiry: datetime.date = datetime.datetime(2025, 1, 31).date()
+prev_week_option_expiry = option_expiry - datetime.timedelta(weeks=1)
 
 t1_strike = Amount(whole=200, part=0, currency=Currency.US_DOLLARS)
 t2_strike = Amount(whole=190, part=0, currency=Currency.US_DOLLARS)
@@ -51,6 +54,8 @@ t3_strike = Amount(whole=240, part=0, currency=Currency.US_DOLLARS)
 t4_strike = Amount(whole=250, part=0, currency=Currency.US_DOLLARS)
 
 equity = Equity(ticker="GE")
+tradable0: Option = Option(equity=equity, type=OptionType.PUT,
+                           strike=t1_strike, expiry=prev_week_option_expiry)
 tradable1: Option = Option(equity=equity, type=OptionType.PUT,
                                strike=t1_strike, expiry=option_expiry)
 tradable2: Option = Option(equity=equity, type=OptionType.PUT,
@@ -65,6 +70,8 @@ tradable_to_market_price_lookup: dict[Tradable, Price] = dict()
 tradable_to_get_tradable_response_lookup: dict[Tradable, GetTradableResponse] = dict()
 def initialize_lookups():
     t1_price_cents = 215
+    t0_price = Price(bid=.12, ask=0.15)
+
     t1_price = Price(bid=2.12, ask=2.21)
 
     t2_price = Price(bid=1.10, ask=1.18)
@@ -74,7 +81,10 @@ def initialize_lookups():
     t4_price = Price(bid=1.17, ask=1.24)
 
     tradable_to_market_price_lookup[equity] = MARKET_PRICE_NEAR_225
-    tradable_to_get_tradable_response_lookup[equity] = GetTradableResponse(tradable=tradable1, current_price=MARKET_PRICE_NEAR_225, volume=50000)
+    tradable_to_get_tradable_response_lookup[equity] = GetTradableResponse(tradable=equity, current_price=MARKET_PRICE_NEAR_225, volume=50000)
+
+    tradable_to_get_tradable_response_lookup[tradable0] = GetTradableResponse(tradable=tradable0, current_price=t0_price, volume=5)
+    tradable_to_market_price_lookup[tradable0] = t0_price
 
     tradable_to_get_tradable_response_lookup[tradable1] = GetTradableResponse(tradable=tradable1, current_price=t1_price, volume=5)
     tradable_to_market_price_lookup[tradable1] = t1_price
@@ -132,13 +142,16 @@ class TradeSetup:
 
     def get_market_price(self)->Price:
         running_price = Price(bid=0, ask=0)
+        quantities: set[int] = set(self.tradable_quantities.values())
+        gcd = reduce(math.gcd, quantities)
+
         for tradable, quantity in self.tradable_quantities.items():
             # Figure how to handle equities, especially in non-block-sizes
             if quantity > 0:
                 running_price -= self.market_price_lookup[tradable] * quantity
             else:
                 running_price += self.market_price_lookup[tradable] * abs(quantity)
-        return running_price
+        return running_price / gcd
 
 
 @pytest.fixture
@@ -183,7 +196,6 @@ def test_credit_spread_order_more_than_market(quote_service):
     assert new_price.order_price_type == OrderPriceType.NET_CREDIT
     assert new_price.price == Amount(whole=1, part=82)
 
-
 def test_debit_spread_order_less_than_market(quote_service):
     # Mock out quotes
     tradable_to_quantity_map: dict[Tradable, int] = dict[Tradable, int]()
@@ -208,6 +220,30 @@ def test_debit_spread_order_less_than_market(quote_service):
 
     assert new_price.order_price_type == OrderPriceType.NET_DEBIT
     assert new_price.price == Amount(whole=0, part=34)
+
+def test_scaled_multi_legged_trade():
+    tradable_to_quantity_map: dict[Tradable, int] = dict[Tradable, int]()
+
+    tradable_to_quantity_map[tradable0] = 5
+    tradable_to_quantity_map[tradable1] = -5
+    tradable_to_quantity_map[tradable2] = 5
+
+    ts: TradeSetup = TradeSetup(market_price_lookup=tradable_to_market_price_lookup,
+                                tradable_quantities=tradable_to_quantity_map)
+    if ts.market_price.mark >= 0:
+        # then we want to get more cash
+        initial_offer_price = OrderPrice(order_price_type=OrderPriceType.NET_CREDIT, price=Amount.from_float(2 * ts.market_price.ask))
+    else:
+        initial_offer_price = OrderPrice(order_price_type=OrderPriceType.NET_DEBIT, price=Amount.from_float(0))
+
+    o: Order = Order(expiry=GoodUntilCancelled(), order_lines=ts.to_order_lines(), order_price=initial_offer_price)
+
+    quote_service.get_tradable_quote = lookup_market_values
+
+    new_price, _ = IncrementalPriceDeltaExecutionTactic.new_price(o, quote_service)
+
+    assert new_price.order_price_type == OrderPriceType.NET_CREDIT
+    assert new_price.price == Amount(whole=1, part=16)
 
 
 def lookup_market_values(get_tradable_request: GetTradableRequest):
