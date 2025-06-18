@@ -38,3 +38,9 @@ class Price(BaseModel):
 
     def __mul__(self, factor):
         return Price(bid=self.bid * factor, ask=self.ask * factor)
+
+    def __truediv__(self, divisor: float):
+        if divisor == 0:
+            raise ZeroDivisionError("Cannot divide Price by zero.")
+
+        return Price(bid=self.bid / divisor, ask=self.ask / divisor)
