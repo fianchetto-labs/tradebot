@@ -2,6 +2,7 @@ import threading
 import time
 from asyncio import Future
 from threading import Lock
+from venv import create
 
 from fastapi import HTTPException
 
@@ -32,6 +33,7 @@ from fianchetto_tradebot.common_models.managed_executions.list_managed_execution
     ListManagedExecutionsRequest
 from fianchetto_tradebot.common_models.managed_executions.list_managed_executions_response import \
     ListManagedExecutionsResponse
+from fianchetto_tradebot.common_models.managed_executions.moex_status import MoexStatus
 from fianchetto_tradebot.common_models.order.action import Action
 from fianchetto_tradebot.common_models.order.expiry.good_until_cancelled import GoodUntilCancelled
 from fianchetto_tradebot.common_models.order.order import Order
@@ -45,7 +47,8 @@ from fianchetto_tradebot.server.common.api.orders.order_util import OrderUtil
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.server.common.service.service_key import ServiceKey
 from fianchetto_tradebot.server.common.threading.persistent_thread_pool import PersistentThreadPool
-from fianchetto_tradebot.server.orders.managed_order_execution import ManagedExecution
+from fianchetto_tradebot.server.orders.managed_order_execution import ManagedExecution, ManagedExecutionCreationParams, \
+    ManagedExecutionCreationType
 from fianchetto_tradebot.server.orders.tactics.execution_tactic import ExecutionTactic
 from fianchetto_tradebot.server.quotes.etrade.etrade_quotes_service import ETradeQuotesService
 from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
@@ -189,7 +192,7 @@ class MoexService:
 
     def create_managed_execution(self, create_managed_execution_request: CreateManagedExecutionRequest)->CreateManagedExecutionResponse:
         new_id = self._increment_id()
-
+        creation_request_params = create_managed_execution_request.managed_execution_creation_params
 
         managed_execution: ManagedExecution = create_managed_execution_request.managed_execution
         # TODO: In a cleaner implementation, the wait would be internal to the Worker - FIA-127
@@ -241,7 +244,6 @@ class MoexService:
         return self.current_id
 
 if __name__ == "__main__":
-
     quotes_services = dict[Brokerage, QuotesService]()
     orders_services = dict[Brokerage, OrderService]()
 
@@ -260,11 +262,11 @@ if __name__ == "__main__":
     reserve_price: OrderPrice = OrderPrice(order_price_type=OrderPriceType.LIMIT, price=Amount(whole=120, part=1))
     o: Order = Order(expiry=GoodUntilCancelled(), order_lines=[ol], order_price=order_price)
 
-    managed_execution = ManagedExecution(brokerage=Brokerage.ETRADE, account_id=account_id, original_order=o, latest_order_price=o.order_price, reserve_order_price=reserve_price)
+    managed_execution_creation_params = ManagedExecutionCreationParams(managed_execution_creation_type=ManagedExecutionCreationType.AS_NEW_ORDER, brokerage=Brokerage.ETRADE, account_id=account_id, creation_order=o)
 
-    create_managed_execution_request = CreateManagedExecutionRequest(account_id=account_id, managed_execution=managed_execution)
+    create_managed_execution_request = CreateManagedExecutionRequest(managed_execution_creation_params=managed_execution_creation_params)
 
-    managed_execution_as_json = create_managed_execution_request.managed_execution.model_dump_json()
+    managed_execution_as_json = create_managed_execution_request.model_dump_json()
     as_json = create_managed_execution_request.model_dump_json()
     print(as_json)
 
