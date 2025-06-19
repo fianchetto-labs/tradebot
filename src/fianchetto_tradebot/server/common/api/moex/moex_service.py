@@ -192,7 +192,7 @@ class MoexService:
 
 
         managed_execution: ManagedExecution = create_managed_execution_request.managed_execution
-        # TODO: In a cleaner implementation, the wait would be internal to the Worker
+        # TODO: In a cleaner implementation, the wait would be internal to the Worker - FIA-127
         order_creation_event = threading.Event()
 
         with self.managed_executions_lock:

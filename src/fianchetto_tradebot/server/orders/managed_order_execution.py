@@ -15,9 +15,7 @@ from fianchetto_tradebot.server.orders.tactics.incremental_price_delta_execution
 class ManagedExecution(BaseModel):
     brokerage: Brokerage
     account_id: str
-
     current_brokerage_order_id: Optional[str] = None
-
     past_brokerage_order_ids: Optional[list[str]] = []
     original_order: Order
     status: Optional[OrderStatus] = OrderStatus.PRE_SUBMISSION
