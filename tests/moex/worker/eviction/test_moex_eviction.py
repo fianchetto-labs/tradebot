@@ -18,7 +18,7 @@ from fianchetto_tradebot.common_models.managed_executions.create_managed_executi
     CreateManagedExecutionResponse
 from fianchetto_tradebot.common_models.order.order import Order
 from fianchetto_tradebot.common_models.order.order_type import OrderType
-from fianchetto_tradebot.server.common.api.moex.moex_service import ManagedExecutionWorker, MoexService
+from fianchetto_tradebot.server.common.api.moex.moex_service import MoexService
 from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.server.common.api.orders.order_service import OrderService
 from fianchetto_tradebot.server.orders.managed_order_execution import ManagedExecution
