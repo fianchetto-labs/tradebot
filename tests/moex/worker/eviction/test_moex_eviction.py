@@ -1,4 +1,3 @@
-# TODO: We want to perhaps add a service for this. Filed FIA-126 to discuss.
 from unittest.mock import MagicMock
 
 import pytest
@@ -65,6 +64,7 @@ def quotes_service_map()-> dict[Brokerage, QuotesService]:
 
     return quotes_service_map
 
+# TODO: We want to perhaps add a service for this. Filed FIA-126 to discuss.
 def test_all_managed_orders_closed_at_eod():
     # TODO: implement this
     pass
@@ -86,8 +86,13 @@ def test_order_cancelled_when_worker_killed(account_id: str, sample_managed_exec
     cancel_managed_execution_request: CancelManagedExecutionRequest = CancelManagedExecutionRequest(managed_execution_id=moex_id)
     cancel_managed_execution_response: CancelManagedExecutionResponse = moex_service.cancel_managed_execution(cancel_managed_executions_request=cancel_managed_execution_request)
     expected_order_id = cancel_managed_execution_response.managed_execution.current_brokerage_order_id
-    if not cancel_managed_execution_response.managed_execution or not cancel_managed_execution_response.managed_execution.current_brokerage_order_id:
-        raise Exception("Could not get order id from response")
+
+    if not cancel_managed_execution_response.managed_execution:
+        raise Exception(f"Could not get managed_execution from cancel_managed_execution_response: {cancel_managed_execution_response}")
+
+    if not cancel_managed_execution_response.managed_execution.current_brokerage_order_id:
+        raise Exception(f"Could not get current_brokerage_order_id from"
+                        f"cancel_managed_execution_response.managed_execution: {cancel_managed_execution_response.managed_execution.current_brokerage_order_id}")
 
     # Then
     # We see that the Brokerage Order is cancelled (using mocking).

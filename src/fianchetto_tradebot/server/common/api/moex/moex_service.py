@@ -72,6 +72,7 @@ class ManagedExecutionWorker:
         account_id = self.moex.account_id
         try:
             # If the order is submitted, check its status. If it's not submitted, submit it.
+
             order_id = self.moex.current_brokerage_order_id
             if not order_id:
                 order_type = self.moex.original_order.get_order_type()
@@ -79,9 +80,14 @@ class ManagedExecutionWorker:
                 order_metadata: OrderMetadata = OrderMetadata(order_type=order_type, account_id=account_id, client_order_id=client_order_id)
 
                 place_order_request: PreviewPlaceOrderRequest = PreviewPlaceOrderRequest(order_metadata=order_metadata, order=order)
-                place_order_response = orders_service.preview_and_place_order(place_order_request)
 
+                place_order_response = orders_service.preview_and_place_order(place_order_request)
                 order_id = place_order_response.order_id
+
+                if 'event_creation_lock' in kwargs:
+                    event: threading.Event = kwargs['event_creation_lock']
+                    print(f"Brokerage order {order_id} available for MOEX.")
+                    event.set()
 
             # Get order status
             self.moex.current_brokerage_order_id = order_id
@@ -184,13 +190,21 @@ class MoexService:
     def create_managed_execution(self, create_managed_execution_request: CreateManagedExecutionRequest)->CreateManagedExecutionResponse:
         new_id = self._increment_id()
 
+
         managed_execution: ManagedExecution = create_managed_execution_request.managed_execution
-        worker: ManagedExecutionWorker = ManagedExecutionWorker(moex=managed_execution, moex_id=str(new_id), quotes_services=self.quotes_services, orders_services=self.orders_services)
-        future: Future = self.thread_pool_executor.submit(worker)
+        # TODO: In a cleaner implementation, the wait would be internal to the Worker
+        order_creation_event = threading.Event()
 
         with self.managed_executions_lock:
+            worker: ManagedExecutionWorker = ManagedExecutionWorker(moex=managed_execution, moex_id=str(new_id), quotes_services=self.quotes_services, orders_services=self.orders_services)
+            future: Future = self.thread_pool_executor.submit(worker, event_creation_lock=order_creation_event)
+
+            # TODO: This ought to be configurable
+            success = order_creation_event.wait(timeout=15)
+            assert success, "Could not create event in a meaningful amount of time"
+
             self.managed_executions[str(new_id)] = (managed_execution, worker, future)
-        print(f"Added new execution {new_id}")
+            print(f"Added new execution {new_id}")
 
         return CreateManagedExecutionResponse(managed_execution_id = str(new_id))
 
