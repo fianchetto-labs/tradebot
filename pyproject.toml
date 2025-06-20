@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fianchetto-tradebot"
-version = "0.1.14"
+version = "0.1.15"
 description = "An algorithmic trading bot framework connecting to brokerages like E*Trade and Schwab"
 readme = "README.md"
 requires-python = ">=3.6"
