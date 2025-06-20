@@ -15,12 +15,14 @@ from fianchetto_tradebot.common_models.managed_executions.create_managed_executi
     CreateManagedExecutionRequest
 from fianchetto_tradebot.common_models.managed_executions.create_managed_execution_response import \
     CreateManagedExecutionResponse
+from fianchetto_tradebot.common_models.managed_executions.moex_status import MoexStatus
 from fianchetto_tradebot.common_models.order.order import Order
 from fianchetto_tradebot.common_models.order.order_type import OrderType
 from fianchetto_tradebot.server.common.api.moex.moex_service import MoexService
 from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.server.common.api.orders.order_service import OrderService
-from fianchetto_tradebot.server.orders.managed_order_execution import ManagedExecution
+from fianchetto_tradebot.server.orders.managed_order_execution import ManagedExecution, ManagedExecutionCreationParams, \
+    ManagedExecutionCreationType
 from fianchetto_tradebot.server.quotes.etrade.etrade_quotes_service import ETradeQuotesService
 from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
@@ -40,7 +42,7 @@ def order()->Order:
 def sample_managed_execution(account_id: str, order_id: str, order: Order):
     managed_execution: ManagedExecution = ManagedExecution(brokerage=Brokerage.ETRADE, account_id=account_id,
                                                            original_order=order, latest_order_price=order.order_price,
-                                                           reserve_order_price=order.order_price)
+                                                           reserve_order_price=order.order_price, status=MoexStatus.PRE_SUBMISSION)
     return managed_execution
 
 @pytest.fixture
@@ -69,7 +71,7 @@ def test_all_managed_orders_closed_at_eod():
     # TODO: implement this
     pass
 
-def test_order_cancelled_when_worker_killed(account_id: str, sample_managed_execution: ManagedExecution, quotes_service_map: dict[Brokerage, QuotesService], orders_service_map: dict[Brokerage, OrderService]):
+def test_order_cancelled_when_worker_killed(account_id: str, order: Order, quotes_service_map: dict[Brokerage, QuotesService], orders_service_map: dict[Brokerage, OrderService]):
     # Given
     # A user wants to cancel a managed execution.
     # The user has cancelled their order using the API
@@ -77,7 +79,12 @@ def test_order_cancelled_when_worker_killed(account_id: str, sample_managed_exec
     # 1. Assume the MOEX is running. There is exactly 1 managed execution in progress
     mock_order_service = orders_service_map[Brokerage.ETRADE]
     moex_service = MoexService(quotes_services=quotes_service_map, orders_services=orders_service_map)
-    create_managed_execution_request: CreateManagedExecutionRequest = CreateManagedExecutionRequest(account_id=account_id, managed_execution=sample_managed_execution)
+
+    managed_execution_creation_params: ManagedExecutionCreationParams = ManagedExecutionCreationParams(
+        managed_execution_creation_type=ManagedExecutionCreationType.AS_NEW_ORDER,
+        brokerage=Brokerage.ETRADE, account_id=account_id, creation_order=order)
+
+    create_managed_execution_request: CreateManagedExecutionRequest = CreateManagedExecutionRequest(managed_execution_creation_params=managed_execution_creation_params)
     create_managed_execution_response: CreateManagedExecutionResponse = moex_service.create_managed_execution(create_managed_execution_request=create_managed_execution_request)
 
     # When
