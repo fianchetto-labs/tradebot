@@ -1,12 +1,11 @@
-from pydantic import ConfigDict
+from typing import Optional
 
 from fianchetto_tradebot.common_models.api.request import Request
-from fianchetto_tradebot.server.orders.managed_order_execution import ManagedExecution
+from fianchetto_tradebot.server.orders.managed_order_execution import ManagedExecution, ManagedExecutionCreationParams
 
 
 class CreateManagedExecutionRequest(Request):
-    account_id: str
-    managed_execution: ManagedExecution
+    managed_execution_creation_params: ManagedExecutionCreationParams
 
     def model_dump_json(self, **kwargs):
         return super().model_dump_json(

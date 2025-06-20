@@ -243,7 +243,7 @@ def test_scaled_multi_legged_trade():
     new_price, _ = IncrementalPriceDeltaExecutionTactic.new_price(o, quote_service)
 
     assert new_price.order_price_type == OrderPriceType.NET_CREDIT
-    assert new_price.price == Amount(whole=1, part=16)
+    assert new_price.price == Amount(whole=1, part=62)
 
 
 def lookup_market_values(get_tradable_request: GetTradableRequest):

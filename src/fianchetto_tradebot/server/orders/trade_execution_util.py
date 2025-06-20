@@ -1,3 +1,6 @@
+import math
+from functools import reduce
+
 from fianchetto_tradebot.common_models.api.quotes.get_tradable_request import GetTradableRequest
 from fianchetto_tradebot.common_models.finance.price import Price
 from fianchetto_tradebot.common_models.order.action import Action
@@ -18,10 +21,12 @@ class TradeExecutionUtil:
         best_price: float = 0
         worst_price: float = 0
 
+        quantities: list[int] = list[int]()
         for order_line in order.order_lines:
             get_tradable_request: GetTradableRequest = GetTradableRequest(tradable=order_line.tradable)
             get_tradable_response: GetTradableResponse = quote_service.get_tradable_quote(get_tradable_request)
             quantity = order_line.quantity
+            quantities.append(quantity)
 
             current_price: Price = get_tradable_response.current_price
 
@@ -52,4 +57,5 @@ class TradeExecutionUtil:
             lower = best_price
             upper = worst_price
 
-        return Price(bid=lower, ask=upper)
+        gcd: int = reduce(math.gcd, quantities)
+        return Price(bid=lower, ask=upper) / gcd

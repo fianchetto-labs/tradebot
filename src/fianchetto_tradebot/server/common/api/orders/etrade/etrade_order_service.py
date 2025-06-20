@@ -141,9 +141,10 @@ class ETradeOrderService(OrderService):
             raise Exception(f"Retry count must not be negative! - {num_retries} provided")
         response = self.session.post(url, header_auth=True, headers=headers, data=payload)
         preview_order_response: PreviewOrderResponse = ETradeOrderService._parse_preview_order_response(response, order_metadata, previous_order_id)
+
         while num_retries:
             if preview_order_response.request_status == RequestStatus.FAILURE_DO_NOT_RETRY:
-                raise Exception(f"Order not previewable - please fix {preview_order_response.order_message}")
+                raise Exception(f"Order not previewable - please fix {preview_order_response.order_messages}")
             if preview_order_response.request_status == RequestStatus.FAILURE_RETRY_SUGGESTED:
                 print(f"Sleeping {DEFAULT_RETRY_SLEEP_SECONDS} before retrying")
                 sleep(DEFAULT_RETRY_SLEEP_SECONDS)
@@ -232,6 +233,7 @@ class ETradeOrderService(OrderService):
     def preview_and_place_order(self, preview_order_request: PreviewOrderRequest) -> PlaceOrderResponse:
         order_metadata = preview_order_request.order_metadata
         preview_order_response: PreviewOrderResponse = self.preview_order(preview_order_request)
+
         preview_id = preview_order_response.preview_id
         place_order_request: PlaceOrderRequest = PlaceOrderRequest(order_metadata=order_metadata, preview_id=preview_id, order=preview_order_request.order)
         place_order_response: PlaceOrderResponse = self.place_order(place_order_request)
@@ -312,9 +314,7 @@ class ETradeOrderService(OrderService):
                 error = data['Error']
                 code = error['code'] if 'code' in error else None
                 message = error['message'] if 'message' in error else None
-
                 order_placement_message: OrderPlacementMessage = ETradeOrderResponseMessage(code=str(code), message=message)
-
                 if NOT_ENOUGH_SHARES_MSG_PORTION in message or code == PARTIAL_EXECUTED_CODE:
                     request_status = RequestStatus.FAILURE_RETRY_SUGGESTED
                 else:
@@ -322,7 +322,7 @@ class ETradeOrderService(OrderService):
                 if previous_order_id:
                     return PreviewModifyOrderResponse(order_metadata=order_metadata, preview_id=None, preview_order_info=None, request_status=request_status, order_message=order_placement_message, previous_order_id=previous_order_id)
                 else:
-                    return PreviewOrderResponse(order_metadata=order_metadata, preview_id=None, preview_order_info=None, request_status=request_status, order_message=order_placement_message)
+                    return PreviewOrderResponse(order_metadata=order_metadata, preview_id=None, preview_order_info=None, request_status=request_status, order_message=[order_placement_message])
             else:
                 request_status = RequestStatus.FAILURE_DO_NOT_RETRY
 
@@ -341,9 +341,12 @@ class ETradeOrderService(OrderService):
 
         # how to check if it replaces order
         if previous_order_id:
-            return PreviewModifyOrderResponse(order_metadata=order_metadata, preview_id=preview_id, previous_order_id=str(previous_order_id), order_preview=order_preview, request_status=request_status)
+            return PreviewModifyOrderResponse(order_metadata=order_metadata, preview_id=preview_id,
+                                              previous_order_id=str(previous_order_id), order_preview=order_preview,
+                                              request_status=request_status)
         else:
             return PreviewOrderResponse(order_metadata=order_metadata, preview_id=str(preview_id), preview_order_info=order_preview, request_status=request_status)
+
 
     @staticmethod
     def _parse_order_list_response(response, account_id) -> list[PlacedOrder]:

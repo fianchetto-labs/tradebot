@@ -12,7 +12,7 @@ from fianchetto_tradebot.server.orders.trade_execution_util import TradeExecutio
 from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
 GAP_REDUCTION_RATIO = 1/3
-DEFAULT_WAIT_SEC = 15
+DEFAULT_WAIT_SEC = 5
 VERY_CLOSE_TO_MARKET_PRICE_WAIT = 30
 
 @register_tactic
@@ -53,11 +53,11 @@ class IncrementalPriceDeltaExecutionTactic(ExecutionTactic):
     def get_spread_new_price(delta, current_order: Order):
 
         current_order_price: float = current_order.order_price.price.to_float()
-        adjustment = round(delta * GAP_REDUCTION_RATIO, 2)
+        adjustment = max(round(delta * GAP_REDUCTION_RATIO, 2), .01)
 
         # Adjustments go in one direction -- less credit or more debit.
         proposed_new_amount_float: float = round(current_order_price - adjustment, 2)
-        proposed_new_amount = Amount.from_float(proposed_new_amount_float)
+        proposed_new_amount: Amount = Amount.from_float(proposed_new_amount_float)
         if proposed_new_amount == ZERO_AMOUNT:
             return OrderPrice(order_price_type=OrderPriceType.NET_EVEN, price=Amount(whole=0, part=0)), DEFAULT_WAIT_SEC
         elif proposed_new_amount < ZERO_AMOUNT:
