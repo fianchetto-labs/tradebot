@@ -53,7 +53,7 @@ class IncrementalPriceDeltaExecutionTactic(ExecutionTactic):
     def get_spread_new_price(delta, current_order: Order):
 
         current_order_price: float = current_order.order_price.price.to_float()
-        adjustment = round(delta * GAP_REDUCTION_RATIO, 2)
+        adjustment = max(round(delta * GAP_REDUCTION_RATIO, 2), .01)
 
         # Adjustments go in one direction -- less credit or more debit.
         proposed_new_amount_float: float = round(current_order_price - adjustment, 2)

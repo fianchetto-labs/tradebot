@@ -80,7 +80,10 @@ class ManagedExecutionWorker:
 
             order_id = self.moex.current_brokerage_order_id
             order_metadata = None
+
             if not order_id:
+                if not self.moex.original_order:
+                    raise Exception("must provide order_id or order")
                 order_type = self.moex.original_order.get_order_type()
                 client_order_id = OrderUtil.generate_random_client_order_id()
                 order_metadata: OrderMetadata = OrderMetadata(order_type=order_type, account_id=account_id, client_order_id=client_order_id)
@@ -90,6 +93,12 @@ class ManagedExecutionWorker:
                 place_order_response = orders_service.preview_and_place_order(place_order_request)
                 order_id = place_order_response.order_id
 
+                if 'event_creation_lock' in kwargs:
+                    event: threading.Event = kwargs['event_creation_lock']
+                    print(f"Brokerage order {order_id} available for MOEX.")
+                    event.set()
+            else:
+                # TODO: There is probably a more elegant way
                 if 'event_creation_lock' in kwargs:
                     event: threading.Event = kwargs['event_creation_lock']
                     print(f"Brokerage order {order_id} available for MOEX.")
@@ -210,8 +219,10 @@ class MoexService:
     def create_managed_execution(self, create_managed_execution_request: CreateManagedExecutionRequest)->CreateManagedExecutionResponse:
         new_id = self._increment_id()
         creation_request_params = create_managed_execution_request.managed_execution_creation_params
+        managed_execution: ManagedExecution = ManagedExecution(brokerage=creation_request_params.brokerage, account_id=creation_request_params.account_id,
+                                                               original_order=creation_request_params.creation_order,
+                                                               original_order_id=creation_request_params.creation_order_id, current_brokerage_order_id=creation_request_params.creation_order_id, status=MoexStatus.PRE_SUBMISSION)
 
-        managed_execution: ManagedExecution = create_managed_execution_request.managed_execution
         # TODO: In a cleaner implementation, the wait would be internal to the Worker - FIA-127
         order_creation_event = threading.Event()
 
@@ -318,7 +329,7 @@ if __name__ == "__main__":
     #create_moex_with_new_order_list_and_cancel()
     #print("End test with new order")
 
-    existing_order_id = 91359
+    existing_order_id = 91399
     print(f"Testing with new order: {existing_order_id}")
     create_moex_with_new_order_list_and_cancel(str(existing_order_id))
     print("End test with new order")
