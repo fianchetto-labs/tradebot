@@ -318,7 +318,7 @@ if __name__ == "__main__":
     #create_moex_with_new_order_list_and_cancel()
     #print("End test with new order")
 
-    existing_order_id = 91265
+    existing_order_id = 91359
     print(f"Testing with new order: {existing_order_id}")
     create_moex_with_new_order_list_and_cancel(str(existing_order_id))
     print("End test with new order")

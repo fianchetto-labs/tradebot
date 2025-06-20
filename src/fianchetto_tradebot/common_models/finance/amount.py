@@ -102,7 +102,7 @@ class Amount(BaseModel):
         return nominal
 
     def to_float(self)->float:
-        absolute_value = self.whole + self.part / 100.0
+        absolute_value = round(self.whole + self.part / 100.0,2)
         if self.negative:
             return -1 * absolute_value
         else:

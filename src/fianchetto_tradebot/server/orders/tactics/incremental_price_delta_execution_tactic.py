@@ -57,7 +57,7 @@ class IncrementalPriceDeltaExecutionTactic(ExecutionTactic):
 
         # Adjustments go in one direction -- less credit or more debit.
         proposed_new_amount_float: float = round(current_order_price - adjustment, 2)
-        proposed_new_amount = Amount.from_float(proposed_new_amount_float)
+        proposed_new_amount: Amount = Amount.from_float(proposed_new_amount_float)
         if proposed_new_amount == ZERO_AMOUNT:
             return OrderPrice(order_price_type=OrderPriceType.NET_EVEN, price=Amount(whole=0, part=0)), DEFAULT_WAIT_SEC
         elif proposed_new_amount < ZERO_AMOUNT:
