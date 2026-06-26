@@ -43,6 +43,7 @@ from fianchetto_tradebot.common_models.order.order_line import OrderLine
 from fianchetto_tradebot.common_models.order.order_price import OrderPrice
 from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceType
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
+from fianchetto_tradebot.server.common.api.http_status_code import HttpStatusCode
 from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.server.common.api.orders.order_service import OrderService
 from fianchetto_tradebot.server.common.api.orders.order_util import OrderUtil
@@ -210,7 +211,7 @@ class MoexService:
             return GetManagedExecutionResponse(managed_execution=managed_execution)
         else:
             # Raise 404 here
-            raise HTTPException(status_code=404, detail=f"Managed execution {managed_execution_id} not found")
+            raise HTTPException(status_code=HttpStatusCode.NOT_FOUND, detail=f"Managed execution {managed_execution_id} not found")
 
     def shutdown(self):
         print("...shutting down...")
@@ -333,5 +334,4 @@ if __name__ == "__main__":
     print(f"Testing with new order: {existing_order_id}")
     create_moex_with_new_order_list_and_cancel(str(existing_order_id))
     print("End test with new order")
-
 

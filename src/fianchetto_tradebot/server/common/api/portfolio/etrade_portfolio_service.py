@@ -12,6 +12,7 @@ from fianchetto_tradebot.common_models.finance.option import Option
 from fianchetto_tradebot.common_models.finance.option_type import OptionType
 from fianchetto_tradebot.common_models.finance.tradable import Tradable
 from fianchetto_tradebot.common_models.portfolio.portfolio_builder import PortfolioBuilder
+from fianchetto_tradebot.server.common.api.http_status_code import HttpStatusCode
 
 DEFAULT_SORT_BY = "DAYS_EXPIRATION"
 DEFAULT_SORT_ORDER = "ASC"
@@ -55,7 +56,7 @@ class ETradePortfolioService(PortfolioService):
 
     @staticmethod
     def _parse_portfolio_response(input) -> GetPortfolioResponse:
-        if input.status_code != 200:
+        if int(input.status_code) != HttpStatusCode.OK:
             text = json.loads(input.text)
             error = text['Error']
             message = error['message']

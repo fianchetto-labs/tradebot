@@ -1,5 +1,6 @@
 import os
 import pickle
+import stat
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -11,10 +12,12 @@ from fianchetto_tradebot.common_models.api.orders.order_metadata import OrderMet
 from fianchetto_tradebot.common_models.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common_models.api.orders.preview_order_request import PreviewOrderRequest
 from fianchetto_tradebot.common_models.api.orders.preview_order_response import PreviewOrderResponse
+from fianchetto_tradebot.server.common.api.http_status_code import HttpStatusCode
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector, DEFAULT_ETRADE_BASE_URL_FILE
 from fianchetto_tradebot.common_models.finance.amount import Amount
 from fianchetto_tradebot.common_models.finance.currency import Currency
 from fianchetto_tradebot.common_models.finance.equity import Equity
+from fianchetto_tradebot.common_models.order.executed_order import ExecutedOrder
 from fianchetto_tradebot.common_models.order.action import Action
 from fianchetto_tradebot.common_models.order.expiry.good_for_day import GoodForDay
 from fianchetto_tradebot.common_models.order.order import Order
@@ -44,6 +47,15 @@ SPREAD_PREVIEW_ORDER_RESPONSE_FILE = os.path.join(os.path.dirname(__file__), "./
 SPREAD_PLACE_ORDER_RESPONSE_FILE = os.path.join(os.path.dirname(__file__), "./resources/output_place_order_spread")
 
 SPREAD_ORDER = OrderTestUtil.build_spread_order(EXPECTED_ORDER_PRICE)
+
+
+class DummyJsonResponse:
+    def __init__(self, status_code, body):
+        self.status_code = status_code
+        self._body = body
+
+    def json(self):
+        return self._body
 
 @pytest.fixture
 def preview_request()->PreviewOrderRequest:
@@ -133,6 +145,93 @@ def test_modify_order_preview():
 def test_place_modified_order():
     # TODO: Implement this test
     pass
+
+
+def test_parse_order_list_response_handles_no_content_status():
+    response = DummyJsonResponse(HttpStatusCode.NO_CONTENT, {})
+
+    assert ETradeOrderService._parse_order_list_response(response, ACCOUNT_ID) == []
+
+
+def test_parse_get_order_response_returns_executed_order_for_executed_status():
+    response = DummyJsonResponse(HttpStatusCode.OK, {
+        "OrdersResponse": {
+            "Order": [
+                {
+                    "orderId": PLACED_ORDER_ID,
+                    "OrderDetail": [
+                        {
+                            "accountId": ACCOUNT_ID,
+                            "status": "EXECUTED",
+                            "placedTime": 1700000000000,
+                            "executedTime": 1700000001000,
+                            "orderValue": 12.34,
+                            "marketSession": "REGULAR",
+                            "netPrice": -12.34,
+                            "netBid": -12.30,
+                            "netAsk": -12.38,
+                            "allOrNone": False,
+                            "orderTerm": "GOOD_FOR_DAY",
+                            "priceType": "LIMIT",
+                            "limitPrice": 12.34,
+                            "Instrument": [
+                                {
+                                    "orderedQuantity": 1,
+                                    "filledQuantity": 1,
+                                    "orderAction": "BUY",
+                                    "Product": {
+                                        "securityType": "EQ",
+                                        "symbol": "GE"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    })
+
+    parsed_response = ETradeOrderService._parse_get_order_response(response, ACCOUNT_ID, str(PLACED_ORDER_ID))
+
+    assert isinstance(parsed_response.placed_order, ExecutedOrder)
+
+
+def test_connector_serializes_base_url_as_private_json(tmp_path):
+    connector = object.__new__(ETradeConnector)
+    base_url_file = tmp_path / "base_url.json"
+    connector.base_url_file = str(base_url_file)
+
+    connector.serialize_base_url("https://api.example.test")
+
+    assert ETradeConnector.deserialize_base_url(base_url_file) == "https://api.example.test"
+    assert stat.S_IMODE(base_url_file.stat().st_mode) == 0o600
+    assert stat.S_IMODE(base_url_file.parent.stat().st_mode) == 0o700
+
+
+def test_connector_rebuilds_sessions_from_private_json_credentials(tmp_path):
+    connector = object.__new__(ETradeConnector)
+    credentials_file = tmp_path / "connection.json"
+    connector.credentials_file = str(credentials_file)
+
+    connector.serialize_connection_credentials(
+        consumer_key="consumer-key",
+        consumer_secret="consumer-secret",
+        access_token="access-token",
+        access_token_secret="access-token-secret",
+        request_token="request-token",
+        request_token_secret="request-token-secret",
+        base_url="https://api.example.test",
+    )
+
+    session, async_session, base_url = ETradeConnector._build_connection_from_credentials_file(credentials_file)
+
+    assert session.access_token == "access-token"
+    assert session.access_token_secret == "access-token-secret"
+    assert async_session.oauth_token == "access-token"
+    assert async_session.oauth_token_secret == "access-token-secret"
+    assert base_url == "https://api.example.test"
+    assert stat.S_IMODE(credentials_file.stat().st_mode) == 0o600
 
 def _read_input(input_file):
     with open(input_file, 'rb') as handle:
