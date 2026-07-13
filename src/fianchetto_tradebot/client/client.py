@@ -199,11 +199,11 @@ class Client:
         url = self._format_path(path, base_uri, path_params)
         if hasattr(self, 'session'):
             response = self.session.post(
-                url, json=request_body.model_dump(), timeout=self.timeout
+                url, json=request_body.model_dump(mode="json"), timeout=self.timeout
             )
         else:
             response = requests.post(
-                url, json=request_body.model_dump(), timeout=self.timeout
+                url, json=request_body.model_dump(mode="json"), timeout=self.timeout
             )
         response.raise_for_status()
         return response_model.model_validate(response.json())
@@ -219,11 +219,11 @@ class Client:
         url = self._format_path(path, base_uri, path_params)
         if hasattr(self, 'session'):
             response = self.session.put(
-                url, json=request_body.model_dump(), timeout=self.timeout
+                url, json=request_body.model_dump(mode="json"), timeout=self.timeout
             )
         else:
             response = requests.put(
-                url, json=request_body.model_dump(), timeout=self.timeout
+                url, json=request_body.model_dump(mode="json"), timeout=self.timeout
             )
         response.raise_for_status()
         return response_model.model_validate(response.json())
