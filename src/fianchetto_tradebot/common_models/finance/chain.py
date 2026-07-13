@@ -8,6 +8,12 @@ from fianchetto_tradebot.common_models.finance.equity import Equity
 from fianchetto_tradebot.common_models.finance.option_type import OptionType
 from fianchetto_tradebot.common_models.finance.price import Price
 from fianchetto_tradebot.common_models.finance.priced_option import PricedOption
+from fianchetto_tradebot.common_models.serialization import (
+    deserialize_amount_key,
+    deserialize_date_key,
+    serialize_amount_key,
+    serialize_date_key,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +31,10 @@ class Chain(BaseModel):
     def serialize_strike_expiry_chain_call(self, strike_expiry_chain_call:dict):
         serialized: dict = dict()
         for amount, date_price_dict in strike_expiry_chain_call.items():
-            amount_str = str(amount)
-            serialized[amount_str] = date_price_dict
+            amount_str = serialize_amount_key(amount)
+            serialized[amount_str] = dict()
+            for expiry, price in date_price_dict.items():
+                serialized[amount_str][serialize_date_key(expiry)] = price
 
         return serialized
 
@@ -36,13 +44,10 @@ class Chain(BaseModel):
         if isinstance(v, dict):
             rebuilt = dict()
             for amount, date_price_map in v.items():
-                if isinstance(amount, Amount):
-                    amount_obj = amount
-                else:
-                    amount_obj = Amount.from_string(amount)
+                amount_obj = deserialize_amount_key(amount)
                 rebuilt[amount_obj] = dict()
                 for date_key, price in date_price_map.items():
-                    rebuilt[amount_obj][date_key] = price
+                    rebuilt[amount_obj][deserialize_date_key(date_key)] = price
             return rebuilt
         return v
 
@@ -50,8 +55,10 @@ class Chain(BaseModel):
     def serialize_strike_expiry_chain_put(self, strike_expiry_chain_put: dict):
         serialized: dict = dict()
         for amount, date_price_dict in strike_expiry_chain_put.items():
-            amount_str = str(amount)
-            serialized[amount_str] = date_price_dict
+            amount_str = serialize_amount_key(amount)
+            serialized[amount_str] = dict()
+            for expiry, price in date_price_dict.items():
+                serialized[amount_str][serialize_date_key(expiry)] = price
 
         return serialized
 
@@ -61,13 +68,10 @@ class Chain(BaseModel):
         if isinstance(v, dict):
             rebuilt = {}
             for amount, date_price_map in v.items():
-                if isinstance(amount, Amount):
-                    amount_obj = amount
-                else:
-                    amount_obj = Amount.from_string(amount)
+                amount_obj = deserialize_amount_key(amount)
                 rebuilt[amount_obj] = dict()
                 for date_key, price in date_price_map.items():
-                    rebuilt[amount_obj][date_key] = price
+                    rebuilt[amount_obj][deserialize_date_key(date_key)] = price
             return rebuilt
         return v
 
@@ -75,9 +79,10 @@ class Chain(BaseModel):
     def serialize_expiry_strike_chain_call(self, expiry_strike_chain_call: dict):
         serialized: dict = dict()
         for expiry, strike_to_price in expiry_strike_chain_call.items():
-            serialized[expiry] = dict()
+            expiry_key = serialize_date_key(expiry)
+            serialized[expiry_key] = dict()
             for strike, price in strike_to_price.items():
-                serialized[expiry][strike] = price
+                serialized[expiry_key][serialize_amount_key(strike)] = price
 
         return serialized
 
@@ -87,13 +92,11 @@ class Chain(BaseModel):
         if isinstance(v, dict):
             rebuilt = {}
             for expiry, strike_price_map in v.items():
-                rebuilt[expiry] = dict()
+                expiry_obj = deserialize_date_key(expiry)
+                rebuilt[expiry_obj] = dict()
                 for strike, price in strike_price_map.items():
-                    if isinstance(strike, Amount):
-                        amount_obj = strike
-                    else:
-                        amount_obj = Amount.from_string(strike)
-                    rebuilt[expiry][amount_obj] = price
+                    amount_obj = deserialize_amount_key(strike)
+                    rebuilt[expiry_obj][amount_obj] = price
             return rebuilt
         return v
 
@@ -101,9 +104,10 @@ class Chain(BaseModel):
     def serialize_expiry_strike_chain_put(self, expiry_strike_chain_put: dict):
         serialized: dict = dict()
         for expiry, strike_to_price in expiry_strike_chain_put.items():
-            serialized[expiry] = dict()
+            expiry_key = serialize_date_key(expiry)
+            serialized[expiry_key] = dict()
             for strike, price in strike_to_price.items():
-                serialized[expiry][strike] = price
+                serialized[expiry_key][serialize_amount_key(strike)] = price
 
         return serialized
 
@@ -113,13 +117,11 @@ class Chain(BaseModel):
         if isinstance(v, dict):
             rebuilt = {}
             for expiry, strike_price_map in v.items():
-                rebuilt[expiry] = dict()
+                expiry_obj = deserialize_date_key(expiry)
+                rebuilt[expiry_obj] = dict()
                 for strike, price in strike_price_map.items():
-                    if isinstance(strike, Amount):
-                        amount_obj = strike
-                    else:
-                        amount_obj = Amount.from_string(strike)
-                    rebuilt[expiry][amount_obj] = price
+                    amount_obj = deserialize_amount_key(strike)
+                    rebuilt[expiry_obj][amount_obj] = price
             return rebuilt
         return v
 

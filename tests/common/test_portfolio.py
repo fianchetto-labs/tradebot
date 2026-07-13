@@ -5,6 +5,17 @@ from fianchetto_tradebot.common_models.portfolio.portfolio_builder import Portfo
 from tests.common import test_option
 from tests.common.util.test_object_util import get_sample_option, get_sample_equity
 
+
+def _assert_all_dict_keys_are_strings(value):
+    if isinstance(value, dict):
+        for key, nested_value in value.items():
+            assert isinstance(key, str), f"Expected serialized key to be str, got {type(key)}: {key!r}"
+            _assert_all_dict_keys_are_strings(nested_value)
+    elif isinstance(value, list):
+        for nested_value in value:
+            _assert_all_dict_keys_are_strings(nested_value)
+
+
 def test_add_option():
     p = PortfolioBuilder()
     o = get_sample_option()
@@ -33,7 +44,16 @@ def test_portfolio_dump():
     p.add_position(o2, 1)
 
     portfolio: Portfolio = p.to_portfolio()
-    portfolio.model_dump()
+    as_dict = portfolio.model_dump()
+
+    _assert_all_dict_keys_are_strings(as_dict)
+    assert as_dict["options"]["GE"][o.expiry.isoformat()][str(o.strike)][OptionType.PUT.value] == 1
+    assert as_dict["options"]["GE"][o2.expiry.isoformat()]["10.00 USD"][OptionType.PUT.value] == 1
+
+    round_trip = Portfolio.model_validate(as_dict)
+    assert o.expiry in round_trip.options["GE"]
+    assert o.strike in round_trip.options["GE"][o.expiry]
+    assert OptionType.PUT in round_trip.options["GE"][o.expiry][o.strike]
 
 def test_portfolio_serde():
     p = PortfolioBuilder()
@@ -55,6 +75,8 @@ def test_portfolio_serde():
     ge_opts_at_expiry_strike_type = ge_opts_at_expiry_strike[OptionType.PUT]
 
     assert ge_opts_at_expiry_strike_type == 1
+
+    _assert_all_dict_keys_are_strings(portfolio.model_dump())
 
 def test_add_two_options_diff_expiry():
     p = PortfolioBuilder()
@@ -112,4 +134,3 @@ def get_option_not_present():
 
 def get_equity_not_present():
     pass
-
