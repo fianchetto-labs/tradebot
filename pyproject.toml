@@ -7,7 +7,7 @@ name = "fianchetto-tradebot"
 version = "0.1.15"
 description = "An algorithmic trading bot framework connecting to brokerages like E*Trade and Schwab"
 readme = "README.md"
-requires-python = ">=3.6"
+requires-python = ">=3.14,<3.15"
 
 authors = [
     { name = "Aleks Shulman", email = "aleks@fianchettolabs.com" }
@@ -42,8 +42,7 @@ dependencies = [
     "packaging>=24.2,<25.0",
     "pandas>=2.2,<3.0",
     "pluggy>=1.5,<2.0",
-    "pydantic>=2.11,<3.0",
-    "pydantic_core>=2.33,<3.0",
+    "pydantic>=2.13.4,<2.14",
     "Pygments>=2.19,<3.0",
     "python-dateutil>=2.9,<3.0",
     "pytz>=2025.2,<2026.0",
@@ -75,3 +74,6 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "tests"]

@@ -1,6 +1,6 @@
 from typing import Optional, Annotated
 
-from pydantic import PlainValidator
+from pydantic import ConfigDict, PlainValidator
 
 from fianchetto_tradebot.common_models.finance.price import Price
 from fianchetto_tradebot.common_models.finance.tradable import Tradable
@@ -16,11 +16,10 @@ def validate_ticker(input: str):
     return input
 
 class Equity(Tradable):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     ticker: Annotated[str, PlainValidator(validate_ticker)]
     company_name: Optional[str] = None
-
-    class Config:
-        arbitrary_types_allowed = True
 
     def set_price(self, price: Price):
         self.price = price

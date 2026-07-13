@@ -6,8 +6,13 @@ src/dist/
 src/fianchetto_tradebot/server/common/brokerage/etrade/config.ini
 src/fianchetto_tradebot/server/common/brokerage/etrade/etrade_base_url.out
 src/fianchetto_tradebot/server/common/brokerage/etrade/etrade_session.out
+src/fianchetto_tradebot/server/common/brokerage/etrade/*.out
+src/fianchetto_tradebot/server/common/brokerage/etrade/serialized/
+src/fianchetto_tradebot/server/common/brokerage/etrade/*token*
+src/fianchetto_tradebot/server/common/brokerage/etrade/*secret*
+src/fianchetto_tradebot/server/common/api/scripts/integration_test_properties.ini
+*.out
 *.pyc
 *.egg-info
 **/__pycache__
 .venv
-

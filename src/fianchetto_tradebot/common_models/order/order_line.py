@@ -1,5 +1,5 @@
 
-from pydantic import BaseModel, field_validator, field_serializer
+from pydantic import BaseModel, ConfigDict, field_validator, field_serializer
 
 from fianchetto_tradebot.common_models.finance.equity import Equity
 from fianchetto_tradebot.common_models.finance.option import Option
@@ -9,13 +9,12 @@ from fianchetto_tradebot.common_models.order.action import Action
 QUANTITY_FILLED_NOT_SPECIFIED = -1
 
 class OrderLine(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
     tradable: Tradable
     action: Action
     quantity: int
     quantity_filled: int = QUANTITY_FILLED_NOT_SPECIFIED
-
-    class Config:
-        use_enum_values = True
 
     @field_serializer('tradable')
     def serialize_tradable(self, value: Tradable, _info):

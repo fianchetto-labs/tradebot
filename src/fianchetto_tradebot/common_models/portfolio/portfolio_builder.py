@@ -9,6 +9,14 @@ from fianchetto_tradebot.common_models.finance.option import Option
 from fianchetto_tradebot.common_models.finance.option_type import OptionType
 from fianchetto_tradebot.common_models.finance.tradable import Tradable
 from fianchetto_tradebot.common_models.order.tradable_type import TradableType
+from fianchetto_tradebot.common_models.serialization import (
+    deserialize_amount_key,
+    deserialize_date_key,
+    deserialize_enum_key,
+    serialize_amount_key,
+    serialize_date_key,
+    serialize_enum_key,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,15 +26,17 @@ class Portfolio(BaseModel):
 
     @field_serializer('options', when_used='always')
     def serialize_options(self, options: dict):
-        # Stringify the Amount keys (deep inside)
         serialized = dict()
         for symbol, date_map in options.items():
             serialized[symbol] = dict()
             for expiry, amount_map in date_map.items():
-                serialized[symbol][expiry] = {}
+                expiry_key = serialize_date_key(expiry)
+                serialized[symbol][expiry_key] = {}
                 for amount_obj, opttype_map in amount_map.items():
-                    amount_key = str(amount_obj)
-                    serialized[symbol][expiry][amount_key] = opttype_map
+                    amount_key = serialize_amount_key(amount_obj)
+                    serialized[symbol][expiry_key][amount_key] = {}
+                    for option_type, quantity in opttype_map.items():
+                        serialized[symbol][expiry_key][amount_key][serialize_enum_key(option_type)] = quantity
         return serialized
 
     @field_validator('options', mode='before')
@@ -37,13 +47,13 @@ class Portfolio(BaseModel):
             for symbol, date_map in v.items():
                 rebuilt[symbol] = {}
                 for expiry, amount_map in date_map.items():
-                    rebuilt[symbol][expiry] = {}
+                    expiry_obj = deserialize_date_key(expiry)
+                    rebuilt[symbol][expiry_obj] = {}
                     for amount_key, opttype_map in amount_map.items():
-                        if isinstance(amount_key, Amount):
-                            amount_obj = amount_key
-                        else:
-                            amount_obj = Amount.from_string(amount_key)
-                        rebuilt[symbol][expiry][amount_obj] = opttype_map
+                        amount_obj = deserialize_amount_key(amount_key)
+                        rebuilt[symbol][expiry_obj][amount_obj] = {}
+                        for option_type, quantity in opttype_map.items():
+                            rebuilt[symbol][expiry_obj][amount_obj][deserialize_enum_key(OptionType, option_type)] = quantity
             return rebuilt
         return v
 
@@ -110,5 +120,4 @@ class PortfolioBuilder:
 
     def to_portfolio(self)->Portfolio:
         return Portfolio(equities=self.equities, options=self.options)
-
 

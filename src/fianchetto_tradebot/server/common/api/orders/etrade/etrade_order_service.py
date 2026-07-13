@@ -25,6 +25,7 @@ from fianchetto_tradebot.common_models.api.orders.preview_modify_order_response 
 from fianchetto_tradebot.common_models.api.orders.preview_order_request import PreviewOrderRequest
 from fianchetto_tradebot.common_models.api.orders.preview_order_response import PreviewOrderResponse
 from fianchetto_tradebot.common_models.api.request_status import RequestStatus
+from fianchetto_tradebot.server.common.api.http_status_code import HttpStatusCode
 from fianchetto_tradebot.server.common.api.orders.order_util import OrderUtil
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common_models.finance.amount import Amount
@@ -350,7 +351,7 @@ class ETradeOrderService(OrderService):
 
     @staticmethod
     def _parse_order_list_response(response, account_id) -> list[PlacedOrder]:
-        if response.status_code == '204':
+        if int(response.status_code) == HttpStatusCode.NO_CONTENT:
             return list[PlacedOrder]()
 
         data = response.json()
@@ -386,7 +387,7 @@ class ETradeOrderService(OrderService):
 
         placed_order: PlacedOrder = OrderConversionUtil.to_placed_order_from_json(order, account_id, order_id)
 
-        if order["OrderDetail"][0]["status"] == OrderStatus.EXECUTED:
+        if OrderStatus[str(order["OrderDetail"][0]["status"]).upper()] == OrderStatus.EXECUTED:
             executed_order = OrderConversionUtil.to_executed_order_from_json(order, account_id)
             return GetOrderResponse(placed_order=executed_order)
         else:
@@ -402,4 +403,3 @@ class ETradeOrderService(OrderService):
                        <clientOrderId>{client_order_id}</clientOrderId>
                        {orders_str}
                    </PreviewOrderRequest>"""
-
