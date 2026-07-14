@@ -75,7 +75,7 @@ class MoexRestService(RestService):
         self.order_services[etrade_key] = etrade_order_service
         self.quotes_services[etrade_key] = etrade_quotes_service
 
-        # TODO: Add for IKBR and Schwab
+        # TODO: Add for IBKR and Schwab
         self.moex_service = MoexService(self.quotes_services, self.order_services)
 
     def list_managed_executions(self, brokerage: str, account_id: str):

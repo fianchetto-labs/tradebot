@@ -62,7 +62,7 @@ Brokerage capabilities are evolving and may not be uniform across integrations.
 | --- | --- | --- | --- | --- |
 | E\*Trade | Implemented | Implemented | Implemented | Primary integration |
 | Schwab | In development | In development | In development | Adapter scaffold |
-| Interactive Brokers | Planned | Planned | Planned | Roadmap |
+| Interactive Brokers (IBKR) | Planned | Planned | Planned | Roadmap |
 
 Before relying on a capability, review the relevant adapter and tests in the repository. Broker APIs and authentication requirements can change independently of TradeBot.
 

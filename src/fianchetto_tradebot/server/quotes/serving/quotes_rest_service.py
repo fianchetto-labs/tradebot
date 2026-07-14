@@ -156,7 +156,7 @@ class QuotesRestService(RestService):
         self.portfolio_services[etrade_key] = etrade_portfolio_service
         self.account_services[etrade_key] = etrade_account_service
 
-        # TODO: Add for Schwab and IKBR
+        # TODO: Add for Schwab and IBKR
 
 
 if __name__ == "__main__":

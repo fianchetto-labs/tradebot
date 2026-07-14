@@ -4,6 +4,7 @@ src/common/brokerage/etrade/etrade_session.out
 src/fianchetto_tradbot.egg-info/*
 src/dist/
 src/fianchetto_tradebot/server/common/brokerage/etrade/config.ini
+src/fianchetto_tradebot/server/common/brokerage/ibkr/config.ini
 src/fianchetto_tradebot/server/common/brokerage/etrade/etrade_base_url.out
 src/fianchetto_tradebot/server/common/brokerage/etrade/etrade_session.out
 src/fianchetto_tradebot/server/common/brokerage/etrade/*.out
