@@ -18,7 +18,7 @@ Each exchange requires an API key and secret to authenticate. These are stored i
 
 1. Navigate to the appropriate brokerage directory:
    - `src/fianchetto_tradebot/server/common/brokerage/etrade/`
-   - `src/fianchetto_tradebot/server/common/brokerage/ikbr/`
+   - `src/fianchetto_tradebot/server/common/brokerage/ibkr/`
    - `src/fianchetto_tradebot/server/common/brokerage/schwab/`
 
 2. Copy the example config file:
