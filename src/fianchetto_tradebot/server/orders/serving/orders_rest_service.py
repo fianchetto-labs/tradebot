@@ -63,7 +63,7 @@ class OrdersRestService(RestService):
         self.order_services[etrade_key] = etrade_order_service
         self.quotes_services[etrade_key] = etrade_quotes_service
 
-        # TODO: Add for IKBR and Schwab
+        # TODO: Add for IBKR and Schwab
 
     def list_orders(self, brokerage: str, account_id: str, status: str = None, from_date: str=None, to_date: str=None, count:int=DEFAULT_COUNT):
         status = OrderStatus.ANY if not status else OrderStatus[status]

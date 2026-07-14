@@ -7,13 +7,13 @@ from fastapi import FastAPI, APIRouter
 from fianchetto_tradebot.server.common.brokerage.connector import Connector
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector, DEFAULT_CONFIG_FILE
 from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
-from fianchetto_tradebot.server.common.brokerage.ikbr.ikbr_connector import IkbrConnector, DEFAULT_IKBR_CONFIG_FILE
+from fianchetto_tradebot.server.common.brokerage.ibkr.ibkr_connector import IbkrConnector, DEFAULT_IBKR_CONFIG_FILE
 from fianchetto_tradebot.server.common.brokerage.schwab.schwab_connector import SchwabConnector, DEFAULT_SCHWAB_CONFIG_FILE
 from fianchetto_tradebot.server.common.service.service_key import ServiceKey
 
 DEFAULT_BROKERAGE_CONFIGS: Final[dict[Brokerage, str]] = {
     Brokerage.ETRADE : DEFAULT_CONFIG_FILE,
-    Brokerage.IKBR : DEFAULT_IKBR_CONFIG_FILE,
+    Brokerage.IBKR : DEFAULT_IBKR_CONFIG_FILE,
     Brokerage.SCHWAB : DEFAULT_SCHWAB_CONFIG_FILE
 }
 
@@ -21,9 +21,10 @@ ETRADE_ONLY_BROKERAGE_CONFIG: Final[dict[Brokerage, str]] = {
     Brokerage.ETRADE : DEFAULT_CONFIG_FILE,
 }
 
-IKBR_ONLY_BROKERAGE_CONFIG: Final[dict[Brokerage, str]] = {
-    Brokerage.IKBR : DEFAULT_CONFIG_FILE,
+IBKR_ONLY_BROKERAGE_CONFIG: Final[dict[Brokerage, str]] = {
+    Brokerage.IBKR : DEFAULT_IBKR_CONFIG_FILE,
 }
+IKBR_ONLY_BROKERAGE_CONFIG = IBKR_ONLY_BROKERAGE_CONFIG
 
 SCHWAB_ONLY_BROKERAGE_CONFIG: Final[dict[Brokerage, str]] = {
     Brokerage.SCHWAB : DEFAULT_SCHWAB_CONFIG_FILE,
@@ -53,9 +54,9 @@ class RestService(ABC):
             elif brokerage == Brokerage.SCHWAB:
                 schwab_connector: SchwabConnector = SchwabConnector(config_file=brokerage_config_file)
                 self.connectors[Brokerage.SCHWAB] = schwab_connector
-            elif brokerage == Brokerage.IKBR:
-                ikbr_connector: IkbrConnector = IkbrConnector(config_file=brokerage_config_file)
-                self.connectors[Brokerage.IKBR] = ikbr_connector
+            elif brokerage == Brokerage.IBKR:
+                ibkr_connector: IbkrConnector = IbkrConnector(config_file=brokerage_config_file)
+                self.connectors[Brokerage.IBKR] = ibkr_connector
             else:
                 raise Exception(f"Brokerage {brokerage} not recognized")
 
