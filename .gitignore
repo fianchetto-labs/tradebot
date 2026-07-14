@@ -16,3 +16,7 @@ src/fianchetto_tradebot/server/common/api/scripts/integration_test_properties.in
 *.egg-info
 **/__pycache__
 .venv
+.idea/
+.pytest_cache/
+dist/
+outputs/
