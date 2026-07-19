@@ -19,13 +19,11 @@ from fianchetto_tradebot.common_models.managed_executions.list_managed_execution
 from fianchetto_tradebot.common_models.managed_executions.list_managed_executions_response import \
     ListManagedExecutionsResponse
 from fianchetto_tradebot.server.common.api.moex.moex_service import MoexService
-from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
-from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
+from fianchetto_tradebot.server.common.service.adapters import build_local_service_adapters
 from fianchetto_tradebot.server.common.service.ports import OrderServicePort, QuoteServicePort
 from fianchetto_tradebot.server.common.service.rest_service import RestService, ETRADE_ONLY_BROKERAGE_CONFIG
 from fianchetto_tradebot.server.common.service.service_key import ServiceKey
-from fianchetto_tradebot.server.quotes.etrade.etrade_quotes_service import ETradeQuotesService
 
 JAN_1_2024 = datetime(2024,1,1).date()
 DEFAULT_START_DATE = JAN_1_2024
@@ -62,19 +60,9 @@ class MoexRestService(RestService):
 
 
     def _setup_brokerage_services(self):
-        self.order_services: dict[Brokerage, OrderServicePort] = dict()
-        self.quotes_services: dict[Brokerage, QuoteServicePort] = dict()
-
-        # E*Trade
-        etrade_key: Brokerage = Brokerage.ETRADE
-        etrade_connector: ETradeConnector = self.connectors[Brokerage.ETRADE]
-        etrade_order_service = ETradeOrderService(etrade_connector)
-        etrade_quotes_service = ETradeQuotesService(etrade_connector)
-
-        self.order_services[etrade_key] = etrade_order_service
-        self.quotes_services[etrade_key] = etrade_quotes_service
-
-        # TODO: Add for IBKR and Schwab
+        local_services = build_local_service_adapters(self.connectors)
+        self.order_services: dict[Brokerage, OrderServicePort] = local_services.order_services
+        self.quotes_services: dict[Brokerage, QuoteServicePort] = local_services.quote_services
         self.moex_service = MoexService(self.quotes_services, self.order_services)
 
     def list_managed_executions(self, brokerage: str, account_id: str):
