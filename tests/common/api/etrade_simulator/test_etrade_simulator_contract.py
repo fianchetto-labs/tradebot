@@ -32,13 +32,13 @@ from fianchetto_tradebot.server.common.api.http_status_code import HttpStatusCod
 from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.server.common.api.portfolio.etrade_portfolio_service import ETradePortfolioService
 from fianchetto_tradebot.server.quotes.etrade.etrade_quotes_service import ETradeQuotesService
+from fianchetto_tradebot.server.simulator.etrade import seed_data
 
 SIM_BASE_URL = "http://etrade-sim:8090"
-ACCOUNT_ID = "acct-key-1"
-ACCOUNT_DISPLAY_ID = "acct-1"
-EQUITY_SYMBOL = "GE"
-PREVIEW_ID = "preview-1"
-ORDER_ID = "order-1"
+ACCOUNT_ID = seed_data.ACCOUNT_ID
+EQUITY_SYMBOL = seed_data.EQUITY_SYMBOL
+PREVIEW_ID = seed_data.PREVIEW_ID
+ORDER_ID = seed_data.ORDER_ID
 
 
 @dataclass
@@ -228,12 +228,7 @@ def test_simulator_contract_supports_order_lifecycle_paths():
 def test_simulator_contract_includes_retryable_order_preview_failure():
     # Given
     # A representative simulator error body for a retryable order-preview failure.
-    response = _ContractResponse({
-        "Error": {
-            "code": 167,
-            "message": "We did not find enough available shares of this security in your account.",
-        }
-    })
+    response = _ContractResponse(seed_data.retryable_preview_error_response())
 
     # When
     # The existing E*Trade parser receives that response.
@@ -276,19 +271,19 @@ def _demo_order() -> Order:
 
 def _sync_response_for(method: str, path: str, params: dict | None) -> dict:
     routes = {
-        ("GET", "/v1/accounts/list.json"): _account_list_response(),
-        ("GET", f"/v1/accounts/{ACCOUNT_ID}/balance.json"): _balance_response(),
-        ("GET", f"/v1/accounts/{ACCOUNT_ID}/portfolio.json"): _portfolio_response(),
-        ("GET", "/v1/market/quote/GE.json"): _quote_response(EQUITY_SYMBOL),
-        ("GET", "/v1/market/quote/GE:2026:1:16:PUT:25.0.json"): _quote_response(
+        ("GET", "/v1/accounts/list.json"): seed_data.account_list_response(),
+        ("GET", f"/v1/accounts/{ACCOUNT_ID}/balance.json"): seed_data.balance_response(),
+        ("GET", f"/v1/accounts/{ACCOUNT_ID}/portfolio.json"): seed_data.portfolio_response(),
+        ("GET", "/v1/market/quote/GE.json"): seed_data.quote_response(EQUITY_SYMBOL),
+        ("GET", "/v1/market/quote/GE:2026:1:16:PUT:25.0.json"): seed_data.quote_response(
             "GE:2026:1:16:PUT:25.0",
             include_greeks=True,
         ),
-        ("GET", "/v1/market/optionexpiredate.json"): _option_expire_date_response(),
-        ("POST", f"/v1/accounts/{ACCOUNT_ID}/orders/preview.json"): _preview_order_response(),
-        ("POST", f"/v1/accounts/{ACCOUNT_ID}/orders/place.json"): _place_order_response(),
-        ("GET", f"/v1/accounts/{ACCOUNT_ID}/orders/{ORDER_ID}.json"): _get_order_response(),
-        ("PUT", f"/v1/accounts/{ACCOUNT_ID}/orders/cancel.json"): _cancel_order_response(),
+        ("GET", "/v1/market/optionexpiredate.json"): seed_data.option_expire_date_response(),
+        ("POST", f"/v1/accounts/{ACCOUNT_ID}/orders/preview.json"): seed_data.preview_order_response(),
+        ("POST", f"/v1/accounts/{ACCOUNT_ID}/orders/place.json"): seed_data.place_order_response(),
+        ("GET", f"/v1/accounts/{ACCOUNT_ID}/orders/{ORDER_ID}.json"): seed_data.get_order_response(),
+        ("PUT", f"/v1/accounts/{ACCOUNT_ID}/orders/cancel.json"): seed_data.cancel_order_response(),
     }
     try:
         return routes[(method, path)]
@@ -298,249 +293,9 @@ def _sync_response_for(method: str, path: str, params: dict | None) -> dict:
 
 def _async_response_for(method: str, path: str, params: dict | None) -> dict:
     if method == "GET" and path == "/v1/market/optionchains.json":
-        return _option_chain_response(
+        return seed_data.option_chain_response(
             year=int(params["expiryYear"]),
             month=int(params["expiryMonth"]),
             day=int(params["expiryDay"]),
         )
     raise AssertionError(f"Simulator contract has no async seed response for {method} {path} {params}")
-
-
-def _account_list_response() -> dict:
-    return {
-        "AccountListResponse": {
-            "Accounts": {
-                "Account": [
-                    {
-                        "accountId": ACCOUNT_DISPLAY_ID,
-                        "accountIdKey": ACCOUNT_ID,
-                        "accountName": "Demo Margin",
-                        "accountDesc": "Individual Brokerage",
-                    }
-                ]
-            }
-        }
-    }
-
-
-def _balance_response() -> dict:
-    return {
-        "BalanceResponse": {
-            "accountId": ACCOUNT_ID,
-            "Computed": {
-                "RealTimeValues": {"totalAccountValue": 125000.25},
-                "OpenCalls": {
-                    "fedCall": 0,
-                    "maintenanceCall": -250.00,
-                },
-                "settledCashForInvestment": 10000.00,
-                "unSettledCashForInvestment": 250.25,
-                "cashAvailableForWithdrawal": 9000.00,
-                "netCash": 10250.25,
-                "cashBalance": 10250.25,
-                "marginBuyingPower": 50000.00,
-                "cashBuyingPower": 10000.00,
-                "marginBalance": 0.00,
-                "accountBalance": 125000.25,
-            },
-        }
-    }
-
-
-def _portfolio_response() -> dict:
-    return {
-        "PortfolioResponse": {
-            "AccountPortfolio": [
-                {
-                    "accountId": ACCOUNT_ID,
-                    "Position": [
-                        {
-                            "quantity": 100,
-                            "Product": {
-                                "securityType": "EQ",
-                                "symbol": EQUITY_SYMBOL,
-                            },
-                            "Complete": {"symbolDescription": "General Electric"},
-                        },
-                        {
-                            "quantity": -1,
-                            "Product": {
-                                "securityType": "OPTN",
-                                "symbol": EQUITY_SYMBOL,
-                                "callPut": "PUT",
-                                "strikePrice": 25.00,
-                                "expiryYear": 2026,
-                                "expiryMonth": 1,
-                                "expiryDay": 16,
-                            },
-                            "Complete": {"symbolDescription": "GE Jan 2026 25 Put"},
-                        },
-                    ],
-                }
-            ]
-        }
-    }
-
-
-def _quote_response(symbol: str, include_greeks: bool = False) -> dict:
-    quote_data = {
-        "dateTime": "2026-01-02T13:30:00Z",
-        "symbolDescription": symbol,
-        "All": {
-            "bid": 100.00,
-            "bidSize": 10,
-            "ask": 101.00,
-            "askSize": 12,
-            "lastTrade": 100.50,
-            "totalVolume": 1000,
-        },
-    }
-    if include_greeks:
-        quote_data["option"] = {
-            "optionGreeks": {
-                "rho": -0.01,
-                "vega": 0.12,
-                "theta": -0.03,
-                "delta": -0.40,
-                "gamma": 0.05,
-                "iv": 0.22,
-                "currentValue": {"bid": 1.40, "ask": 1.60},
-            }
-        }
-
-    return {"QuoteResponse": {"QuoteData": [quote_data]}}
-
-
-def _option_expire_date_response() -> dict:
-    return {
-        "OptionExpireDateResponse": {
-            "ExpirationDate": [
-                {"year": 2026, "month": 1, "day": 16},
-                {"year": 2026, "month": 2, "day": 20},
-            ]
-        }
-    }
-
-
-def _option_chain_response(year: int, month: int, day: int) -> dict:
-    strike = 25.00 if month == 1 else 30.00
-    return {
-        "OptionChainResponse": {
-            "SelectedED": {"year": year, "month": month, "day": day},
-            "OptionPair": [
-                {
-                    "Call": {
-                        "strikePrice": strike,
-                        "bid": 1.10 if month == 1 else 2.90,
-                        "ask": 1.20 if month == 1 else 3.10,
-                        "lastPrice": 1.15 if month == 1 else 3.00,
-                    },
-                    "Put": {
-                        "strikePrice": strike,
-                        "bid": 1.40 if month == 1 else 3.20,
-                        "ask": 1.60 if month == 1 else 3.30,
-                        "lastPrice": 1.50 if month == 1 else 3.25,
-                    },
-                }
-            ],
-        }
-    }
-
-
-def _preview_order_response() -> dict:
-    order = _etrade_order_json()
-    order["estimatedTotalAmount"] = 100.00
-    order["estimatedCommission"] = 0.00
-    return {
-        "PreviewOrderResponse": {
-            "PreviewIds": [{"previewId": PREVIEW_ID}],
-            "Order": [order],
-        }
-    }
-
-
-def _place_order_response() -> dict:
-    order = _etrade_order_json()
-    order["messages"] = {
-        "Message": [
-            {
-                "description": "Order placed",
-                "code": 1027,
-                "type": "INFO",
-            }
-        ]
-    }
-    return {
-        "PlaceOrderResponse": {
-            "orderType": "EQ",
-            "OrderIds": [{"orderId": ORDER_ID}],
-            "Order": [order],
-        }
-    }
-
-
-def _get_order_response() -> dict:
-    return {
-        "OrdersResponse": {
-            "Order": [
-                {
-                    "orderId": ORDER_ID,
-                    "OrderDetail": [_etrade_order_json(status="OPEN", include_market_values=True)],
-                }
-            ]
-        }
-    }
-
-
-def _cancel_order_response() -> dict:
-    return {
-        "CancelOrderResponse": {
-            "orderId": ORDER_ID,
-            "cancelTime": "2026-01-02T13:31:00Z",
-            "Messages": {
-                "Message": [
-                    {
-                        "description": "Order canceled",
-                        "code": 5011,
-                        "type": "INFO",
-                    }
-                ]
-            },
-        }
-    }
-
-
-def _etrade_order_json(status: str | None = None, include_market_values: bool = False) -> dict:
-    order = {
-        "accountId": ACCOUNT_ID,
-        "allOrNone": False,
-        "orderTerm": "GOOD_FOR_DAY",
-        "priceType": "LIMIT",
-        "limitPrice": 100.00,
-        "Instrument": [
-            {
-                "orderedQuantity": 1,
-                "filledQuantity": 0,
-                "orderAction": "BUY",
-                "Product": {
-                    "securityType": "EQ",
-                    "symbol": EQUITY_SYMBOL,
-                },
-            }
-        ],
-    }
-
-    if status:
-        order["status"] = status
-    if include_market_values:
-        order.update(
-            {
-                "placedTime": 1767360600000,
-                "marketSession": "REGULAR",
-                "netPrice": -100.50,
-                "netBid": -100.00,
-                "netAsk": -101.00,
-            }
-        )
-
-    return order

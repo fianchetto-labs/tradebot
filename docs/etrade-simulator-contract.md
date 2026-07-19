@@ -50,11 +50,38 @@ The initial representative failure should be an order preview response with an
 `Error` body. The first seed failure should use the existing E*Trade parser
 behavior for a retry-suggested response, such as an insufficient-shares message.
 
+The FastAPI simulator exposes that failure with:
+
+```bash
+curl -X POST \
+  "http://127.0.0.1:8090/v1/accounts/acct-key-1/orders/preview.json?scenario=retryable-preview-error"
+```
+
 ## State
 
 The first implementation can keep order state in memory and reset it on process
 restart. That is enough for deployment demos and smoke tests. Persistent
 simulator state is out of scope until a test needs it.
+
+## Running The Simulator
+
+Start the simulator locally with:
+
+```bash
+python -m fianchetto_tradebot.server.simulator.etrade
+```
+
+By default it binds to `0.0.0.0:8090`. Override that with:
+
+```bash
+TRADEBOT_ETRADE_SIMULATOR_HOST=127.0.0.1 \
+TRADEBOT_ETRADE_SIMULATOR_PORT=8090 \
+python -m fianchetto_tradebot.server.simulator.etrade
+```
+
+This is a real FastAPI/uvicorn process, but it is still not part of the default
+unit test suite. Docker Compose wiring and real-process smoke tests are tracked
+separately.
 
 ## Validation Layers
 
