@@ -27,6 +27,23 @@ Local mode uses explicit adapter wrappers:
 
 These adapters preserve ordinary in-process debugging while giving deployed HTTP clients a clear interface to implement later.
 
+HTTP mode uses adapter wrappers that receive generic base URLs:
+
+- `HttpOrderServiceAdapter`
+- `HttpQuoteServiceAdapter`
+- `build_http_service_adapters`
+- `orders_base_url`
+- `quotes_base_url`
+
+The environment variable names are deployment-neutral:
+
+- `TRADEBOT_ORDERS_SERVICE_URL`
+- `TRADEBOT_QUOTES_SERVICE_URL`
+
+Code defaults point at local development ports. Docker Compose and Kubernetes should override those values with the right service DNS names for that environment.
+
+HTTP adapters should construct URLs using the route path values required by the target service. FastAPI handlers do not need to accept every path value when the handler only needs the parsed Pydantic request body.
+
 ## TCP port convention
 
 Use the `80xx` range for public FastAPI service processes:
