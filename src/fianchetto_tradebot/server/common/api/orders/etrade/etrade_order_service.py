@@ -321,9 +321,9 @@ class ETradeOrderService(OrderService):
                 else:
                     request_status = RequestStatus.FAILURE_DO_NOT_RETRY
                 if previous_order_id:
-                    return PreviewModifyOrderResponse(order_metadata=order_metadata, preview_id=None, preview_order_info=None, request_status=request_status, order_message=order_placement_message, previous_order_id=previous_order_id)
+                    return PreviewModifyOrderResponse(order_metadata=order_metadata, preview_id=None, preview_order_info=None, request_status=request_status, order_messages=[order_placement_message], previous_order_id=previous_order_id)
                 else:
-                    return PreviewOrderResponse(order_metadata=order_metadata, preview_id=None, preview_order_info=None, request_status=request_status, order_message=[order_placement_message])
+                    return PreviewOrderResponse(order_metadata=order_metadata, preview_id=None, preview_order_info=None, request_status=request_status, order_messages=[order_placement_message])
             else:
                 request_status = RequestStatus.FAILURE_DO_NOT_RETRY
 

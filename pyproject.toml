@@ -77,3 +77,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests"]
+markers = [
+    "service: requires one or more local service processes to be running",
+    "docker: requires Docker or Docker Compose",
+]
