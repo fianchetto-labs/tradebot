@@ -7,9 +7,9 @@ from fianchetto_tradebot.common_models.order.order import Order
 from fianchetto_tradebot.common_models.order.order_price import OrderPrice
 from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceType
 from fianchetto_tradebot.common_models.order.order_type import OrderType
+from fianchetto_tradebot.server.common.service.ports import QuoteServicePort
 from fianchetto_tradebot.server.orders.tactics.execution_tactic import ExecutionTactic, register_tactic
 from fianchetto_tradebot.server.orders.trade_execution_util import TradeExecutionUtil
-from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
 GAP_REDUCTION_RATIO = 1/3
 DEFAULT_WAIT_SEC = 5
@@ -18,7 +18,7 @@ VERY_CLOSE_TO_MARKET_PRICE_WAIT = 30
 @register_tactic
 class IncrementalPriceDeltaExecutionTactic(ExecutionTactic):
     @staticmethod
-    def new_price(order: Order, quotes_service: QuotesService=None)->(OrderPrice, int):
+    def new_price(order: Order, quotes_service: QuoteServicePort=None)->(OrderPrice, int):
 
         current_order_price: float = order.order_price.price.to_float()
         if order.get_order_type() == OrderType.EQ:
