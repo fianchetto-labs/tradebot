@@ -7,6 +7,7 @@ from fianchetto_tradebot.server.common.brokerage.connector import Connector
 from fianchetto_tradebot.server.common.service.adapters import (
     LocalOrderServiceAdapter,
     LocalQuoteServiceAdapter,
+    ServiceAdapters,
     build_local_service_adapters,
 )
 from fianchetto_tradebot.server.common.service.ports import OrderServicePort, QuoteServicePort
@@ -63,6 +64,7 @@ def test_local_quote_adapter_delegates_to_wrapped_service():
 def test_build_local_service_adapters_creates_etrade_port_adapters():
     local_services = build_local_service_adapters({Brokerage.ETRADE: FakeConnector()})
 
+    assert isinstance(local_services, ServiceAdapters)
     order_service = local_services.order_services[Brokerage.ETRADE]
     quote_service = local_services.quote_services[Brokerage.ETRADE]
 
