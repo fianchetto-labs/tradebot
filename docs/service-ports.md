@@ -44,6 +44,14 @@ Code defaults point at local development ports. Docker Compose and Kubernetes sh
 
 HTTP adapters should construct URLs using the route path values required by the target service. FastAPI handlers do not need to accept every path value when the handler only needs the parsed Pydantic request body.
 
+Run the adapter contract simulation with:
+
+```bash
+python -m pytest tests/common/service/test_service_adapter_contracts.py
+```
+
+This starts fake in-process FastAPI order and quote services and drives them through the same port methods as local adapters. It is the fastest demo that local and network mode still agree without requiring brokerage credentials.
+
 ## TCP port convention
 
 Use the `80xx` range for public FastAPI service processes:
