@@ -20,13 +20,12 @@ from fianchetto_tradebot.common_models.managed_executions.list_managed_execution
     ListManagedExecutionsResponse
 from fianchetto_tradebot.server.common.api.moex.moex_service import MoexService
 from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
-from fianchetto_tradebot.server.common.api.orders.order_service import OrderService
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
+from fianchetto_tradebot.server.common.service.ports import OrderServicePort, QuoteServicePort
 from fianchetto_tradebot.server.common.service.rest_service import RestService, ETRADE_ONLY_BROKERAGE_CONFIG
 from fianchetto_tradebot.server.common.service.service_key import ServiceKey
 from fianchetto_tradebot.server.quotes.etrade.etrade_quotes_service import ETradeQuotesService
-from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
 JAN_1_2024 = datetime(2024,1,1).date()
 DEFAULT_START_DATE = JAN_1_2024
@@ -63,8 +62,8 @@ class MoexRestService(RestService):
 
 
     def _setup_brokerage_services(self):
-        self.order_services: dict[Brokerage, OrderService] = dict()
-        self.quotes_services: dict[Brokerage, QuotesService] = dict()
+        self.order_services: dict[Brokerage, OrderServicePort] = dict()
+        self.quotes_services: dict[Brokerage, QuoteServicePort] = dict()
 
         # E*Trade
         etrade_key: Brokerage = Brokerage.ETRADE

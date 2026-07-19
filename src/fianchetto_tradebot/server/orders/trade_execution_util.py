@@ -6,7 +6,7 @@ from fianchetto_tradebot.common_models.finance.price import Price
 from fianchetto_tradebot.common_models.order.action import Action
 from fianchetto_tradebot.common_models.order.order import Order
 from fianchetto_tradebot.common_models.api.quotes.get_tradable_response import GetTradableResponse
-from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
+from fianchetto_tradebot.server.common.service.ports import QuoteServicePort
 
 ADJUSTED_NO_BIDS_WIDE_SPREAD_ASK = .03
 
@@ -16,7 +16,7 @@ class TradeExecutionUtil:
 
     # This is a bit unintuitive for Equity orders, but this returns affect on cash to actuate the position.
     @staticmethod
-    def get_cost_or_proceeds_to_establish_position(order: Order, quote_service: QuotesService, adjust_excessive_spreads=True) -> Price:
+    def get_cost_or_proceeds_to_establish_position(order: Order, quote_service: QuoteServicePort, adjust_excessive_spreads=True) -> Price:
         mark_to_market_price: float = 0
         best_price: float = 0
         worst_price: float = 0

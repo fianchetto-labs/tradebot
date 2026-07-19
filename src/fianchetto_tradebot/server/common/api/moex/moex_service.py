@@ -45,25 +45,24 @@ from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceT
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.server.common.api.http_status_code import HttpStatusCode
 from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
-from fianchetto_tradebot.server.common.api.orders.order_service import OrderService
 from fianchetto_tradebot.server.common.api.orders.order_util import OrderUtil
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
+from fianchetto_tradebot.server.common.service.ports import OrderServicePort, QuoteServicePort
 from fianchetto_tradebot.server.common.service.service_key import ServiceKey
 from fianchetto_tradebot.server.common.threading.persistent_thread_pool import PersistentThreadPool
 from fianchetto_tradebot.server.orders.managed_order_execution import ManagedExecution, ManagedExecutionCreationParams, \
     ManagedExecutionCreationType
 from fianchetto_tradebot.server.orders.tactics.execution_tactic import ExecutionTactic
 from fianchetto_tradebot.server.quotes.etrade.etrade_quotes_service import ETradeQuotesService
-from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
 class ManagedExecutionWorker:
-    def __init__(self, moex: ManagedExecution, moex_id: str, quotes_services: dict[Brokerage, QuotesService], orders_services: dict[Brokerage, OrderService]):
+    def __init__(self, moex: ManagedExecution, moex_id: str, quotes_services: dict[Brokerage, QuoteServicePort], orders_services: dict[Brokerage, OrderServicePort]):
         # This object gets modified in this process
         self.moex: ManagedExecution = moex
         self.moex_id: str = moex_id
         self.tactic: ExecutionTactic = moex.tactic
-        self.quotes_services: dict[Brokerage, QuotesService] = quotes_services
-        self.orders_services: dict[Brokerage, OrderService] = orders_services
+        self.quotes_services: dict[Brokerage, QuoteServicePort] = quotes_services
+        self.orders_services: dict[Brokerage, OrderServicePort] = orders_services
         self.continue_processing = True
 
     def stop(self):
@@ -159,9 +158,9 @@ class ManagedExecutionWorker:
         return ''.join(choice(characters) for _ in range(length))
 
 class MoexService:
-    def __init__(self, quotes_services: dict[Brokerage, QuotesService], orders_services: dict[Brokerage, OrderService]):
-        self.quotes_services: dict[Brokerage, QuotesService] = quotes_services
-        self.orders_services: dict[Brokerage, OrderService] = orders_services
+    def __init__(self, quotes_services: dict[Brokerage, QuoteServicePort], orders_services: dict[Brokerage, OrderServicePort]):
+        self.quotes_services: dict[Brokerage, QuoteServicePort] = quotes_services
+        self.orders_services: dict[Brokerage, OrderServicePort] = orders_services
 
         # todo - figure out a way to keep this running until it's explicitly closed
         self.thread_pool_executor = PersistentThreadPool(max_workers=10)
@@ -256,7 +255,7 @@ class MoexService:
 
             # cancel the order
             managed_execution : ManagedExecution = managed_execution
-            order_service: OrderService = self.orders_services[managed_execution.brokerage]
+            order_service: OrderServicePort = self.orders_services[managed_execution.brokerage]
             if managed_execution.current_brokerage_order_id:
                 cancel_order_request: CancelOrderRequest = CancelOrderRequest(account_id=managed_execution.account_id, order_id=managed_execution.current_brokerage_order_id)
                 cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
@@ -273,8 +272,8 @@ class MoexService:
         return self.current_id
 
 def create_moex_with_new_order_list_and_cancel(existing_order_id: str = None):
-    quotes_services = dict[Brokerage, QuotesService]()
-    orders_services = dict[Brokerage, OrderService]()
+    quotes_services = dict[Brokerage, QuoteServicePort]()
+    orders_services = dict[Brokerage, OrderServicePort]()
 
     connector: ETradeConnector = ETradeConnector()
     quotes_services[Brokerage.ETRADE] = ETradeQuotesService(connector)
@@ -334,4 +333,3 @@ if __name__ == "__main__":
     print(f"Testing with new order: {existing_order_id}")
     create_moex_with_new_order_list_and_cancel(str(existing_order_id))
     print("End test with new order")
-
