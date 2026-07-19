@@ -44,16 +44,15 @@ from fianchetto_tradebot.common_models.order.order_price import OrderPrice
 from fianchetto_tradebot.common_models.order.order_price_type import OrderPriceType
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.server.common.api.http_status_code import HttpStatusCode
-from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.server.common.api.orders.order_util import OrderUtil
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
+from fianchetto_tradebot.server.common.service.adapters import build_local_service_adapters
 from fianchetto_tradebot.server.common.service.ports import OrderServicePort, QuoteServicePort
 from fianchetto_tradebot.server.common.service.service_key import ServiceKey
 from fianchetto_tradebot.server.common.threading.persistent_thread_pool import PersistentThreadPool
 from fianchetto_tradebot.server.orders.managed_order_execution import ManagedExecution, ManagedExecutionCreationParams, \
     ManagedExecutionCreationType
 from fianchetto_tradebot.server.orders.tactics.execution_tactic import ExecutionTactic
-from fianchetto_tradebot.server.quotes.etrade.etrade_quotes_service import ETradeQuotesService
 
 class ManagedExecutionWorker:
     def __init__(self, moex: ManagedExecution, moex_id: str, quotes_services: dict[Brokerage, QuoteServicePort], orders_services: dict[Brokerage, OrderServicePort]):
@@ -272,14 +271,10 @@ class MoexService:
         return self.current_id
 
 def create_moex_with_new_order_list_and_cancel(existing_order_id: str = None):
-    quotes_services = dict[Brokerage, QuoteServicePort]()
-    orders_services = dict[Brokerage, OrderServicePort]()
-
     connector: ETradeConnector = ETradeConnector()
-    quotes_services[Brokerage.ETRADE] = ETradeQuotesService(connector)
-    orders_services[Brokerage.ETRADE] = ETradeOrderService(connector)
+    local_services = build_local_service_adapters({Brokerage.ETRADE: connector})
 
-    moex_service: MoexService = MoexService(quotes_services, orders_services)
+    moex_service: MoexService = MoexService(local_services.quote_services, local_services.order_services)
     app_thread = threading.Thread(target=moex_service.run)
     app_thread.start()
 

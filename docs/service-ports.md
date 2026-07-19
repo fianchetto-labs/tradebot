@@ -19,6 +19,14 @@ Concrete services such as ETrade order and quote services can satisfy these port
 
 The composition root should choose local or HTTP adapters at startup. Domain and orchestration logic should not branch on deployment mode.
 
+Local mode uses explicit adapter wrappers:
+
+- `LocalOrderServiceAdapter`
+- `LocalQuoteServiceAdapter`
+- `build_local_service_adapters`
+
+These adapters preserve ordinary in-process debugging while giving deployed HTTP clients a clear interface to implement later.
+
 ## TCP port convention
 
 Use the `80xx` range for public FastAPI service processes:
