@@ -1,0 +1,9 @@
+{
+  "consumer_key": "simulator-consumer-key",
+  "consumer_secret": "simulator-consumer-secret",
+  "access_token": "simulator-access-token",
+  "access_token_secret": "simulator-access-token-secret",
+  "request_token": "simulator-request-token",
+  "request_token_secret": "simulator-request-token-secret",
+  "base_url": "http://127.0.0.1:8090"
+}
