@@ -119,10 +119,19 @@ pip install -e ".[dev]"
 Run the test suite:
 
 ```bash
-pytest
+python -m nox -s unit
 ```
 
-Brokerage integration tests require separate credentials and configuration. Do not commit access tokens, private keys, account identifiers, or other secrets.
+For focused debugging, direct pytest remains useful:
+
+```bash
+python -m pytest tests/common/test_chain.py
+```
+
+See [`docs/testing.md`](docs/testing.md) for the test pyramid, Docker-backed
+test commands, and live brokerage safety gates. Brokerage integration tests
+require separate credentials and configuration. Do not commit access tokens,
+private keys, account identifiers, or other secrets.
 
 ## Contributing
 
