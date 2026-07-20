@@ -83,6 +83,51 @@ This is a real FastAPI/uvicorn process, but it is still not part of the default
 unit test suite. Docker Compose wiring and real-process smoke tests are tracked
 separately.
 
+## TradeBot Connector Configuration
+
+TradeBot E*Trade services should keep production behavior unchanged by default:
+they load OAuth credentials and use the E*Trade base URL stored with those
+credentials.
+
+Simulator-backed deployments should supply fake E*Trade credentials and point
+the connector at the simulator endpoint. For example, the credential cache can
+contain non-secret placeholder values:
+
+```json
+{
+  "consumer_key": "simulator-consumer-key",
+  "consumer_secret": "simulator-consumer-secret",
+  "access_token": "simulator-access-token",
+  "access_token_secret": "simulator-access-token-secret",
+  "request_token": "simulator-request-token",
+  "request_token_secret": "simulator-request-token-secret",
+  "base_url": "http://etrade-sim:8090"
+}
+```
+
+This preserves the normal OAuth-shaped connector/session path while avoiding
+live brokerage credentials. The simulator ignores the fake signature material,
+but the credential document is still validated: required OAuth fields must be
+present and non-empty, request-token fields must be present and either non-empty
+or `null`, and `base_url` must be an `http` or `https` URL.
+
+`TRADEBOT_ETRADE_API_BASE_URL` can override the cached E*Trade-compatible HTTP
+endpoint at runtime:
+
+```bash
+TRADEBOT_ETRADE_API_BASE_URL=http://etrade-sim:8090
+```
+
+Use a Docker/Kubernetes service name such as `http://etrade-sim:8090` inside a
+service network, or `http://127.0.0.1:8090` for local process testing.
+
+Base URL precedence is explicit:
+
+1. `TRADEBOT_ETRADE_API_BASE_URL`
+2. `base_url` in the credential cache
+3. legacy standalone `base_url.json`
+4. interactive OAuth establishment
+
 ## Validation Layers
 
 - Unit/parser tests prove the simulator-shaped payloads still parse into domain
