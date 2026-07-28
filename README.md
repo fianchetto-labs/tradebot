@@ -96,11 +96,12 @@ client = Client(Brokerage.ETRADE)
 accounts = client.get_accounts()
 ```
 
-For local environment setup and brokerage configuration, see:
+For local development setup and related guides, see:
 
 - [`dev_get_started_guides/set_up_local_env.MD`](dev_get_started_guides/set_up_local_env.MD)
-- [`dev_get_started_guides/exchange_setup.MD`](dev_get_started_guides/exchange_setup.MD)
 - [`docs/serialization.md`](docs/serialization.md)
+- [`dev_get_started_guides/exchange_setup.MD`](dev_get_started_guides/exchange_setup.MD) only if your
+  work explicitly needs real or sandbox brokerage credentials.
 
 > The client API is evolving. Consult the source and tests for the current constructor and supported operations.
 
@@ -109,11 +110,12 @@ For local environment setup and brokerage configuration, see:
 Clone the repository and install the package with development dependencies:
 
 ```bash
-git clone https://github.com/fianchetto-labs/tradebot.git
+git clone git@github.com:fianchetto-labs/tradebot.git
 cd tradebot
-python -m venv .venv
+python3.14 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
 ```
 
 Run the test suite:
@@ -122,10 +124,10 @@ Run the test suite:
 python -m nox -s unit
 ```
 
-For focused debugging, direct pytest remains useful:
+For focused debugging, route pytest through Nox:
 
 ```bash
-python -m pytest tests/common/test_chain.py
+python -m nox -s test -- tests/common/test_chain.py
 ```
 
 See [`docs/testing.md`](docs/testing.md) for the test pyramid, Docker-backed
@@ -143,6 +145,11 @@ Contributions are welcome. Useful areas include:
 - Strategy research components
 - Test coverage and brokerage simulators
 - Documentation and reproducible local development
+
+New contributors can start with the
+[`New Contributor Quickstart`](docs/new-contributor-quickstart.md), which
+covers account access, cloning, local setup, starter tickets, and first PR
+conventions.
 
 Before opening a pull request, add or update tests for behavioral changes and clearly identify any brokerage-specific assumptions.
 

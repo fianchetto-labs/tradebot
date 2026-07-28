@@ -47,7 +47,7 @@ HTTP adapters should construct URLs using the route path values required by the 
 Run the adapter contract simulation with:
 
 ```bash
-python -m pytest tests/common/service/test_service_adapter_contracts.py
+python -m nox -s test -- tests/common/service/test_service_adapter_contracts.py
 ```
 
 This starts fake in-process FastAPI order and quote services and drives them through the same port methods as local adapters. It is the fastest demo that local and network mode still agree without requiring brokerage credentials.

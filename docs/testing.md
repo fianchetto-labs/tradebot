@@ -3,8 +3,9 @@
 TradeBot uses a test pyramid with explicit commands and explicit safety gates.
 Nox is the canonical interface for routine local validation and CI.
 
-Raw `python -m pytest` is still useful for tight local debugging, but shared
-project workflows should use Nox so local and CI behavior stay aligned.
+Raw `python -m pytest` can still be useful as a tight local debugging escape
+hatch, but shared project workflows should use Nox so local and CI behavior
+stay aligned.
 
 ## Test Layers
 
