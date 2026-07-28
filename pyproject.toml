@@ -68,6 +68,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "build>=1.2,<2.0",
+    "nox>=2026.7,<2027.0",
     "pyproject_hooks>=1.2,<2.0",
     "pytest>=8.3,<9.0",
 ]
@@ -78,6 +79,9 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests"]
 markers = [
+    "contract: verifies that two implementations satisfy the same behavioral contract",
     "service: requires one or more local service processes to be running",
     "docker: requires Docker or Docker Compose",
+    "integration: crosses a real process, container, or external-service boundary",
+    "live_e2e: requires live paper-account brokerage credentials and external brokerage access",
 ]
