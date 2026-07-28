@@ -1,40 +1,57 @@
-# 📈 TradeBot: Getting Started with an Exchange
+# TradeBot Brokerage Setup
 
-Welcome to the TradeBot ecosystem! This guide will help you connect your first exchange and execute your first trade.
+Most contributors do not need this guide on day one. Use it only when your
+ticket explicitly needs real or sandbox brokerage credentials.
 
-TradeBot currently supports:
+For ordinary documentation, model, serialization, service-adapter, simulator,
+and unit-test work, stay credentials-free and use the normal local setup:
 
-- 🏦 **E*TRADE** – [API Docs](https://apisb.etrade.com/docs/api/overview.html)
-- 🏦 **Charles Schwab** – [API Docs](https://developer.schwab.com/products/trader-api--individual)
-- 🏦 **Interactive Brokers (IBKR)** – [API Docs](https://interactivebrokers.github.io/)
+- [New Contributor Quickstart](../docs/new-contributor-quickstart.md)
+- [Local development setup](set_up_local_env.MD)
+- [Testing guide](../docs/testing.md)
+- [E*Trade simulator contract](../docs/etrade-simulator-contract.md)
 
----
+## Supported Brokerages
 
-## 🔐 1. Authentication Overview
+Brokerage support is evolving and is not uniform across integrations.
 
-Each exchange requires an API key and secret to authenticate. These are stored in a `config.ini` file that you'll need to create (per exchange).
+| Brokerage | Status | Credentialed validation |
+| --- | --- | --- |
+| E*Trade | Primary current integration | Sandbox/live OAuth credentials |
+| Schwab | In development | Do not assume full workflow support |
+| Interactive Brokers (IBKR) | Planned | Paper trading support is roadmap work |
 
-### How to Set Up
+Use simulator-backed tests for process, networking, and serialization checks
+whenever possible. Use sandbox or live brokerage validation only for risks that
+cannot be proven with unit tests, fakes, or the simulator.
 
-1. Navigate to the appropriate brokerage directory:
-   - `src/fianchetto_tradebot/server/common/brokerage/etrade/`
-   - `src/fianchetto_tradebot/server/common/brokerage/ibkr/`
-   - `src/fianchetto_tradebot/server/common/brokerage/schwab/`
+## Safety Rules
 
-2. Copy the example config file:
+- Never commit `config.ini`, credential caches, tokens, private keys, account
+  identifiers, screenshots containing account data, or generated credential
+  files.
+- Prefer sandbox or paper accounts for validation.
+- Keep live order-placement work out of ordinary local test runs.
+- Use the explicit test gates documented in [Testing](../docs/testing.md).
+- If a command would place, cancel, or modify a real order, stop and confirm the
+  intended account, environment, and ticket scope first.
+
+## E*Trade Config
+
+The E*Trade connector reads configuration from:
+
+```text
+src/fianchetto_tradebot/server/common/brokerage/etrade/config.ini
+```
+
+Create it from the example:
 
 ```bash
+cd src/fianchetto_tradebot/server/common/brokerage/etrade
 cp config.example.ini config.ini
 ```
 
-3. Open the new `config.ini` and fill in your API keys.  
-   The `BASE_URL` values are already set and do **not** need to be changed.
-
----
-
-## 🧾 Config File Format
-
-Each exchange’s `config.ini` should follow this format:
+Then fill in the sandbox and/or production values provided by E*Trade:
 
 ```ini
 [DEFAULT]
@@ -50,65 +67,54 @@ PROD_API_KEY=<PROD_API_KEY>
 PROD_API_SECRET=<PROD_API_SECRET>
 ```
 
-> 🔒 These `config.ini` files are already included in `.gitignore` — **do not commit them**.
+`config.ini` files are ignored by Git. Keep them local.
 
----
+## Credential Cache
 
-## 🧪 2. Sandbox vs. Live
+After OAuth succeeds, E*Trade connection state is cached under:
 
-| Exchange     | Sandbox Support | Notes                                             |
-|--------------|-----------------|---------------------------------------------------|
-| E*TRADE      | ✅               | Fully-featured sandbox for testing                |
-| Schwab       | ❌               | Use small trades or test data only               |
-| IBKR         | ✅               | Paper Trading supported via TWS or Gateway       |
-
-
-
-```python
-from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
-
-connector: ETradeConnector = ETradeConnector()
+```text
+~/.fianchetto_tradebot/etrade/
 ```
 
-> Enable sandbox mode in the client initialization:
-At E*Trade login, at runtime, select `1` for the `Sandbox` option, `2` for `Live`. 
-```
+The current credential cache stores OAuth-shaped values plus a `base_url`.
+Simulator-backed deployments can use fake but well-formed credential values;
+live brokerage validation must use real credentials.
+
+The E*Trade base URL precedence is:
+
+1. `TRADEBOT_ETRADE_API_BASE_URL`
+2. `base_url` in the credential cache
+3. legacy standalone `base_url.json`
+4. interactive OAuth establishment
+
+See [E*Trade simulator contract](../docs/etrade-simulator-contract.md) for the
+simulator-backed credential shape and fake-value conventions.
+
+## Manual E*Trade OAuth
+
+When the E*Trade connector cannot load a valid cached connection, it starts an
+interactive OAuth flow. At the prompt, choose sandbox unless your ticket
+explicitly requires live validation:
+
+```text
 1) Sandbox Consumer Key
 2) Live Consumer Key
 3) Exit
 Please select Consumer Key Type: 1
 ```
 
----
+The connector opens a browser, asks you to authorize the app, and prompts for
+the verification code.
 
-## 🚀 3. First Call: Verify Connection
+## First Validation
 
-Try pulling account info to ensure your credentials and config are working:
+For a new contributor, the first validation should still be credentials-free:
 
-```python
-from fianchetto_tradebot.client import TradeBotClient
-from fianchetto_tradebot.models import GetAccountRequest
-
-req = GetAccountRequest(brokerage="etrade", account_id="your_account_id")
-response = TradeBotClient().get_account(req)
-print(response)
+```bash
+python -m nox -s unit
 ```
 
-You should see your account summary or positions if everything is correctly configured.
-
----
-
-## 🛡️ 4. Security Tips
-
-- Never commit `config.ini` files.
-- Use encrypted secrets for production environments.
-- Rotate keys and secrets regularly.
-- Restrict key permissions during testing (read-only where possible).
-
----
-
-## 🆘 Need Help?
-
-- Open an issue on [GitHub](https://github.com/Fianchetto-Labs/TradeBot/issues)
-- Or contact the maintainer:  
-  📧 **aleks@fianchettolabs.com**
+If your ticket needs a credentialed E*Trade check, define the smallest safe
+manual validation with Aleks before running it. Prefer read-only account or
+quote calls before any order workflow.

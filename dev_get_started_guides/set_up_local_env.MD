@@ -1,108 +1,136 @@
-# 🧠 TradeBot Developer Onboarding Guide
+# TradeBot Local Development Setup
 
-Welcome to **TradeBot**, the algorithmic trading system by [Fianchetto Labs](https://github.com/Fianchetto-Labs/TradeBot). This guide will help new developers set up their environment and verify their installation to contribute effectively.
+This guide is the detailed local setup path for TradeBot contributors. If you
+are brand new to the project, start with the friendlier
+[New Contributor Quickstart](../docs/new-contributor-quickstart.md), then come
+back here when you want more detail.
 
----
+You do not need brokerage credentials to run the normal development setup or
+the safe test suite.
 
-## 🚀 Getting Started
+## 1. Get Access
 
-### 1. Clone the Repository
+Ask Aleks for GitHub access that lets you clone the repository, push feature
+branches, and open pull requests against `fianchetto-labs/tradebot`.
 
-Use SSH to clone the repository:
+You will also want access to the Fianchetto Labs Linear workspace so you can
+claim tickets and link PRs to issues.
 
-```bash
-git clone git@github.com:Fianchetto-Labs/TradeBot.git
-cd TradeBot
-```
+Useful setup links:
 
-> 🔐 **Access Required:**
-> If you don't yet have SSH access to the repo, please email the maintainer at:
-> 📧 **aleks@fianchettolabs.com**
+- [GitHub SSH setup](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
+- [Testing your GitHub SSH connection](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/testing-your-ssh-connection)
+- [Fianchetto Labs Linear issues](https://linear.app/fianchetto-labs/view/all-issues-1d578a3e4473)
 
----
+## 2. Clone The Repository
 
-## 🐍 Python Environment
-
-- **Recommended Python version:** `>=3.7`
-- Use `virtualenv` (preferred), `conda`, or `pyenv` to manage Python versions and environments.
-
-Create a virtual environment:
+Use SSH:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-pip install --upgrade pip
+git clone git@github.com:fianchetto-labs/tradebot.git
+cd tradebot
 ```
 
-Install project dependencies (once defined in `requirements.txt` or via `pyproject.toml`):
+Confirm you are in the Git root:
 
 ```bash
-pip install -r requirements.txt  # or use poetry/pip-tools as appropriate
+git status --short --branch
 ```
 
----
+If cloning fails with `Permission denied (publickey)`, confirm that your SSH key
+is loaded, added to GitHub, and that you accepted the repository invite.
 
-## 🛠 Recommended IDE: PyCharm
+## 3. Install Python
 
-We suggest using **PyCharm** for the best experience. Once the project is opened:
+TradeBot targets Python 3.14.
 
-1. Mark the following as **Sources Root**:
-    - `src/`
-2. Mark the following as **Tests Root**:
-    - `tests/`
+Check your local version:
 
-You can do this by right-clicking the folder in PyCharm's file browser → *Mark Directory As* → *Sources Root* or *Tests Root*.
+```bash
+python3.14 --version
+```
 
+If that command fails, install Python 3.14 with your normal toolchain. On macOS,
+reasonable options include Homebrew, pyenv, or asdf.
 
-### 🧪 Running Tests in PyCharm
+## 4. Create A Virtual Environment
 
-In addition to the command line, you can run tests directly in **PyCharm**:
+```bash
+python3.14 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+```
 
-#### ▶️ Option 1: Run Tests via Right-Click
-1. Navigate to the `tests/` directory or a specific test file.
-2. Right-click and choose **Run 'pytest in ...'**.
-3. PyCharm will automatically use the configured interpreter and show results in the test runner pane.
+The editable install with `.[dev]` is the normal contributor setup. It installs
+the package plus development tools such as pytest and Nox.
 
-#### 🐞 Option 2: Debug Tests
-1. Right-click a test file or individual test function.
-2. Choose **Debug 'pytest for ...'**.
-3. This launches the debugger and allows you to set breakpoints, inspect variables, and step through code.
+## 5. Run Tests
 
-> 💡 Make sure your `src/` and `tests/` folders are properly marked as source roots to ensure correct module resolution.
+Run the safe default suite:
 
----
+```bash
+python -m nox -s unit
+```
 
-## ✅ Verifying the Setup
+This should pass without brokerage credentials. Docker-backed and live
+brokerage tests are intentionally gated and are not part of the ordinary unit
+workflow.
 
-To confirm your environment is set up correctly:
+For focused debugging, route pytest through Nox:
 
-1. Add the `src/` and `tests/` directories to your `PYTHONPATH`. In bash:
+```bash
+python -m nox -s test -- tests/common/test_chain.py
+```
 
-    ```bash
-    export PYTHONPATH=$PYTHONPATH:$(pwd)/src:$(pwd)/tests
-    ```
+If you intentionally need Docker or live brokerage validation, read the
+[Testing guide](../docs/testing.md) first. Those commands require explicit
+environment variables so they do not run by accident.
 
-2. Run the tests:
+## 6. Optional PyCharm Setup
 
-    ```bash
-    pytest
-    ```
+PyCharm works well for this project.
 
-    You should see the test suite run and pass successfully.
+After opening the repository:
 
----
+1. Configure the interpreter as `.venv/bin/python`.
+2. Mark `src/` as a Sources Root.
+3. Mark `tests/` as a Tests Root.
 
-## 🧪 Continuous Integration (CI)
+The repo also configures pytest's Python path in `pyproject.toml`, so command
+line test runs should not require manually exporting `PYTHONPATH`.
 
-This project uses **GitHub Actions** to automatically test changes when code is pushed or a pull request is opened.
+## 7. First Contribution Workflow
 
-### 🔄 How it Works
+1. Pick a Linear ticket.
+2. Comment that you are taking it, assign yourself if you have permission, and
+   move it to In Progress.
+3. Pull the latest `main`.
+4. Create a branch with the ticket number:
 
-Every time you:
+```bash
+git checkout main
+git pull --ff-only origin main
+git checkout -b githubusername/fia-124-short-slug
+```
 
-- Push to a branch
-- Open a pull request
+Use the Linear key in the PR title:
 
-...GitHub Actions runs the test suite to ensure everything still works.
+```text
+FIA-124: Fix first connection docs
+```
 
-You can always check the status of the CI pipeline at the top of your pull request or on the repository’s **Actions** tab.
+Before opening the PR, run the smallest meaningful validation. For code changes,
+that usually starts with:
+
+```bash
+python -m nox -s unit
+```
+
+For docs-only changes, a careful read plus `git diff --check` is usually enough.
+
+## 8. CI
+
+GitHub Actions runs the project checks when you push a branch or open a pull
+request. Check the PR page for status and link any surprising failure back to
+the Linear ticket or PR discussion.

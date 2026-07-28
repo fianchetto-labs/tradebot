@@ -141,7 +141,7 @@ Base URL precedence is explicit:
 Run the executable seed contract with:
 
 ```bash
-python -m pytest tests/common/api/etrade_simulator/test_etrade_simulator_contract.py
+python -m nox -s test -- tests/common/api/etrade_simulator/test_etrade_simulator_contract.py
 ```
 
 ## Service Test Safety
@@ -166,11 +166,11 @@ def test_simulator_backed_stack_smoke():
 The default test command remains safe:
 
 ```bash
-python -m pytest
+python -m nox -s unit
 ```
 
-Tests marked `service` or `docker` are skipped unless the caller deliberately
-sets:
+Tests marked `service` or `docker` are skipped or deselected unless the caller
+deliberately sets:
 
 ```bash
 TRADEBOT_RUN_SERVICE_TESTS=1
@@ -180,7 +180,7 @@ Run Docker-backed service tests intentionally with:
 
 ```bash
 TRADEBOT_RUN_SERVICE_TESTS=1 docker compose up -d
-TRADEBOT_RUN_SERVICE_TESTS=1 python -m pytest -m docker tests
+TRADEBOT_RUN_SERVICE_TESTS=1 python -m nox -s test -- -m docker tests
 ```
 
 This keeps simple unit-test invocations credentials-free and service-free while

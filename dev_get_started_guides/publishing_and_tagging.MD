@@ -22,7 +22,7 @@ We use three-part version numbers: `MAJOR.MINOR.PATCH` (e.g. `0.1.15`):
 
 ```bash
 git checkout main
-git pull origin main
+git pull --ff-only origin main
 ```
 
 ---
@@ -63,7 +63,7 @@ Ensure the version follows [semantic versioning](https://semver.org/) and is new
 Run all tests to ensure the package is in a good state:
 
 ```bash
-pytest
+python -m nox -s unit
 ```
 
 ---
@@ -105,7 +105,7 @@ Successfully built fianchetto_tradebot-0.1.15.tar.gz and fianchetto_tradebot-0.1
 Install `twine` if needed:
 
 ```bash
-pip install twine
+python -m pip install twine
 ```
 
 Upload the built distributions:
