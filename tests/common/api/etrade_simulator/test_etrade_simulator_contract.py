@@ -3,6 +3,8 @@ from dataclasses import dataclass, field
 from datetime import date
 from urllib.parse import urlsplit
 
+import pytest
+
 from fianchetto_tradebot.common_models.api.account.get_account_balance_request import GetAccountBalanceRequest
 from fianchetto_tradebot.common_models.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
@@ -39,6 +41,7 @@ ACCOUNT_ID = seed_data.ACCOUNT_ID
 EQUITY_SYMBOL = seed_data.EQUITY_SYMBOL
 PREVIEW_ID = seed_data.PREVIEW_ID
 ORDER_ID = seed_data.ORDER_ID
+pytestmark = [pytest.mark.functional, pytest.mark.contract]
 
 
 @dataclass

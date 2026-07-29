@@ -43,6 +43,7 @@ from fianchetto_tradebot.server.common.service.ports import OrderServicePort, Qu
 ACCOUNT_ID = "acct-1"
 INITIAL_ORDER_ID = "order-1"
 MODIFIED_ORDER_ID = "order-2"
+pytestmark = [pytest.mark.functional, pytest.mark.contract]
 
 
 @dataclass

@@ -71,6 +71,7 @@ def test_all_managed_orders_closed_at_eod():
     # TODO: implement this
     pass
 
+@pytest.mark.functional
 def test_order_cancelled_when_worker_killed(account_id: str, order: Order, quotes_service_map: dict[Brokerage, QuotesService], orders_service_map: dict[Brokerage, OrderService]):
     # Given
     # A user wants to cancel a managed execution.

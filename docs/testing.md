@@ -23,6 +23,25 @@ tests for process, networking, readiness, or serialization boundaries. Use live
 paper-account tests only for risks that cannot be proven with fakes, simulators,
 or local containers.
 
+## Unit vs Functional
+
+Unit tests verify one class, function, value object, parser branch, or module
+boundary at a time. They should be fast, deterministic, and narrow. Unit tests
+should not need Docker, a running service, live credentials, real network I/O,
+or a broad application workflow to explain why they exist.
+
+Functional tests verify an in-process slice of product behavior across multiple
+project components. They may use realistic fixtures, fakes, in-process FastAPI
+clients, service adapters, parsers, tactics, and domain objects together. They
+can prove wiring, request/response translation, parser-to-domain behavior,
+adapter equivalence, or a representative trading workflow that would be too
+thinly tested by isolated unit tests.
+
+Functional tests are not Docker tests, live brokerage tests, browser tests, or
+generic slow unit tests. If a test needs a real process, container network,
+external service, or paper-account credential, mark it with the appropriate
+`service`, `docker`, `integration`, or `live_e2e` marker instead.
+
 ## Commands
 
 Install development dependencies:
@@ -37,11 +56,14 @@ Run the safe default suite:
 python -m nox -s unit
 ```
 
-Run the current in-process functional suite:
+Run the in-process functional suite:
 
 ```bash
 python -m nox -s functional
 ```
+
+This selects only tests explicitly marked `functional`. It does not also run the
+unit suite.
 
 Run focused pytest commands through Nox:
 

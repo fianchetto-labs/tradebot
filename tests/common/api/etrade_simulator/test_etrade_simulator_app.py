@@ -1,6 +1,7 @@
 from datetime import date
 from urllib.parse import urlsplit
 
+import pytest
 from fastapi.testclient import TestClient
 
 from fianchetto_tradebot.common_models.api.account.get_account_balance_request import GetAccountBalanceRequest
@@ -33,6 +34,7 @@ from fianchetto_tradebot.server.simulator.etrade import seed_data
 from fianchetto_tradebot.server.simulator.etrade.etrade_simulator_app import create_app
 
 SIM_BASE_URL = "http://testserver"
+pytestmark = pytest.mark.functional
 
 
 class _TestClientSession:

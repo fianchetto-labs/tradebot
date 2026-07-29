@@ -32,6 +32,7 @@ from oex.test_get_market_price import quote_service
 
 ORDER_PRICE_EXACTLY_200 = Amount(whole=200, part=0)
 ORDER_PRICE_EXACTLY_100: Amount = Amount(whole=100, part=0)
+pytestmark = pytest.mark.functional
 
 MARKET_PRICE_NEAR_225 = Price(bid=224.95, ask=225.05)
 

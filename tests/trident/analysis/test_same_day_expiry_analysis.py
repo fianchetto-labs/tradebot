@@ -9,6 +9,8 @@ from fianchetto_tradebot.common_models.order.tradable_type import TradableType
 from fianchetto_tradebot.server.trident.analysis.same_expiry_combined_order_analyser import SameDayExpiryCombinedOrderAnalyser
 from tests.common.api.orders.order_test_util import OrderTestUtil
 
+pytestmark = pytest.mark.functional
+
 
 class TestSameDayExpiryAnalysis:
     def test_option_spread(self):
