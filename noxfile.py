@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import http.client
 import os
 import shutil
 import subprocess
@@ -112,7 +113,12 @@ def _wait_for_health(service: DockerService, timeout_seconds: int = 30) -> None:
             with urllib.request.urlopen(health_url, timeout=2) as response:
                 if response.status == 200:
                     return
-        except (urllib.error.URLError, TimeoutError) as exc:
+        except (
+            ConnectionResetError,
+            http.client.RemoteDisconnected,
+            urllib.error.URLError,
+            TimeoutError,
+        ) as exc:
             last_error = exc
         time.sleep(1)
 
