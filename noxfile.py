@@ -4,9 +4,11 @@ import http.client
 import os
 import shutil
 import subprocess
+import sys
 import time
 import urllib.error
 import urllib.request
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -20,6 +22,7 @@ PYTHON = os.environ.get("TRADEBOT_NOX_PYTHON", "3.14")
 SERVICE_TEST_ENV_VAR = "TRADEBOT_RUN_SERVICE_TESTS"
 LIVE_E2E_TEST_ENV_VAR = "TRADEBOT_RUN_LIVE_E2E_TESTS"
 DOCKER_IMAGE = os.environ.get("TRADEBOT_DOCKER_IMAGE", "tradebot:local")
+SMOKE_CONTAINER_TTL_SECONDS = 30 * 60
 REPO_ROOT = Path(__file__).parent
 SAFE_PYTEST_MARKER_EXPR = "not service and not docker and not integration and not live_e2e"
 
@@ -129,13 +132,18 @@ def _container_name(service: DockerService) -> str:
     return f"tradebot-nox-smoke-{service.name}"
 
 
-def _start_smoke_service(service: DockerService) -> None:
+def _start_smoke_service(service: DockerService, run_id: str) -> None:
     _run_docker_command(
         "run",
         "-d",
-        "--rm",
         "--name",
         _container_name(service),
+        "--label",
+        "fianchetto.tradebot.kind=nox-smoke",
+        "--label",
+        f"fianchetto.tradebot.run-id={run_id}",
+        "--label",
+        f"fianchetto.tradebot.ttl-seconds={SMOKE_CONTAINER_TTL_SECONDS}",
         "-e",
         "FIANCHETTO_TRADEBOT_STATE_DIR=/app/deploy/docker/demo-state",
         "-e",
@@ -146,6 +154,26 @@ def _start_smoke_service(service: DockerService) -> None:
         "python",
         "-m",
         service.module,
+    )
+
+
+def _schedule_smoke_service_cleanup(run_id: str) -> None:
+    cleanup_script = (
+        "import subprocess, sys, time; "
+        "time.sleep(int(sys.argv[1])); "
+        "containers = subprocess.run("
+        "['docker', 'ps', '-a', '--filter', f'label=fianchetto.tradebot.run-id={sys.argv[2]}', "
+        "'--format', '{{.ID}}'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, "
+        "text=True, check=False).stdout.splitlines(); "
+        "containers and subprocess.run(['docker', 'rm', '-f', *containers], "
+        "stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)"
+    )
+    subprocess.Popen(
+        [sys.executable, "-c", cleanup_script, str(SMOKE_CONTAINER_TTL_SECONDS), run_id],
+        cwd=REPO_ROOT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
     )
 
 
@@ -193,16 +221,24 @@ def docker_smoke(session: nox.Session) -> None:
     _require_env_gate(session, SERVICE_TEST_ENV_VAR, "Docker-backed service smoke tests")
     _docker_build(session)
 
+    for service in DOCKER_SMOKE_SERVICES:
+        _stop_smoke_service(service)
+
+    run_id = uuid.uuid4().hex
     started_services: list[DockerService] = []
     try:
         for service in DOCKER_SMOKE_SERVICES:
-            _start_smoke_service(service)
+            _start_smoke_service(service, run_id)
             started_services.append(service)
             _wait_for_health(service)
             session.log("%s service is healthy on port %s", service.name, service.host_port)
     finally:
-        for service in reversed(started_services):
-            _stop_smoke_service(service)
+        if started_services:
+            _schedule_smoke_service_cleanup(run_id)
+            session.log(
+                "Smoke containers will remain available for %s minutes, then be removed.",
+                SMOKE_CONTAINER_TTL_SECONDS // 60,
+            )
 
 
 @nox.session(python=False)

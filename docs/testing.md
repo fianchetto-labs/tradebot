@@ -61,6 +61,27 @@ Run Docker-backed service smoke checks intentionally:
 TRADEBOT_RUN_SERVICE_TESTS=1 python -m nox -s docker_smoke
 ```
 
+This starts the orders, quotes, and MOEX smoke containers after building the
+local image. After their health checks pass, the containers remain available
+for 30 minutes so you can inspect them in Docker Desktop, curl their health
+checks, or review logs. The smoke harness schedules automatic cleanup at the
+end of that window and also removes any previous smoke containers before
+starting a fresh run.
+
+The smoke containers bind only to localhost:
+
+```bash
+curl http://127.0.0.1:18080/health-check
+curl http://127.0.0.1:18081/health-check
+curl http://127.0.0.1:18082/health-check
+```
+
+To clean them up early:
+
+```bash
+docker rm -f tradebot-nox-smoke-orders tradebot-nox-smoke-quotes tradebot-nox-smoke-moex
+```
+
 The Docker integration session is reserved for the Docker Compose and reusable
 service lifecycle work in FIA-136, FIA-149, and FIA-152:
 
