@@ -37,6 +37,17 @@ can prove wiring, request/response translation, parser-to-domain behavior,
 adapter equivalence, or a representative trading workflow that would be too
 thinly tested by isolated unit tests.
 
+Functional tests should be scenario-oriented. A good functional test starts
+from a recognizable product behavior, arranges the relevant in-process
+collaborators, runs the behavior through the public boundary for that slice,
+and asserts the domain result. It should not exist merely because a unit test
+grew large.
+
+Reusable scenario harnesses belong under `tests/functional/`. A harness may own
+setup for an in-process app, fake connector/session, seeded state, service
+adapters, and realistic request fixtures. Test files should use those harnesses
+to stay readable and focused on the Given/When/Then behavior being proved.
+
 Functional tests are not Docker tests, live brokerage tests, browser tests, or
 generic slow unit tests. If a test needs a real process, container network,
 external service, or paper-account credential, mark it with the appropriate
