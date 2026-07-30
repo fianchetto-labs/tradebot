@@ -341,6 +341,7 @@ def docker_integration(session: nox.Session) -> None:
             env={
                 **os.environ,
                 SERVICE_TEST_ENV_VAR: "1",
+                "TRADEBOT_TEST_MOEX_BASE_URL": "http://127.0.0.1:18082",
                 "TRADEBOT_TEST_ORDERS_BASE_URL": "http://127.0.0.1:18080",
                 "TRADEBOT_TEST_QUOTES_BASE_URL": "http://127.0.0.1:18081",
             },

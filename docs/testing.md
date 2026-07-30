@@ -133,9 +133,11 @@ This builds the local image, starts the Compose stack, waits for health checks,
 runs Docker integration tests, and leaves the stack available for 30 minutes on
 local machines. The current slices verify host pytest -> TradeBot service
 container -> E*Trade simulator container -> TradeBot service container -> host
-assertion for quotes and orders. That catches broken Docker DNS, port mapping,
-service startup ordering, connector base URL configuration, request/response
-serialization, and order lifecycle behavior across a real HTTP/process boundary.
+assertion for quotes and orders. They also verify MOEX -> orders/quotes over
+Docker DNS for a representative managed-execution lifecycle. That catches
+broken Docker DNS, port mapping, service startup ordering, connector base URL
+configuration, request/response serialization, and order lifecycle behavior
+across a real HTTP/process boundary.
 
 Integration cleanup is intentionally automatic. Local runs schedule cleanup by
 run-specific Docker labels so an old cleanup task does not remove a newer run.

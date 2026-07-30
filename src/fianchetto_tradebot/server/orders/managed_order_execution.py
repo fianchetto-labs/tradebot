@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Optional, Type
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, field_serializer, field_validator, model_validator
 
 from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
 from fianchetto_tradebot.common_models.managed_executions.moex_status import MoexStatus
@@ -45,6 +45,10 @@ class ManagedExecutionCreationParams(BaseModel):
             except KeyError:
                 raise ValueError(f"Unknown tactic class name: {value}")
         return value
+
+    @field_serializer("tactic")
+    def serialize_tactic(self, value: Type[ExecutionTactic]) -> str:
+        return value.__name__
 
     @staticmethod
     def _json_fallback(obj):
@@ -97,6 +101,10 @@ class ManagedExecution(BaseModel):
             except KeyError:
                 raise ValueError(f"Unknown tactic class name: {value}")
         return value
+
+    @field_serializer("tactic")
+    def serialize_tactic(self, value: Type[ExecutionTactic]) -> str:
+        return value.__name__
 
     @staticmethod
     def _json_fallback(obj):
