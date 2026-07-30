@@ -104,7 +104,9 @@ TRADEBOT_RUN_SERVICE_TESTS=1 python -m nox -s docker_integration
 
 That command builds `tradebot:local`, starts the Compose stack in
 `deploy/docker/docker-compose.integration.yml`, waits for service health, runs
-the Docker integration tests, and tears the stack down.
+the Docker integration tests, and leaves the stack available for 30 minutes on
+local machines. CI runs and local runs with
+`TRADEBOT_INTEGRATION_STACK_TTL_SECONDS=0` tear the stack down immediately.
 
 To inspect the stack manually:
 

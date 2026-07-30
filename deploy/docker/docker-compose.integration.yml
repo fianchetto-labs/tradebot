@@ -1,9 +1,15 @@
 name: tradebot-integration
 
+x-tradebot-integration-labels: &tradebot-integration-labels
+  fianchetto.tradebot.kind: docker-integration
+  fianchetto.tradebot.run-id: ${TRADEBOT_INTEGRATION_RUN_ID:-manual}
+  fianchetto.tradebot.ttl-seconds: ${TRADEBOT_INTEGRATION_STACK_TTL_SECONDS:-1800}
+
 services:
   etrade-simulator:
     image: ${TRADEBOT_DOCKER_IMAGE:-tradebot:local}
     command: python -m fianchetto_tradebot.server.simulator.etrade
+    labels: *tradebot-integration-labels
     environment:
       TRADEBOT_ETRADE_SIMULATOR_HOST: 0.0.0.0
       TRADEBOT_ETRADE_SIMULATOR_PORT: "8090"
@@ -24,6 +30,7 @@ services:
   quotes:
     image: ${TRADEBOT_DOCKER_IMAGE:-tradebot:local}
     command: python -m fianchetto_tradebot.server.quotes.serving.quotes_rest_service
+    labels: *tradebot-integration-labels
     environment:
       FIANCHETTO_TRADEBOT_STATE_DIR: /app/deploy/docker/demo-state
       TRADEBOT_ETRADE_API_BASE_URL: http://etrade-simulator:8090
@@ -48,6 +55,7 @@ services:
   orders:
     image: ${TRADEBOT_DOCKER_IMAGE:-tradebot:local}
     command: python -m fianchetto_tradebot.server.orders.serving.orders_rest_service
+    labels: *tradebot-integration-labels
     environment:
       FIANCHETTO_TRADEBOT_STATE_DIR: /app/deploy/docker/demo-state
       TRADEBOT_ETRADE_API_BASE_URL: http://etrade-simulator:8090
@@ -68,3 +76,7 @@ services:
       timeout: 3s
       retries: 20
       start_period: 5s
+
+networks:
+  default:
+    labels: *tradebot-integration-labels

@@ -119,6 +119,10 @@ To clean them up early:
 docker rm -f tradebot-nox-smoke-orders tradebot-nox-smoke-quotes tradebot-nox-smoke-moex
 ```
 
+Smoke tests are startup probes. They prove a service process can boot from the
+Docker image and answer its health check, but they do not prove service-to-service
+behavior or a user workflow.
+
 Run the simulator-backed Docker integration slice intentionally:
 
 ```bash
@@ -126,12 +130,28 @@ TRADEBOT_RUN_SERVICE_TESTS=1 python -m nox -s docker_integration
 ```
 
 This builds the local image, starts the Compose stack, waits for health checks,
-runs Docker integration tests, and tears the stack down. The current slices
-verify host pytest -> TradeBot service container -> E*Trade simulator container
--> TradeBot service container -> host assertion for quotes and orders. That
-catches broken Docker DNS, port mapping, service startup ordering, connector
-base URL configuration, request/response serialization, and order lifecycle
-behavior across a real HTTP/process boundary.
+runs Docker integration tests, and leaves the stack available for 30 minutes on
+local machines. The current slices verify host pytest -> TradeBot service
+container -> E*Trade simulator container -> TradeBot service container -> host
+assertion for quotes and orders. That catches broken Docker DNS, port mapping,
+service startup ordering, connector base URL configuration, request/response
+serialization, and order lifecycle behavior across a real HTTP/process boundary.
+
+Integration cleanup is intentionally automatic. Local runs schedule cleanup by
+run-specific Docker labels so an old cleanup task does not remove a newer run.
+Each integration run removes any previous integration stack before starting a
+fresh one. CI always tears the stack down immediately. To make a local run clean
+up immediately, set:
+
+```bash
+TRADEBOT_RUN_SERVICE_TESTS=1 TRADEBOT_INTEGRATION_STACK_TTL_SECONDS=0 python -m nox -s docker_integration
+```
+
+To clean the integration stack up early:
+
+```bash
+docker compose -f deploy/docker/docker-compose.integration.yml down --volumes --remove-orphans
+```
 
 The live paper-account E*Trade session is reserved for FIA-153 and must remain
 separately gated:
