@@ -1,6 +1,8 @@
 import csv
 import os
 
+import pytest
+
 from fianchetto_tradebot.common_models.finance.equity import Equity
 from fianchetto_tradebot.common_models.finance.option import Option
 from fianchetto_tradebot.common_models.portfolio.portfolio_builder import PortfolioBuilder
@@ -14,6 +16,7 @@ riot = Equity(ticker="RIOT", company_name="Riot Platforms")
 VIX_OCT_16_24_18_CALL = Option.from_str("VIX Oct 16 '24 $18 Call")
 
 SAMPLE_PORTFOLIO_FILENAME = os.path.join(os.path.dirname(__file__), 'resources/sample_position_list.csv')
+pytestmark = pytest.mark.functional
 
 
 def test_parsing():

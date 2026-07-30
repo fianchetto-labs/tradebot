@@ -48,8 +48,6 @@ class ETradeAccountService(AccountService):
         path = f"/v1/accounts/list.json"
         url = self.base_url + path
         response = self.session.get(url)
-        print(response.request.headers)
-        print(response.url)
 
         name_filter = (lambda a: a.account_id_key == get_account_info_request.account_id)
 

@@ -24,7 +24,8 @@ LIVE_E2E_TEST_ENV_VAR = "TRADEBOT_RUN_LIVE_E2E_TESTS"
 DOCKER_IMAGE = os.environ.get("TRADEBOT_DOCKER_IMAGE", "tradebot:local")
 SMOKE_CONTAINER_TTL_SECONDS = 30 * 60
 REPO_ROOT = Path(__file__).parent
-SAFE_PYTEST_MARKER_EXPR = "not service and not docker and not integration and not live_e2e"
+UNIT_PYTEST_MARKER_EXPR = "not functional and not contract and not service and not docker and not integration and not live_e2e"
+FUNCTIONAL_PYTEST_MARKER_EXPR = "functional and not service and not docker and not integration and not live_e2e"
 
 
 @dataclass(frozen=True)
@@ -191,15 +192,14 @@ def _stop_smoke_service(service: DockerService) -> None:
 def unit(session: nox.Session) -> None:
     """Run the safe service-free test suite."""
     _install_project(session)
-    _run_pytest(session, "-m", SAFE_PYTEST_MARKER_EXPR, "tests")
+    _run_pytest(session, "-m", UNIT_PYTEST_MARKER_EXPR, "tests")
 
 
 @nox.session(python=PYTHON, venv_backend="venv", download_python="never")
 def functional(session: nox.Session) -> None:
-    """Run in-process tests until FIA-151 splits functional markers explicitly."""
+    """Run service-free tests that exercise multiple components in-process."""
     _install_project(session)
-    session.log("Functional tests are not separately classified yet; running the safe suite.")
-    _run_pytest(session, "-m", SAFE_PYTEST_MARKER_EXPR, "tests")
+    _run_pytest(session, "-m", FUNCTIONAL_PYTEST_MARKER_EXPR, "tests")
 
 
 @nox.session(python=PYTHON, venv_backend="venv", download_python="never")

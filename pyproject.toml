@@ -79,6 +79,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests"]
 markers = [
+    "functional: verifies in-process behavior across multiple project components without external services",
     "contract: verifies that two implementations satisfy the same behavioral contract",
     "service: requires one or more local service processes to be running",
     "docker: requires Docker or Docker Compose",
