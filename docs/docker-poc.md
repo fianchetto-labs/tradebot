@@ -4,10 +4,11 @@ FIA-133 introduces one reusable image for local container startup checks. The
 image can run each current REST service by selecting the Python module at
 container start.
 
-The first Compose-backed integration slices start the E*Trade simulator plus the
-quotes and orders services. TradeBot services reach the simulator through Docker
-service DNS, so this proves more than container startup: it proves endpoint
-configuration, service networking, and representative TradeBot HTTP routes.
+The Compose-backed integration slices start the E*Trade simulator plus the
+quotes, orders, and MOEX services. TradeBot services reach the simulator and
+each other through Docker service DNS, so this proves more than container
+startup: it proves endpoint configuration, service networking, and
+representative TradeBot HTTP routes.
 
 ## Build
 
@@ -86,6 +87,11 @@ docker run --rm \
   python -m fianchetto_tradebot.server.moex.serving.moex_rest_service
 ```
 
+The standalone MOEX command uses in-process orders and quotes adapters. The
+Compose-backed integration stack sets `TRADEBOT_MOEX_SERVICE_ADAPTER_MODE=http`
+plus `TRADEBOT_ORDERS_SERVICE_URL` and `TRADEBOT_QUOTES_SERVICE_URL` so MOEX
+talks to the orders and quotes containers over Docker DNS.
+
 Then verify health from the host:
 
 ```bash
@@ -116,5 +122,6 @@ docker compose -f deploy/docker/docker-compose.integration.yml up --detach --wai
 curl http://127.0.0.1:18090/health-check
 curl http://127.0.0.1:18080/health-check
 curl http://127.0.0.1:18081/api/v1/ETRADE/quotes/tradable/GE
+curl http://127.0.0.1:18082/health-check
 docker compose -f deploy/docker/docker-compose.integration.yml down --volumes
 ```

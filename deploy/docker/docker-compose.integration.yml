@@ -77,6 +77,36 @@ services:
       retries: 20
       start_period: 5s
 
+  moex:
+    image: ${TRADEBOT_DOCKER_IMAGE:-tradebot:local}
+    command: python -m fianchetto_tradebot.server.moex.serving.moex_rest_service
+    labels: *tradebot-integration-labels
+    environment:
+      FIANCHETTO_TRADEBOT_STATE_DIR: /app/deploy/docker/demo-state
+      TRADEBOT_ETRADE_API_BASE_URL: http://etrade-simulator:8090
+      TRADEBOT_ETRADE_CACHE_MAX_AGE_SECONDS: "315360000"
+      TRADEBOT_HEALTHCHECK_PORT: "8082"
+      TRADEBOT_MOEX_SERVICE_ADAPTER_MODE: http
+      TRADEBOT_ORDERS_SERVICE_URL: http://orders:8080
+      TRADEBOT_QUOTES_SERVICE_URL: http://quotes:8081
+    ports:
+      - "127.0.0.1:18082:8082"
+    depends_on:
+      orders:
+        condition: service_healthy
+      quotes:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8082/health-check', timeout=2).read()"
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
 networks:
   default:
     labels: *tradebot-integration-labels

@@ -59,19 +59,13 @@ def test_managed_execution_dict_serde(managed_execution: ManagedExecution, accou
     assert reserialized.account_id == account_id
     assert reserialized.tactic == IncrementalPriceDeltaExecutionTactic
 
-def test_create_managed_execution_request_json_serde(managed_execution, account_id):
-    create_managed_execution_request: CreateManagedExecutionRequest = CreateManagedExecutionRequest(account_id=account_id, managed_execution=managed_execution)
+def test_managed_execution_json_mode_dump_serializes_tactic_name(managed_execution: ManagedExecution):
+    as_dict = managed_execution.model_dump(mode="json")
 
-    # serialize to json
-    as_json: str = create_managed_execution_request.model_dump_json()
+    assert as_dict["tactic"] == "IncrementalPriceDeltaExecutionTactic"
+    assert ManagedExecution.model_validate(as_dict).tactic == IncrementalPriceDeltaExecutionTactic
 
-    # deserialize from json
-    reserialized_from_json: ManagedExecution = CreateManagedExecutionRequest.model_validate_json(as_json)
-
-    assert reserialized_from_json.account_id == account_id
-    assert reserialized_from_json.managed_execution.tactic == IncrementalPriceDeltaExecutionTactic
-
-def test_create_managed_execution_request_json_serde(managed_execution, account_id, order):
+def test_create_managed_execution_request_with_creation_params_dict_serde(account_id, order):
     # TODO: Add more tests for the various other option types
     managed_execution_creation_params: ManagedExecutionCreationParams = ManagedExecutionCreationParams(managed_execution_creation_type=ManagedExecutionCreationType.AS_NEW_ORDER, brokerage=Brokerage.ETRADE, account_id=account_id, creation_order=order)
     create_managed_execution_request: CreateManagedExecutionRequest = CreateManagedExecutionRequest(managed_execution_creation_params=managed_execution_creation_params)
@@ -84,6 +78,25 @@ def test_create_managed_execution_request_json_serde(managed_execution, account_
 
     assert reserialized_from_json.managed_execution_creation_params.account_id == account_id
     assert reserialized_from_json.managed_execution_creation_params.tactic == IncrementalPriceDeltaExecutionTactic
+
+def test_create_managed_execution_request_json_mode_dump_serializes_tactic_name(account_id, order):
+    managed_execution_creation_params = ManagedExecutionCreationParams(
+        managed_execution_creation_type=ManagedExecutionCreationType.AS_NEW_ORDER,
+        brokerage=Brokerage.ETRADE,
+        account_id=account_id,
+        creation_order=order,
+    )
+    create_managed_execution_request = CreateManagedExecutionRequest(
+        managed_execution_creation_params=managed_execution_creation_params
+    )
+
+    as_dict = create_managed_execution_request.model_dump(mode="json")
+
+    assert as_dict["managed_execution_creation_params"]["tactic"] == "IncrementalPriceDeltaExecutionTactic"
+    assert (
+        CreateManagedExecutionRequest.model_validate(as_dict).managed_execution_creation_params.tactic
+        == IncrementalPriceDeltaExecutionTactic
+    )
 
 def test_managed_execution_new_order_creation_request_from_string():
     input = '{"managed_execution_creation_type":"AS_NEW_ORDER","brokerage":"etrade","account_id":"ABC123","reserve_order_price":null,"tactic":"IncrementalPriceDeltaExecutionTactic","creation_order":{"expiry":{"expiry_date":null,"all_or_none":false},"order_lines":[{"tradable":{"__type__":"Equity","price":null,"ticker":"GE","company_name":null},"action":"BUY","quantity":1,"quantity_filled":-1}],"order_price":{"order_price_type":"LIMIT","price":{"whole":100,"part":1,"currency":"USD","negative":false}}},"creation_order_id":null}'

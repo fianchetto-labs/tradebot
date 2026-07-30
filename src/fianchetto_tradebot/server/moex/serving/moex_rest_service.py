@@ -1,4 +1,6 @@
+import os
 from datetime import datetime
+from typing import Mapping
 
 from fastapi import FastAPI
 
@@ -20,10 +22,19 @@ from fianchetto_tradebot.common_models.managed_executions.list_managed_execution
     ListManagedExecutionsResponse
 from fianchetto_tradebot.server.common.api.moex.moex_service import MoexService
 from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
-from fianchetto_tradebot.server.common.service.adapters import build_local_service_adapters
+from fianchetto_tradebot.server.common.service.adapters import (
+    ServiceAdapters,
+    build_http_service_adapters,
+    build_local_service_adapters,
+    load_http_service_adapter_config,
+)
 from fianchetto_tradebot.server.common.service.ports import OrderServicePort, QuoteServicePort
 from fianchetto_tradebot.server.common.service.rest_service import RestService, ETRADE_ONLY_BROKERAGE_CONFIG
 from fianchetto_tradebot.server.common.service.service_key import ServiceKey
+
+MOEX_SERVICE_ADAPTER_MODE_ENV_VAR = "TRADEBOT_MOEX_SERVICE_ADAPTER_MODE"
+LOCAL_SERVICE_ADAPTER_MODE = "local"
+HTTP_SERVICE_ADAPTER_MODE = "http"
 
 JAN_1_2024 = datetime(2024,1,1).date()
 DEFAULT_START_DATE = JAN_1_2024
@@ -60,10 +71,25 @@ class MoexRestService(RestService):
 
 
     def _setup_brokerage_services(self):
-        local_services = build_local_service_adapters(self.connectors)
-        self.order_services: dict[Brokerage, OrderServicePort] = local_services.order_services
-        self.quotes_services: dict[Brokerage, QuoteServicePort] = local_services.quote_services
+        service_adapters = self._build_service_adapters()
+        self.order_services: dict[Brokerage, OrderServicePort] = service_adapters.order_services
+        self.quotes_services: dict[Brokerage, QuoteServicePort] = service_adapters.quote_services
         self.moex_service = MoexService(self.quotes_services, self.order_services)
+
+    def _build_service_adapters(self, env: Mapping[str, str] | None = None) -> ServiceAdapters:
+        env = os.environ if env is None else env
+        adapter_mode = env.get(MOEX_SERVICE_ADAPTER_MODE_ENV_VAR, LOCAL_SERVICE_ADAPTER_MODE).strip().lower()
+        if adapter_mode == LOCAL_SERVICE_ADAPTER_MODE:
+            return build_local_service_adapters(self.connectors)
+        if adapter_mode == HTTP_SERVICE_ADAPTER_MODE:
+            return build_http_service_adapters(
+                self.connectors.keys(),
+                config=load_http_service_adapter_config(env),
+            )
+        raise ValueError(
+            f"{MOEX_SERVICE_ADAPTER_MODE_ENV_VAR} must be "
+            f"'{LOCAL_SERVICE_ADAPTER_MODE}' or '{HTTP_SERVICE_ADAPTER_MODE}'"
+        )
 
     def list_managed_executions(self, brokerage: str, account_id: str):
         # TODO - FIA-114:
