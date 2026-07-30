@@ -24,6 +24,7 @@ LIVE_E2E_TEST_ENV_VAR = "TRADEBOT_RUN_LIVE_E2E_TESTS"
 DOCKER_IMAGE = os.environ.get("TRADEBOT_DOCKER_IMAGE", "tradebot:local")
 SMOKE_CONTAINER_TTL_SECONDS = 30 * 60
 REPO_ROOT = Path(__file__).parent
+DOCKER_INTEGRATION_COMPOSE_FILE = REPO_ROOT / "deploy" / "docker" / "docker-compose.integration.yml"
 UNIT_PYTEST_MARKER_EXPR = "not functional and not contract and not service and not docker and not integration and not live_e2e"
 FUNCTIONAL_PYTEST_MARKER_EXPR = "functional and not service and not docker and not integration and not live_e2e"
 
@@ -104,6 +105,18 @@ def _run_docker_command(*args: str) -> subprocess.CompletedProcess[str]:
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
+    )
+
+
+def _run_docker_compose(session: nox.Session, *args: str) -> None:
+    session.run(
+        "docker",
+        "compose",
+        "-f",
+        str(DOCKER_INTEGRATION_COMPOSE_FILE),
+        *args,
+        external=True,
+        env={**os.environ, "TRADEBOT_DOCKER_IMAGE": DOCKER_IMAGE},
     )
 
 
@@ -241,11 +254,33 @@ def docker_smoke(session: nox.Session) -> None:
             )
 
 
-@nox.session(python=False)
+@nox.session(python=PYTHON, venv_backend="venv", download_python="never")
 def docker_integration(session: nox.Session) -> None:
-    """Reserved for Docker Compose/service-boundary tests."""
+    """Build the image, run the simulator-backed Compose stack, and execute Docker tests."""
     _require_env_gate(session, SERVICE_TEST_ENV_VAR, "Docker-backed integration tests")
-    session.error("Docker integration orchestration belongs to FIA-136/FIA-149/FIA-152")
+    _install_project(session)
+    _docker_build(session)
+
+    try:
+        _run_docker_compose(session, "up", "--detach", "--wait", "--remove-orphans")
+        session.run(
+            "python",
+            "-m",
+            "pytest",
+            "-m",
+            "docker and integration",
+            "tests/integration/docker",
+            env={
+                **os.environ,
+                SERVICE_TEST_ENV_VAR: "1",
+                "TRADEBOT_TEST_QUOTES_BASE_URL": "http://127.0.0.1:18081",
+            },
+        )
+    except Exception:
+        _run_docker_compose(session, "logs", "--no-color")
+        raise
+    finally:
+        _run_docker_compose(session, "down", "--volumes", "--remove-orphans")
 
 
 @nox.session(python=False)

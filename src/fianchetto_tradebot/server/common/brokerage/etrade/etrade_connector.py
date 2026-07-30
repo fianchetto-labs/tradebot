@@ -29,6 +29,8 @@ DEFAULT_SESSION_FILE = DEFAULT_CREDENTIALS_FILE
 DEFAULT_ASYNC_SESSION_FILE = DEFAULT_CREDENTIALS_FILE
 DEFAULT_ETRADE_BASE_URL_FILE = os.path.join(BROKERAGE_STATE_DIR, "base_url.json")
 ETRADE_API_BASE_URL_ENV_VAR = "TRADEBOT_ETRADE_API_BASE_URL"
+ETRADE_CACHE_MAX_AGE_SECONDS_ENV_VAR = "TRADEBOT_ETRADE_CACHE_MAX_AGE_SECONDS"
+DEFAULT_CACHE_MAX_AGE_SECONDS = 60 * 60
 REQUIRED_CREDENTIAL_FIELDS = (
     "consumer_key",
     "consumer_secret",
@@ -104,14 +106,18 @@ class ETradeConnector(Connector):
         return None
 
     def _load_valid_connection_credentials(self) -> dict | None:
-        if not ETradeConnector.is_file_still_valid(self.credentials_file):
+        if not ETradeConnector.is_file_still_valid(
+                self.credentials_file,
+                max_age=self._cache_max_age()):
             return None
         return ETradeConnector._validate_connection_credentials(
             ETradeConnector._deserialize_connection_credentials(self.credentials_file)
         )
 
     def _load_valid_standalone_base_url(self) -> str | None:
-        if not ETradeConnector.is_file_still_valid(self.base_url_file):
+        if not ETradeConnector.is_file_still_valid(
+                self.base_url_file,
+                max_age=self._cache_max_age()):
             return None
         return ETradeConnector.deserialize_base_url(self.base_url_file)
 
@@ -120,6 +126,20 @@ class ETradeConnector(Connector):
         if not raw_base_url:
             return None
         return ETradeConnector._normalize_base_url(raw_base_url, ETRADE_API_BASE_URL_ENV_VAR)
+
+    def _cache_max_age(self) -> datetime.timedelta:
+        raw_max_age = self.env.get(ETRADE_CACHE_MAX_AGE_SECONDS_ENV_VAR)
+        if raw_max_age is None:
+            return datetime.timedelta(seconds=DEFAULT_CACHE_MAX_AGE_SECONDS)
+        try:
+            max_age_seconds = int(raw_max_age)
+        except ValueError as exc:
+            raise ValueError(
+                f"E*Trade {ETRADE_CACHE_MAX_AGE_SECONDS_ENV_VAR} must be a positive integer"
+            ) from exc
+        if max_age_seconds <= 0:
+            raise ValueError(f"E*Trade {ETRADE_CACHE_MAX_AGE_SECONDS_ENV_VAR} must be positive")
+        return datetime.timedelta(seconds=max_age_seconds)
 
     def establish_connection(self) -> (OAuth1Session, OAuth1Client, str):
         config.read(self.config_file)

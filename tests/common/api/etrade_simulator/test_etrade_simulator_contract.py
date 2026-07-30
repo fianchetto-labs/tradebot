@@ -57,7 +57,7 @@ def test_simulator_contract_supports_account_balance_and_portfolio_paths():
 
     # And
     # The future simulator must support the exact routes and query params the services call.
-    assert connector.session.requests[0] == RecordedRequest("GET", "/v1/accounts/list.json", params=None)
+    assert connector.session.requests[0] == RecordedRequest("GET", "/v1/accounts/list.json", params={})
     assert connector.session.requests[1] == RecordedRequest(
         "GET",
         f"/v1/accounts/{ACCOUNT_ID}/balance.json",
@@ -97,8 +97,12 @@ def test_simulator_contract_supports_quotes_expiries_and_option_chains():
 
     # And
     # The future simulator must support the same sync quote routes and async chain route.
-    assert connector.session.requests[0].path == "/v1/market/quote/GE.json"
-    assert connector.session.requests[1].path == "/v1/market/quote/GE:2026:1:16:PUT:25.0.json"
+    assert connector.session.requests[0] == RecordedRequest("GET", "/v1/market/quote/GE.json", params={})
+    assert connector.session.requests[1] == RecordedRequest(
+        "GET",
+        "/v1/market/quote/GE:2026:1:16:PUT:25.0.json",
+        params={},
+    )
     assert connector.session.requests[2] == RecordedRequest(
         "GET",
         "/v1/market/optionexpiredate.json",
