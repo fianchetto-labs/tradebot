@@ -8,7 +8,7 @@ from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.server.common.api.http_status_code import HttpStatusCode
 from fianchetto_tradebot.server.simulator.etrade import seed_data
 from fianchetto_tradebot.server.simulator.etrade.etrade_simulator_app import create_app
-from functional.etrade_simulator_scenario import ETradeSimulatorScenario
+from tests.functional.etrade_simulator_scenario import ETradeSimulatorScenario
 
 pytestmark = pytest.mark.functional
 
@@ -113,3 +113,19 @@ def test_existing_etrade_services_parse_simulator_http_responses():
     assert result.placed.order_id == seed_data.ORDER_ID
     assert result.fetched.placed_order.placed_order_details.status == OrderStatus.OPEN
     assert result.canceled.order_id == seed_data.ORDER_ID
+
+
+def test_etrade_simulator_scenario_connector_preserves_query_strings():
+    # Given
+    # A service-compatible connector that points at the in-process simulator.
+    scenario = ETradeSimulatorScenario.create()
+    session, _, base_url = scenario.connector.load_connection()
+
+    # When
+    # A caller embeds query parameters in the URL instead of passing them separately.
+    response = session.get(f"{base_url}/v1/market/optionexpiredate.json?symbol={seed_data.EQUITY_SYMBOL}")
+
+    # Then
+    # The harness forwards the query string the way a real HTTP client would.
+    assert response.status_code == HttpStatusCode.OK
+    assert response.json()["OptionExpireDateResponse"]

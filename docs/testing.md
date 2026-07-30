@@ -47,6 +47,8 @@ Reusable scenario harnesses belong under `tests/functional/`. A harness may own
 setup for an in-process app, fake connector/session, seeded state, service
 adapters, and realistic request fixtures. Test files should use those harnesses
 to stay readable and focused on the Given/When/Then behavior being proved.
+When the scenario crosses an adapter boundary, prefer an explicit in-process
+connector or adapter over anonymous mocks so the boundary remains visible.
 
 Functional tests are not Docker tests, live brokerage tests, browser tests, or
 generic slow unit tests. If a test needs a real process, container network,

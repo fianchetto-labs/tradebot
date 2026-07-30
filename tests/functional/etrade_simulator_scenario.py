@@ -57,6 +57,7 @@ class ETradeSimulatorWorkflowResult:
 @dataclass(frozen=True)
 class ETradeSimulatorScenario:
     client: TestClient
+    connector: InProcessETradeConnector
     account_service: ETradeAccountService
     portfolio_service: ETradePortfolioService
     quote_service: ETradeQuotesService
@@ -65,9 +66,10 @@ class ETradeSimulatorScenario:
     @classmethod
     def create(cls) -> ETradeSimulatorScenario:
         client = TestClient(create_app())
-        connector = _SimulatorConnector(client)
+        connector = InProcessETradeConnector(client)
         return cls(
             client=client,
+            connector=connector,
             account_service=ETradeAccountService(connector),
             portfolio_service=ETradePortfolioService(connector),
             quote_service=ETradeQuotesService(connector),
@@ -132,12 +134,22 @@ class ETradeSimulatorScenario:
         )
 
 
+class InProcessETradeConnector:
+    def __init__(self, client: TestClient, base_url: str = SIM_BASE_URL):
+        self.session = _TestClientSession(client)
+        self.async_session = _AsyncTestClientSession(client)
+        self.base_url = base_url
+
+    def load_connection(self):
+        return self.session, self.async_session, self.base_url
+
+
 class _TestClientSession:
     def __init__(self, client: TestClient):
         self.client = client
 
     def get(self, url: str, params: dict | None = None):
-        return self.client.get(_path(url), params=params)
+        return self.client.get(_test_client_url(url), params=params)
 
     def post(
         self,
@@ -146,7 +158,7 @@ class _TestClientSession:
         headers: dict | None = None,
         data: str | None = None,
     ):
-        return self.client.post(_path(url), headers=headers, content=data)
+        return self.client.post(_test_client_url(url), headers=headers, content=data)
 
     def put(
         self,
@@ -155,7 +167,7 @@ class _TestClientSession:
         headers: dict | None = None,
         data: str | None = None,
     ):
-        return self.client.put(_path(url), headers=headers, content=data)
+        return self.client.put(_test_client_url(url), headers=headers, content=data)
 
 
 class _AsyncTestClientSession:
@@ -163,18 +175,13 @@ class _AsyncTestClientSession:
         self.client = client
 
     async def request(self, method: str, url: str, params: dict | None = None):
-        response = self.client.request(method, _path(url), params=params)
+        response = self.client.request(method, _test_client_url(url), params=params)
         return response.json()
 
 
-class _SimulatorConnector:
-    def __init__(self, client: TestClient):
-        self.session = _TestClientSession(client)
-        self.async_session = _AsyncTestClientSession(client)
-
-    def load_connection(self):
-        return self.session, self.async_session, SIM_BASE_URL
-
-
-def _path(url: str) -> str:
-    return urlsplit(url).path
+def _test_client_url(url: str) -> str:
+    parsed = urlsplit(url)
+    path = parsed.path or "/"
+    if parsed.query:
+        return f"{path}?{parsed.query}"
+    return path
