@@ -44,3 +44,27 @@ services:
       timeout: 3s
       retries: 20
       start_period: 5s
+
+  orders:
+    image: ${TRADEBOT_DOCKER_IMAGE:-tradebot:local}
+    command: python -m fianchetto_tradebot.server.orders.serving.orders_rest_service
+    environment:
+      FIANCHETTO_TRADEBOT_STATE_DIR: /app/deploy/docker/demo-state
+      TRADEBOT_ETRADE_API_BASE_URL: http://etrade-simulator:8090
+      TRADEBOT_ETRADE_CACHE_MAX_AGE_SECONDS: "315360000"
+      TRADEBOT_HEALTHCHECK_PORT: "8080"
+    ports:
+      - "127.0.0.1:18080:8080"
+    depends_on:
+      etrade-simulator:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health-check', timeout=2).read()"
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 5s

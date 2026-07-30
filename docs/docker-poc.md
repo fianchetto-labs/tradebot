@@ -4,10 +4,10 @@ FIA-133 introduces one reusable image for local container startup checks. The
 image can run each current REST service by selecting the Python module at
 container start.
 
-The first Compose-backed integration slice starts the E*Trade simulator and the
-quotes service together. The quotes service reaches the simulator through Docker
+The first Compose-backed integration slices start the E*Trade simulator plus the
+quotes and orders services. TradeBot services reach the simulator through Docker
 service DNS, so this proves more than container startup: it proves endpoint
-configuration, service networking, and a representative TradeBot HTTP route.
+configuration, service networking, and representative TradeBot HTTP routes.
 
 ## Build
 
@@ -112,6 +112,7 @@ To inspect the stack manually:
 docker build --build-arg PYTHON_VERSION=3.14 -t tradebot:local .
 docker compose -f deploy/docker/docker-compose.integration.yml up --detach --wait
 curl http://127.0.0.1:18090/health-check
+curl http://127.0.0.1:18080/health-check
 curl http://127.0.0.1:18081/api/v1/ETRADE/quotes/tradable/GE
 docker compose -f deploy/docker/docker-compose.integration.yml down --volumes
 ```

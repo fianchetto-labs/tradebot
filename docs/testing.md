@@ -126,11 +126,12 @@ TRADEBOT_RUN_SERVICE_TESTS=1 python -m nox -s docker_integration
 ```
 
 This builds the local image, starts the Compose stack, waits for health checks,
-runs Docker integration tests, and tears the stack down. The first slice verifies
-host pytest -> quotes service container -> E*Trade simulator container -> quotes
-service container -> host assertion. That catches broken Docker DNS, port
-mapping, service startup ordering, connector base URL configuration, and
-response serialization across a real HTTP/process boundary.
+runs Docker integration tests, and tears the stack down. The current slices
+verify host pytest -> TradeBot service container -> E*Trade simulator container
+-> TradeBot service container -> host assertion for quotes and orders. That
+catches broken Docker DNS, port mapping, service startup ordering, connector
+base URL configuration, request/response serialization, and order lifecycle
+behavior across a real HTTP/process boundary.
 
 The live paper-account E*Trade session is reserved for FIA-153 and must remain
 separately gated:
