@@ -98,7 +98,6 @@ class ETradeOrderService(OrderService):
 
         url = self.base_url + path
         response = self.session.put(url, header_auth=True, headers=headers, data=payload)
-        print(response)
         return ETradeOrderService._parse_cancel_order_response(response, order_id)
 
     def preview_modify_order(self, preview_modify_order_request: PreviewModifyOrderRequest) -> PreviewModifyOrderResponse:
@@ -355,7 +354,6 @@ class ETradeOrderService(OrderService):
             return list[PlacedOrder]()
 
         data = response.json()
-        print(data)
 
         return_order_list: list[PlacedOrder] = []
 
@@ -380,7 +378,6 @@ class ETradeOrderService(OrderService):
     @staticmethod
     def _parse_get_order_response(response, account_id, order_id) -> GetOrderResponse:
         data = response.json()
-        print(data)
 
         orders_response = data["OrdersResponse"]
         order = orders_response['Order'][0]

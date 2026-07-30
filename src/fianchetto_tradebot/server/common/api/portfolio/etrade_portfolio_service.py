@@ -48,8 +48,6 @@ class ETradePortfolioService(PortfolioService):
         url = self.base_url + path
 
         response = self.session.get(url, params=params)
-        print(response.request.headers)
-        print(response.url)
 
         portfolio_list_response: GetPortfolioResponse = ETradePortfolioService._parse_portfolio_response(response)
         return portfolio_list_response
