@@ -8,7 +8,7 @@ from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.server.common.api.http_status_code import HttpStatusCode
 from fianchetto_tradebot.server.simulator.etrade import seed_data
 from fianchetto_tradebot.server.simulator.etrade.etrade_simulator_app import create_app
-from tests.functional.etrade_simulator_scenario import ETradeSimulatorScenario
+from tests.fixtures.etrade_simulator_scenario import ETradeSimulatorScenario
 
 pytestmark = pytest.mark.functional
 

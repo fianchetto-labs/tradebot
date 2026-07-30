@@ -43,10 +43,12 @@ collaborators, runs the behavior through the public boundary for that slice,
 and asserts the domain result. It should not exist merely because a unit test
 grew large.
 
-Reusable scenario harnesses belong under `tests/functional/`. A harness may own
-setup for an in-process app, fake connector/session, seeded state, service
-adapters, and realistic request fixtures. Test files should use those harnesses
-to stay readable and focused on the Given/When/Then behavior being proved.
+Reusable fixtures, fakes, contract sessions, and scenario harnesses belong under
+`tests/fixtures/` or another established test-infrastructure package. A harness
+may own setup for an in-process app, fake connector/session, seeded state,
+service adapters, and realistic request fixtures. Test files should use those
+harnesses to stay readable and focused on the Given/When/Then behavior being
+proved.
 When the scenario crosses an adapter boundary, prefer an explicit in-process
 connector or adapter over anonymous mocks so the boundary remains visible.
 
