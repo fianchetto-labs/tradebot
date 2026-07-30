@@ -1,12 +1,17 @@
+from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
 
 from common.api.orders.order_test_util import OrderTestUtil
 from fianchetto_tradebot.common_models.api.orders.cancel_order_request import CancelOrderRequest
+from fianchetto_tradebot.common_models.api.orders.cancel_order_response import CancelOrderResponse
+from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
+from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
 from fianchetto_tradebot.common_models.api.orders.order_metadata import OrderMetadata
 from fianchetto_tradebot.common_models.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
+from fianchetto_tradebot.common_models.finance.price import Price
 from fianchetto_tradebot.common_models.managed_executions.cancel_managed_execution_request import \
     CancelManagedExecutionRequest
 from fianchetto_tradebot.common_models.managed_executions.cancel_managed_execution_response import \
@@ -17,7 +22,10 @@ from fianchetto_tradebot.common_models.managed_executions.create_managed_executi
     CreateManagedExecutionResponse
 from fianchetto_tradebot.common_models.managed_executions.moex_status import MoexStatus
 from fianchetto_tradebot.common_models.order.order import Order
+from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.common_models.order.order_type import OrderType
+from fianchetto_tradebot.common_models.order.placed_order import PlacedOrder
+from fianchetto_tradebot.common_models.order.placed_order_details import PlacedOrderDetails
 from fianchetto_tradebot.server.common.api.moex.moex_service import MoexService
 from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.server.common.api.orders.order_service import OrderService
@@ -51,8 +59,12 @@ def orders_service_map(account_id, order_id, order) -> dict[Brokerage, OrderServ
 
     order_metadata: OrderMetadata = OrderMetadata(order_type=OrderType.SPREADS, account_id=account_id)
     place_order_response: PlaceOrderResponse = PlaceOrderResponse(order_metadata=order_metadata, preview_id="preview_123", order_id=order_id, order=order)
+    get_order_response = _get_order_response(account_id=account_id, order_id=order_id, order=order)
+    cancel_order_response = CancelOrderResponse(order_id=order_id, cancel_time="2026-07-30T12:00:00", messages=[])
 
     mock_etrade_orders_service.preview_and_place_order = MagicMock(return_value=place_order_response)
+    mock_etrade_orders_service.get_order = MagicMock(return_value=get_order_response)
+    mock_etrade_orders_service.cancel_order = MagicMock(return_value=cancel_order_response)
     order_service_map : dict[Brokerage, OrderService] = dict[Brokerage, OrderService]()
     order_service_map[Brokerage.ETRADE] = mock_etrade_orders_service
 
@@ -72,7 +84,13 @@ def test_all_managed_orders_closed_at_eod():
     pass
 
 @pytest.mark.functional
-def test_order_cancelled_when_worker_killed(account_id: str, order: Order, quotes_service_map: dict[Brokerage, QuotesService], orders_service_map: dict[Brokerage, OrderService]):
+def test_cancel_managed_execution_cancels_current_brokerage_order(
+    account_id: str,
+    order: Order,
+    quotes_service_map: dict[Brokerage, QuotesService],
+    orders_service_map: dict[Brokerage, OrderService],
+    capsys: pytest.CaptureFixture,
+):
     # Given
     # A user wants to cancel a managed execution.
     # The user has cancelled their order using the API
@@ -86,14 +104,17 @@ def test_order_cancelled_when_worker_killed(account_id: str, order: Order, quote
         brokerage=Brokerage.ETRADE, account_id=account_id, creation_order=order)
 
     create_managed_execution_request: CreateManagedExecutionRequest = CreateManagedExecutionRequest(managed_execution_creation_params=managed_execution_creation_params)
-    create_managed_execution_response: CreateManagedExecutionResponse = moex_service.create_managed_execution(create_managed_execution_request=create_managed_execution_request)
+    try:
+        create_managed_execution_response: CreateManagedExecutionResponse = moex_service.create_managed_execution(create_managed_execution_request=create_managed_execution_request)
 
-    # When
-    # We issue the MOEX cancellation order.
-    moex_id = create_managed_execution_response.managed_execution_id
-    cancel_managed_execution_request: CancelManagedExecutionRequest = CancelManagedExecutionRequest(managed_execution_id=moex_id)
-    cancel_managed_execution_response: CancelManagedExecutionResponse = moex_service.cancel_managed_execution(cancel_managed_executions_request=cancel_managed_execution_request)
-    expected_order_id = cancel_managed_execution_response.managed_execution.current_brokerage_order_id
+        # When
+        # We issue the MOEX cancellation order.
+        moex_id = create_managed_execution_response.managed_execution_id
+        cancel_managed_execution_request: CancelManagedExecutionRequest = CancelManagedExecutionRequest(managed_execution_id=moex_id)
+        cancel_managed_execution_response: CancelManagedExecutionResponse = moex_service.cancel_managed_execution(cancel_managed_executions_request=cancel_managed_execution_request)
+        expected_order_id = cancel_managed_execution_response.managed_execution.current_brokerage_order_id
+    finally:
+        moex_service.thread_pool_executor.shutdown(wait=True)
 
     if not cancel_managed_execution_response.managed_execution:
         raise Exception(f"Could not get managed_execution from cancel_managed_execution_response: {cancel_managed_execution_response}")
@@ -105,7 +126,11 @@ def test_order_cancelled_when_worker_killed(account_id: str, order: Order, quote
     # Then
     # We see that the Brokerage Order is cancelled (using mocking).
     expected_input_to_cancel_order = CancelOrderRequest(account_id=account_id, order_id=expected_order_id)
+    mock_order_service.get_order.assert_called_once_with(GetOrderRequest(account_id=account_id, order_id=expected_order_id))
     mock_order_service.cancel_order.assert_called_once_with(expected_input_to_cancel_order)
+    captured = capsys.readouterr()
+    assert "Error occurred" not in captured.out
+    assert captured.err == ""
 
 
 # TODO: Place into a separate class later
@@ -120,3 +145,16 @@ def test_worker_stopped_after_moex_cancellation_request():
 def test_evicted_worker_no_longer_in_thread_pool():
     # TODO: implement this
     pass
+
+
+def _get_order_response(account_id: str, order_id: str, order: Order) -> GetOrderResponse:
+    placed_order_details = PlacedOrderDetails(
+        account_id=account_id,
+        brokerage_order_id=order_id,
+        status=OrderStatus.EXECUTED,
+        order_placed_time=datetime(2026, 7, 30, 12, 0, 0),
+        current_market_price=Price(bid=1.0, ask=1.2),
+    )
+    return GetOrderResponse(
+        placed_order=PlacedOrder(order=order, placed_order_details=placed_order_details)
+    )
