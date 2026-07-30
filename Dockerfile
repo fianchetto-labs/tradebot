@@ -21,10 +21,11 @@ RUN adduser \
 
 COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
-COPY deploy ./deploy
 
 RUN python -m pip install --upgrade pip \
     && python -m pip install -e .
+
+COPY deploy ./deploy
 
 USER tradebot
 

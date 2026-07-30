@@ -48,7 +48,7 @@ class ETradeQuotesService(QuotesService):
 
         path = f"/v1/market/quote/{symbols}.json"
         url = self.base_url + path
-        response = self.session.get(url)
+        response = self.session.get(url, params={})
 
         tradable_response: GetTradableResponse = ETradeQuotesService._parse_market_response(tradable, response)
 

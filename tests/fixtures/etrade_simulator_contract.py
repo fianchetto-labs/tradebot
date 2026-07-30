@@ -132,16 +132,16 @@ def retryable_preview_error_response() -> ContractResponse:
 
 def _sync_response_for(method: str, path: str, params: dict | None) -> dict:
     routes = {
-        ("GET", "/v1/accounts/list.json"): (seed_data.account_list_response(), None),
+        ("GET", "/v1/accounts/list.json"): (seed_data.account_list_response(), {}),
         ("GET", f"/v1/accounts/{ACCOUNT_ID}/balance.json"): (seed_data.balance_response(), BALANCE_PARAMS),
         ("GET", f"/v1/accounts/{ACCOUNT_ID}/portfolio.json"): (seed_data.portfolio_response(), PORTFOLIO_PARAMS),
-        ("GET", "/v1/market/quote/GE.json"): (seed_data.quote_response(EQUITY_SYMBOL), None),
+        ("GET", "/v1/market/quote/GE.json"): (seed_data.quote_response(EQUITY_SYMBOL), {}),
         ("GET", "/v1/market/quote/GE:2026:1:16:PUT:25.0.json"): (
             seed_data.quote_response(
                 "GE:2026:1:16:PUT:25.0",
                 include_greeks=True,
             ),
-            None,
+            {},
         ),
         ("GET", "/v1/market/optionexpiredate.json"): (
             seed_data.option_expire_date_response(),

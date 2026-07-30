@@ -23,7 +23,10 @@ SERVICE_TEST_ENV_VAR = "TRADEBOT_RUN_SERVICE_TESTS"
 LIVE_E2E_TEST_ENV_VAR = "TRADEBOT_RUN_LIVE_E2E_TESTS"
 DOCKER_IMAGE = os.environ.get("TRADEBOT_DOCKER_IMAGE", "tradebot:local")
 SMOKE_CONTAINER_TTL_SECONDS = 30 * 60
+INTEGRATION_STACK_TTL_ENV_VAR = "TRADEBOT_INTEGRATION_STACK_TTL_SECONDS"
+DEFAULT_INTEGRATION_STACK_TTL_SECONDS = 30 * 60
 REPO_ROOT = Path(__file__).parent
+DOCKER_INTEGRATION_COMPOSE_FILE = REPO_ROOT / "deploy" / "docker" / "docker-compose.integration.yml"
 UNIT_PYTEST_MARKER_EXPR = "not functional and not contract and not service and not docker and not integration and not live_e2e"
 FUNCTIONAL_PYTEST_MARKER_EXPR = "functional and not service and not docker and not integration and not live_e2e"
 
@@ -107,6 +110,18 @@ def _run_docker_command(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _run_docker_compose(session: nox.Session, *args: str, env: dict[str, str] | None = None) -> None:
+    session.run(
+        "docker",
+        "compose",
+        "-f",
+        str(DOCKER_INTEGRATION_COMPOSE_FILE),
+        *args,
+        external=True,
+        env=env or {**os.environ, "TRADEBOT_DOCKER_IMAGE": DOCKER_IMAGE},
+    )
+
+
 def _wait_for_health(service: DockerService, timeout_seconds: int = 30) -> None:
     health_url = f"http://127.0.0.1:{service.host_port}/health-check"
     deadline = time.monotonic() + timeout_seconds
@@ -178,6 +193,67 @@ def _schedule_smoke_service_cleanup(run_id: str) -> None:
     )
 
 
+def _integration_stack_ttl_seconds(session: nox.Session) -> int:
+    if os.getenv("CI") or os.getenv("GITHUB_ACTIONS"):
+        return 0
+
+    raw_ttl = os.getenv(INTEGRATION_STACK_TTL_ENV_VAR)
+    if raw_ttl is None:
+        return DEFAULT_INTEGRATION_STACK_TTL_SECONDS
+
+    try:
+        ttl_seconds = int(raw_ttl)
+    except ValueError:
+        session.error(f"{INTEGRATION_STACK_TTL_ENV_VAR} must be a non-negative integer number of seconds")
+
+    if ttl_seconds < 0:
+        session.error(f"{INTEGRATION_STACK_TTL_ENV_VAR} must be a non-negative integer number of seconds")
+    return ttl_seconds
+
+
+def _integration_compose_env(run_id: str, ttl_seconds: int) -> dict[str, str]:
+    return {
+        **os.environ,
+        "TRADEBOT_DOCKER_IMAGE": DOCKER_IMAGE,
+        "TRADEBOT_INTEGRATION_RUN_ID": run_id,
+        INTEGRATION_STACK_TTL_ENV_VAR: str(ttl_seconds),
+    }
+
+
+def _schedule_integration_stack_cleanup(run_id: str, ttl_seconds: int) -> None:
+    cleanup_script = (
+        "import subprocess, sys, time; "
+        "time.sleep(int(sys.argv[1])); "
+        "run_id = sys.argv[2]; "
+        "filters = ['--filter', 'label=fianchetto.tradebot.kind=docker-integration', "
+        "'--filter', f'label=fianchetto.tradebot.run-id={run_id}']; "
+        "containers = subprocess.run(['docker', 'ps', '-a', *filters, '--format', '{{.ID}}'], "
+        "stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, check=False).stdout.splitlines(); "
+        "containers and subprocess.run(['docker', 'rm', '-f', *containers], "
+        "stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False); "
+        "networks = subprocess.run(['docker', 'network', 'ls', *filters, '--format', '{{.ID}}'], "
+        "stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, check=False).stdout.splitlines(); "
+        "networks and subprocess.run(['docker', 'network', 'rm', *networks], "
+        "stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)"
+    )
+    subprocess.Popen(
+        [sys.executable, "-c", cleanup_script, str(ttl_seconds), run_id],
+        cwd=REPO_ROOT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+
+
+def _format_duration(seconds: int) -> str:
+    if seconds % 60 == 0:
+        minutes = seconds // 60
+        unit = "minute" if minutes == 1 else "minutes"
+        return f"{minutes} {unit}"
+    unit = "second" if seconds == 1 else "seconds"
+    return f"{seconds} {unit}"
+
+
 def _stop_smoke_service(service: DockerService) -> None:
     subprocess.run(
         ["docker", "rm", "-f", _container_name(service)],
@@ -241,11 +317,48 @@ def docker_smoke(session: nox.Session) -> None:
             )
 
 
-@nox.session(python=False)
+@nox.session(python=PYTHON, venv_backend="venv", download_python="never")
 def docker_integration(session: nox.Session) -> None:
-    """Reserved for Docker Compose/service-boundary tests."""
+    """Build the image, run the simulator-backed Compose stack, and execute Docker tests."""
     _require_env_gate(session, SERVICE_TEST_ENV_VAR, "Docker-backed integration tests")
-    session.error("Docker integration orchestration belongs to FIA-136/FIA-149/FIA-152")
+    _install_project(session)
+    _docker_build(session)
+
+    run_id = uuid.uuid4().hex
+    ttl_seconds = _integration_stack_ttl_seconds(session)
+    compose_env = _integration_compose_env(run_id, ttl_seconds)
+
+    try:
+        _run_docker_compose(session, "down", "--volumes", "--remove-orphans", env=compose_env)
+        _run_docker_compose(session, "up", "--detach", "--wait", "--remove-orphans", env=compose_env)
+        session.run(
+            "python",
+            "-m",
+            "pytest",
+            "-m",
+            "docker and integration",
+            "tests/integration/docker",
+            env={
+                **os.environ,
+                SERVICE_TEST_ENV_VAR: "1",
+                "TRADEBOT_TEST_ORDERS_BASE_URL": "http://127.0.0.1:18080",
+                "TRADEBOT_TEST_QUOTES_BASE_URL": "http://127.0.0.1:18081",
+            },
+        )
+    except Exception:
+        _run_docker_compose(session, "logs", "--no-color", env=compose_env)
+        raise
+    finally:
+        if ttl_seconds:
+            _schedule_integration_stack_cleanup(run_id, ttl_seconds)
+            session.log(
+                "Integration containers will remain available for %s, then be removed. "
+                "Set %s=0 to clean up immediately.",
+                _format_duration(ttl_seconds),
+                INTEGRATION_STACK_TTL_ENV_VAR,
+            )
+        else:
+            _run_docker_compose(session, "down", "--volumes", "--remove-orphans", env=compose_env)
 
 
 @nox.session(python=False)

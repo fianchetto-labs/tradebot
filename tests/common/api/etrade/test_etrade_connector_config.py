@@ -1,5 +1,7 @@
 import json
+import os
 import stat
+import time
 from unittest.mock import patch
 
 import pytest
@@ -8,6 +10,7 @@ from rauth import OAuth1Session
 
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import (
     ETRADE_API_BASE_URL_ENV_VAR,
+    ETRADE_CACHE_MAX_AGE_SECONDS_ENV_VAR,
     ETradeConnector,
 )
 
@@ -190,6 +193,53 @@ def test_configured_endpoint_does_not_skip_credentials(tmp_path):
             )
 
 
+def test_stale_credential_cache_falls_back_to_connection_establishment(tmp_path):
+    credentials_file = tmp_path / "connection.json"
+    _write_credentials(credentials_file, base_url="http://etrade-sim:8090")
+    _make_old(credentials_file)
+
+    with patch.object(ETradeConnector, "establish_connection", side_effect=RuntimeError("credentials expired")):
+        with pytest.raises(RuntimeError, match="credentials expired"):
+            ETradeConnector(
+                config_file=str(tmp_path / "missing-config.ini"),
+                session_file=str(credentials_file),
+                async_session_file=str(credentials_file),
+                base_url_file=str(tmp_path / "missing-base-url.json"),
+                env={},
+            )
+
+
+def test_configured_cache_max_age_keeps_valid_demo_credentials_usable(tmp_path):
+    credentials_file = tmp_path / "connection.json"
+    _write_credentials(credentials_file, base_url="http://etrade-sim:8090")
+    _make_old(credentials_file)
+
+    connector = ETradeConnector(
+        config_file=str(tmp_path / "missing-config.ini"),
+        session_file=str(credentials_file),
+        async_session_file=str(credentials_file),
+        base_url_file=str(tmp_path / "missing-base-url.json"),
+        env={ETRADE_CACHE_MAX_AGE_SECONDS_ENV_VAR: str(10 * 365 * 24 * 60 * 60)},
+    )
+
+    assert connector.base_url == "http://etrade-sim:8090"
+    assert connector.async_session.oauth_token == "simulator-access-token"
+
+
+def test_connector_rejects_invalid_cache_max_age(tmp_path):
+    credentials_file = tmp_path / "connection.json"
+    _write_credentials(credentials_file, base_url="http://etrade-sim:8090")
+
+    with pytest.raises(ValueError, match=ETRADE_CACHE_MAX_AGE_SECONDS_ENV_VAR):
+        ETradeConnector(
+            config_file=str(tmp_path / "missing-config.ini"),
+            session_file=str(credentials_file),
+            async_session_file=str(credentials_file),
+            base_url_file=str(tmp_path / "missing-base-url.json"),
+            env={ETRADE_CACHE_MAX_AGE_SECONDS_ENV_VAR: "0"},
+        )
+
+
 def _write_credentials(credentials_file, **overrides) -> None:
     connector = object.__new__(ETradeConnector)
     connector.credentials_file = str(credentials_file)
@@ -222,3 +272,8 @@ def _credentials_dict(**overrides) -> dict:
     }
     credentials.update(overrides)
     return credentials
+
+
+def _make_old(path) -> None:
+    old_timestamp = time.time() - (2 * 60 * 60)
+    os.utime(path, (old_timestamp, old_timestamp))

@@ -24,7 +24,7 @@ class ETradeAccountService(AccountService):
     def list_accounts(self) -> ListAccountsResponse:
         path = f"/v1/accounts/list.json"
         url = self.base_url + path
-        response = self.session.get(url)
+        response = self.session.get(url, params={})
         account_list_response = ETradeAccountService._parse_account_list_response(response)
         return ListAccountsResponse(account_list=account_list_response)
 
@@ -47,7 +47,7 @@ class ETradeAccountService(AccountService):
     def get_account_info(self, get_account_info_request: GetAccountRequest) -> GetAccountResponse:
         path = f"/v1/accounts/list.json"
         url = self.base_url + path
-        response = self.session.get(url)
+        response = self.session.get(url, params={})
 
         name_filter = (lambda a: a.account_id_key == get_account_info_request.account_id)
 
