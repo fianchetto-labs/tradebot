@@ -21,7 +21,6 @@ from fianchetto_tradebot.common_models.api.quotes.get_tradable_response import G
 from fianchetto_tradebot.server.quotes.quotes_service import QuotesService
 
 equity = Equity(ticker="GE", company_name="General Electric")
-pytestmark = pytest.mark.functional
 
 near_put = Option(equity=equity, type=OptionType.PUT, strike=Amount(whole=195, part=0), expiry=datetime(2025, 5, 16).date())
 far_put = Option(equity=equity, type=OptionType.PUT, strike=Amount(whole=185, part=0), expiry=datetime(2025, 5, 16).date())

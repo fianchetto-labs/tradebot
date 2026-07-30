@@ -148,8 +148,9 @@ def orders_app(order_service: OrderServicePort) -> FastAPI:
     app = FastAPI()
 
     @app.post("/api/v1/{brokerage}/accounts/{account_id}/orders/preview_and_place")
-    def _preview_and_place_order(brokerage: str, preview_order_request: PreviewOrderRequest):
+    def _preview_and_place_order(brokerage: str, account_id: str, preview_order_request: PreviewOrderRequest):
         assert Brokerage(brokerage) == Brokerage.ETRADE
+        assert account_id == preview_order_request.order_metadata.account_id
         return order_service.preview_and_place_order(preview_order_request)
 
     @app.get("/api/v1/{brokerage}/accounts/{account_id}/orders/{order_id}")
@@ -158,8 +159,15 @@ def orders_app(order_service: OrderServicePort) -> FastAPI:
         return order_service.get_order(GetOrderRequest(account_id=account_id, order_id=order_id))
 
     @app.put("/api/v1/{brokerage}/accounts/{account_id}/orders/{order_id}")
-    def _modify_order(brokerage: str, preview_modify_order_request: PreviewModifyOrderRequest):
+    def _modify_order(
+        brokerage: str,
+        account_id: str,
+        order_id: str,
+        preview_modify_order_request: PreviewModifyOrderRequest,
+    ):
         assert Brokerage(brokerage) == Brokerage.ETRADE
+        assert account_id == preview_modify_order_request.order_metadata.account_id
+        assert order_id == preview_modify_order_request.order_id_to_modify
         return order_service.modify_order(preview_modify_order_request)
 
     @app.delete("/api/v1/{brokerage}/accounts/{account_id}/orders/{order_id}")
