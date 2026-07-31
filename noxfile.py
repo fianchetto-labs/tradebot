@@ -27,6 +27,7 @@ INTEGRATION_STACK_TTL_ENV_VAR = "TRADEBOT_INTEGRATION_STACK_TTL_SECONDS"
 DEFAULT_INTEGRATION_STACK_TTL_SECONDS = 30 * 60
 REPO_ROOT = Path(__file__).parent
 DOCKER_INTEGRATION_COMPOSE_FILE = REPO_ROOT / "deploy" / "docker" / "docker-compose.integration.yml"
+DOCKER_LOCAL_COMPOSE_FILE = REPO_ROOT / "deploy" / "docker" / "docker-compose.local.yml"
 UNIT_PYTEST_MARKER_EXPR = "not functional and not contract and not service and not docker and not integration and not live_e2e"
 FUNCTIONAL_PYTEST_MARKER_EXPR = "functional and not service and not docker and not integration and not live_e2e"
 
@@ -110,12 +111,17 @@ def _run_docker_command(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _run_docker_compose(session: nox.Session, *args: str, env: dict[str, str] | None = None) -> None:
+def _run_docker_compose(
+    session: nox.Session,
+    compose_file: Path,
+    *args: str,
+    env: dict[str, str] | None = None,
+) -> None:
     session.run(
         "docker",
         "compose",
         "-f",
-        str(DOCKER_INTEGRATION_COMPOSE_FILE),
+        str(compose_file),
         *args,
         external=True,
         env=env or {**os.environ, "TRADEBOT_DOCKER_IMAGE": DOCKER_IMAGE},
@@ -264,6 +270,74 @@ def _stop_smoke_service(service: DockerService) -> None:
     )
 
 
+@nox.session(python=False)
+def docker_up(session: nox.Session) -> None:
+    """Build the image and start the local simulator-backed service stack."""
+    _docker_build(session)
+    _run_docker_compose(
+        session,
+        DOCKER_LOCAL_COMPOSE_FILE,
+        "up",
+        "--detach",
+        "--wait",
+        "--force-recreate",
+        "--remove-orphans",
+    )
+    session.log("Local Docker stack is up.")
+    session.log("Simulator: http://127.0.0.1:18090/health-check")
+    session.log("Orders:    http://127.0.0.1:18080/health-check")
+    session.log("Quotes:    http://127.0.0.1:18081/health-check")
+    session.log("MOEX:      http://127.0.0.1:18082/health-check")
+
+
+@nox.session(python=False)
+def docker_down(session: nox.Session) -> None:
+    """Stop and remove the local simulator-backed service stack."""
+    _require_docker_available(session)
+    _run_docker_compose(
+        session,
+        DOCKER_LOCAL_COMPOSE_FILE,
+        "down",
+        "--volumes",
+        "--remove-orphans",
+    )
+
+
+@nox.session(python=False)
+def docker_logs(session: nox.Session) -> None:
+    """Show logs for the local simulator-backed service stack."""
+    _require_docker_available(session)
+    _run_docker_compose(
+        session,
+        DOCKER_LOCAL_COMPOSE_FILE,
+        "logs",
+        "--no-color",
+        *(session.posargs or []),
+    )
+
+
+@nox.session(python=PYTHON, venv_backend="venv", download_python="never")
+def docker_acceptance(session: nox.Session) -> None:
+    """Run Docker acceptance checks against the already-running local stack."""
+    _require_docker_available(session)
+    _install_project(session)
+    session.run(
+        "python",
+        "-m",
+        "pytest",
+        "-m",
+        "docker and integration",
+        "tests/integration/docker",
+        env={
+            **os.environ,
+            SERVICE_TEST_ENV_VAR: "1",
+            "TRADEBOT_TEST_MOEX_BASE_URL": "http://127.0.0.1:18082",
+            "TRADEBOT_TEST_ORDERS_BASE_URL": "http://127.0.0.1:18080",
+            "TRADEBOT_TEST_QUOTES_BASE_URL": "http://127.0.0.1:18081",
+        },
+    )
+
+
 @nox.session(python=PYTHON, venv_backend="venv", download_python="never")
 def unit(session: nox.Session) -> None:
     """Run the safe service-free test suite."""
@@ -329,8 +403,23 @@ def docker_integration(session: nox.Session) -> None:
     compose_env = _integration_compose_env(run_id, ttl_seconds)
 
     try:
-        _run_docker_compose(session, "down", "--volumes", "--remove-orphans", env=compose_env)
-        _run_docker_compose(session, "up", "--detach", "--wait", "--remove-orphans", env=compose_env)
+        _run_docker_compose(
+            session,
+            DOCKER_INTEGRATION_COMPOSE_FILE,
+            "down",
+            "--volumes",
+            "--remove-orphans",
+            env=compose_env,
+        )
+        _run_docker_compose(
+            session,
+            DOCKER_INTEGRATION_COMPOSE_FILE,
+            "up",
+            "--detach",
+            "--wait",
+            "--remove-orphans",
+            env=compose_env,
+        )
         session.run(
             "python",
             "-m",
@@ -347,7 +436,13 @@ def docker_integration(session: nox.Session) -> None:
             },
         )
     except Exception:
-        _run_docker_compose(session, "logs", "--no-color", env=compose_env)
+        _run_docker_compose(
+            session,
+            DOCKER_INTEGRATION_COMPOSE_FILE,
+            "logs",
+            "--no-color",
+            env=compose_env,
+        )
         raise
     finally:
         if ttl_seconds:
@@ -359,7 +454,14 @@ def docker_integration(session: nox.Session) -> None:
                 INTEGRATION_STACK_TTL_ENV_VAR,
             )
         else:
-            _run_docker_compose(session, "down", "--volumes", "--remove-orphans", env=compose_env)
+            _run_docker_compose(
+                session,
+                DOCKER_INTEGRATION_COMPOSE_FILE,
+                "down",
+                "--volumes",
+                "--remove-orphans",
+                env=compose_env,
+            )
 
 
 @nox.session(python=False)
