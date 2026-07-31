@@ -20,7 +20,7 @@ from fianchetto_tradebot.common_models.managed_executions.create_managed_executi
     CreateManagedExecutionRequest
 from fianchetto_tradebot.common_models.managed_executions.create_managed_execution_response import \
     CreateManagedExecutionResponse
-from fianchetto_tradebot.common_models.managed_executions.moex_status import MoexStatus
+from fianchetto_tradebot.common_models.managed_executions.managed_execution_status import ManagedExecutionStatus
 from fianchetto_tradebot.common_models.order.order import Order
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.common_models.order.order_type import OrderType
@@ -50,7 +50,7 @@ def order()->Order:
 def sample_managed_execution(account_id: str, order_id: str, order: Order):
     managed_execution: ManagedExecution = ManagedExecution(brokerage=Brokerage.ETRADE, account_id=account_id,
                                                            original_order=order, latest_order_price=order.order_price,
-                                                           reserve_order_price=order.order_price, status=MoexStatus.PRE_SUBMISSION)
+                                                           reserve_order_price=order.order_price, status=ManagedExecutionStatus.PRE_SUBMISSION)
     return managed_execution
 
 @pytest.fixture
@@ -128,6 +128,8 @@ def test_cancel_managed_execution_cancels_current_brokerage_order(
     expected_input_to_cancel_order = CancelOrderRequest(account_id=account_id, order_id=expected_order_id)
     mock_order_service.get_order.assert_called_once_with(GetOrderRequest(account_id=account_id, order_id=expected_order_id))
     mock_order_service.cancel_order.assert_called_once_with(expected_input_to_cancel_order)
+    assert cancel_managed_execution_response.managed_execution.status == ManagedExecutionStatus.CANCELLED
+    assert cancel_managed_execution_response.managed_execution.current_order_status == OrderStatus.EXECUTED
     captured = capsys.readouterr()
     assert "Error occurred" not in captured.out
     assert captured.err == ""

@@ -92,6 +92,46 @@ Build the local Docker image after the Docker POC is present:
 python -m nox -s docker_build
 ```
 
+Start the local simulator-backed Docker stack for manual dogfooding:
+
+```bash
+python -m nox -s docker_up
+```
+
+This builds `tradebot:local`, starts the E*Trade simulator, orders, quotes, and
+MOEX services through `deploy/docker/docker-compose.local.yml`, waits for
+health checks, and leaves the containers running. The local stack uses stable
+Compose service names:
+
+| Service | Internal name | Host URL |
+| --- | --- | --- |
+| E*Trade simulator | `tradebot-etrade-simulator` | `http://127.0.0.1:18090` |
+| Orders | `tradebot-orders` | `http://127.0.0.1:18080` |
+| Quotes | `tradebot-quotes` | `http://127.0.0.1:18081` |
+| MOEX | `tradebot-moex` | `http://127.0.0.1:18082` |
+
+Run acceptance checks against the already-running local stack:
+
+```bash
+python -m nox -s docker_acceptance
+```
+
+This reuses the Docker integration tests as an explicit local acceptance pass.
+It does not start or stop containers; run `docker_up` first.
+
+Inspect logs:
+
+```bash
+python -m nox -s docker_logs
+python -m nox -s docker_logs -- tradebot-moex
+```
+
+Stop the local stack:
+
+```bash
+python -m nox -s docker_down
+```
+
 Run Docker-backed service smoke checks intentionally:
 
 ```bash
@@ -154,6 +194,10 @@ To clean the integration stack up early:
 ```bash
 docker compose -f deploy/docker/docker-compose.integration.yml down --volumes --remove-orphans
 ```
+
+Use `docker_integration` for an automated test-owned stack with TTL cleanup.
+Use `docker_up` / `docker_down` when you want a stable local runtime to inspect
+manually.
 
 The live paper-account E*Trade session is reserved for FIA-153 and must remain
 separately gated:

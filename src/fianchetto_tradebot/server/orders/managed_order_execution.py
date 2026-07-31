@@ -6,9 +6,10 @@ from typing import Optional, Type
 from pydantic import BaseModel, field_serializer, field_validator, model_validator
 
 from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
-from fianchetto_tradebot.common_models.managed_executions.moex_status import MoexStatus
+from fianchetto_tradebot.common_models.managed_executions.managed_execution_status import ManagedExecutionStatus
 from fianchetto_tradebot.common_models.order.order import Order
 from fianchetto_tradebot.common_models.order.order_price import OrderPrice
+from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.server.orders.tactics.execution_tactic import ExecutionTactic, TACTIC_REGISTRY, register_tactic
 from fianchetto_tradebot.server.orders.tactics.incremental_price_delta_execution_tactic import IncrementalPriceDeltaExecutionTactic
 
@@ -81,9 +82,9 @@ class ManagedExecution(BaseModel):
     original_order: Optional[Order] = None
     original_order_id: Optional[str] = None
 
-    # Status of the order, or the managed execution? I guess the Order
-    status: MoexStatus
+    status: ManagedExecutionStatus
     current_brokerage_order_id: Optional[str] = None
+    current_order_status: Optional[OrderStatus] = None
     current_order: Optional[Order] = None
 
     def model_dump_json(self, **kwargs) -> str:
