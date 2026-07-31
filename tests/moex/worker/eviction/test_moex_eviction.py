@@ -29,7 +29,10 @@ from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.common_models.order.order_type import OrderType
 from fianchetto_tradebot.common_models.order.placed_order import PlacedOrder
 from fianchetto_tradebot.common_models.order.placed_order_details import PlacedOrderDetails
-from fianchetto_tradebot.server.common.api.moex.moex_service import MoexService
+from fianchetto_tradebot.server.common.api.moex.moex_service import (
+    ManagedExecutionWorker,
+    MoexService,
+)
 from fianchetto_tradebot.server.common.api.orders.etrade.etrade_order_service import ETradeOrderService
 from fianchetto_tradebot.server.common.api.orders.order_service import OrderService
 from fianchetto_tradebot.server.orders.managed_order_execution import ManagedExecution, ManagedExecutionCreationParams, \
@@ -89,14 +92,16 @@ def test_all_managed_orders_closed_at_eod():
 @pytest.mark.functional
 def test_managed_execution_succeeds_when_brokerage_order_executes(
     account_id: str,
+    order_id: str,
     order: Order,
     quotes_service_map: dict[Brokerage, QuotesService],
     orders_service_map: dict[Brokerage, OrderService],
     capsys: pytest.CaptureFixture,
 ):
+    # Given
+    # A new managed execution request whose brokerage order is immediately executed.
     mock_order_service = orders_service_map[Brokerage.ETRADE]
     moex_service = MoexService(quotes_services=quotes_service_map, orders_services=orders_service_map)
-
     managed_execution_creation_params = ManagedExecutionCreationParams(
         managed_execution_creation_type=ManagedExecutionCreationType.AS_NEW_ORDER,
         brokerage=Brokerage.ETRADE,
@@ -106,6 +111,9 @@ def test_managed_execution_succeeds_when_brokerage_order_executes(
     create_managed_execution_request = CreateManagedExecutionRequest(
         managed_execution_creation_params=managed_execution_creation_params
     )
+
+    # When
+    # The MOEX service creates the managed execution and the caller reads it back.
     try:
         create_managed_execution_response = moex_service.create_managed_execution(
             create_managed_execution_request=create_managed_execution_request
@@ -118,10 +126,66 @@ def test_managed_execution_succeeds_when_brokerage_order_executes(
     finally:
         moex_service.thread_pool_executor.shutdown(wait=True)
 
+    # Then
+    # The managed execution preserves both its own lifecycle state and the brokerage order state.
     managed_execution = get_managed_execution_response.managed_execution
     assert managed_execution.status == ManagedExecutionStatus.EXECUTED
     assert managed_execution.current_order_status == OrderStatus.EXECUTED
+    assert managed_execution.current_brokerage_order_id == order_id
     mock_order_service.cancel_order.assert_not_called()
+    captured = capsys.readouterr()
+    assert "Error occurred" not in captured.out
+    assert captured.err == ""
+
+
+@pytest.mark.functional
+def test_worker_signals_initial_order_ready_after_order_state_is_recorded(
+    account_id: str,
+    order_id: str,
+    order: Order,
+    quotes_service_map: dict[Brokerage, QuotesService],
+    orders_service_map: dict[Brokerage, OrderService],
+    capsys: pytest.CaptureFixture,
+):
+    # Given
+    # A worker creating the first brokerage order for a managed execution.
+    managed_execution = ManagedExecution(
+        brokerage=Brokerage.ETRADE,
+        account_id=account_id,
+        original_order=order,
+        status=ManagedExecutionStatus.PRE_SUBMISSION,
+    )
+    worker = ManagedExecutionWorker(
+        moex=managed_execution,
+        moex_id="moex-1",
+        quotes_services=quotes_service_map,
+        orders_services=orders_service_map,
+    )
+    readiness_event = MagicMock()
+
+    def assert_initial_order_state_is_ready():
+        assert managed_execution.current_brokerage_order_id == order_id
+        assert managed_execution.current_order_status == OrderStatus.EXECUTED
+        assert managed_execution.status == ManagedExecutionStatus.EXECUTED
+
+    # The callback keeps us honest: if the worker signals early, these assertions fail.
+    readiness_event.set.side_effect = assert_initial_order_state_is_ready
+
+    # When
+    # The worker reaches the initial readiness boundary.
+    worker(event_creation_lock=readiness_event)
+
+    # Then
+    # The worker placed the order, fetched its first status, and signaled exactly once.
+    mock_order_service = orders_service_map[Brokerage.ETRADE]
+    mock_order_service.preview_and_place_order.assert_called_once()
+    mock_order_service.get_order.assert_called_once_with(
+        GetOrderRequest(account_id=account_id, order_id=order_id)
+    )
+    readiness_event.set.assert_called_once_with()
+    assert managed_execution.current_brokerage_order_id == order_id
+    assert managed_execution.current_order_status == OrderStatus.EXECUTED
+    assert managed_execution.status == ManagedExecutionStatus.EXECUTED
     captured = capsys.readouterr()
     assert "Error occurred" not in captured.out
     assert captured.err == ""
@@ -135,9 +199,10 @@ def test_cancel_request_does_not_change_executed_managed_execution(
     orders_service_map: dict[Brokerage, OrderService],
     capsys: pytest.CaptureFixture,
 ):
+    # Given
+    # A managed execution that reaches a terminal EXECUTED state before cancellation.
     mock_order_service = orders_service_map[Brokerage.ETRADE]
     moex_service = MoexService(quotes_services=quotes_service_map, orders_services=orders_service_map)
-
     managed_execution_creation_params: ManagedExecutionCreationParams = ManagedExecutionCreationParams(
         managed_execution_creation_type=ManagedExecutionCreationType.AS_NEW_ORDER,
         brokerage=Brokerage.ETRADE, account_id=account_id, creation_order=order)
@@ -146,6 +211,8 @@ def test_cancel_request_does_not_change_executed_managed_execution(
     try:
         create_managed_execution_response: CreateManagedExecutionResponse = moex_service.create_managed_execution(create_managed_execution_request=create_managed_execution_request)
 
+        # When
+        # A caller requests cancellation after the terminal state has already been recorded.
         moex_id = create_managed_execution_response.managed_execution_id
         cancel_managed_execution_request: CancelManagedExecutionRequest = CancelManagedExecutionRequest(managed_execution_id=moex_id)
         cancel_managed_execution_response: CancelManagedExecutionResponse = moex_service.cancel_managed_execution(cancel_managed_executions_request=cancel_managed_execution_request)
@@ -160,6 +227,8 @@ def test_cancel_request_does_not_change_executed_managed_execution(
         raise Exception(f"Could not get current_brokerage_order_id from"
                         f"cancel_managed_execution_response.managed_execution: {cancel_managed_execution_response.managed_execution.current_brokerage_order_id}")
 
+    # Then
+    # The terminal managed execution state is not rewritten or cancelled downstream.
     mock_order_service.get_order.assert_called_once_with(GetOrderRequest(account_id=account_id, order_id=expected_order_id))
     mock_order_service.cancel_order.assert_not_called()
     assert cancel_managed_execution_response.managed_execution.status == ManagedExecutionStatus.EXECUTED
