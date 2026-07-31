@@ -9,8 +9,6 @@ config = configparser.ConfigParser()
 
 DEFAULT_IBKR_CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'config.ini')
 DEFAULT_IBKR_SESSION_FILE = os.path.join(os.path.dirname(__file__), 'ibkr_session.out')
-DEFAULT_IKBR_CONFIG_FILE = DEFAULT_IBKR_CONFIG_FILE
-DEFAULT_IKBR_SESSION_FILE = DEFAULT_IBKR_SESSION_FILE
 
 
 logger = logging.getLogger(__name__)
@@ -24,9 +22,6 @@ class IbkrConnector(Connector):
 
     def get_brokerage(self):
         return "IBKR"
-
-
-IkbrConnector = IbkrConnector
 
 
 if __name__ == "__main__":
