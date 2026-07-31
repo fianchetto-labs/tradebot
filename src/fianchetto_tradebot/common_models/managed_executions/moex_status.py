@@ -1,14 +1,4 @@
-from enum import Enum
+from fianchetto_tradebot.common_models.managed_executions.managed_execution_status import ManagedExecutionStatus
 
 
-class MoexStatus(str, Enum):
-    OPEN = "OPEN"
-    PARTIAL = "PARTIAL"
-    EXECUTED = "EXECUTED"
-    CANCELLED = "CANCELLED"
-    INDIVIDUAL_FILLS = "INDIVIDUAL_FILLS"
-    CANCEL_REQUESTED = "CANCEL_REQUESTED"
-    EXPIRED = "EXPIRED"
-    REJECTED = "REJECTED"
-    PRE_SUBMISSION = "PRE_SUBMISSION"
-    ANY = "ANY"
+MoexStatus = ManagedExecutionStatus

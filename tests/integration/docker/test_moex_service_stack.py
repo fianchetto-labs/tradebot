@@ -62,4 +62,5 @@ def test_moex_service_runs_networked_managed_execution_lifecycle(moex_base_url: 
     assert body["managed_execution"]["brokerage"] == "etrade"
     assert body["managed_execution"]["account_id"] == ACCOUNT_ID
     assert body["managed_execution"]["status"] == "CANCELLED"
+    assert body["managed_execution"]["current_order_status"] == "OPEN"
     assert body["managed_execution"]["current_brokerage_order_id"] == ORDER_ID
