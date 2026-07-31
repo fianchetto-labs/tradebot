@@ -35,7 +35,10 @@ from fianchetto_tradebot.common_models.managed_executions.list_managed_execution
     ListManagedExecutionsRequest
 from fianchetto_tradebot.common_models.managed_executions.list_managed_executions_response import \
     ListManagedExecutionsResponse
-from fianchetto_tradebot.common_models.managed_executions.managed_execution_status import ManagedExecutionStatus
+from fianchetto_tradebot.common_models.managed_executions.managed_execution_status import (
+    ManagedExecutionStatus,
+    managed_execution_status_from_order_status,
+)
 from fianchetto_tradebot.common_models.order.action import Action
 from fianchetto_tradebot.common_models.order.expiry.good_until_cancelled import GoodUntilCancelled
 from fianchetto_tradebot.common_models.order.order import Order
@@ -100,7 +103,7 @@ class ManagedExecutionWorker:
 
             current_status = get_order_response.placed_order.placed_order_details.status
             self.moex.current_order_status = current_status
-            self.moex.status = _managed_execution_status_for_order_status(current_status)
+            self.moex.status = managed_execution_status_from_order_status(current_status)
             current_price = get_order_response.placed_order.placed_order_details.current_market_price
 
             if 'event_creation_lock' in kwargs:
@@ -137,7 +140,7 @@ class ManagedExecutionWorker:
 
                 current_status = get_order_response.placed_order.placed_order_details.status
                 self.moex.current_order_status = current_status
-                self.moex.status = _managed_execution_status_for_order_status(current_status)
+                self.moex.status = managed_execution_status_from_order_status(current_status)
                 current_price = get_order_response.placed_order.order.order_price
 
             if not self.continue_processing:
@@ -270,13 +273,6 @@ class MoexService:
             self.current_id += 1
 
         return self.current_id
-
-def _managed_execution_status_for_order_status(order_status: OrderStatus) -> ManagedExecutionStatus:
-    if order_status == OrderStatus.EXECUTED:
-        return ManagedExecutionStatus.EXECUTED
-    if order_status in {OrderStatus.CANCELLED, OrderStatus.EXPIRED, OrderStatus.REJECTED}:
-        return ManagedExecutionStatus.FAILED
-    return ManagedExecutionStatus.WORKING
 
 def create_moex_with_new_order_list_and_cancel(existing_order_id: str = None):
     connector: ETradeConnector = ETradeConnector()

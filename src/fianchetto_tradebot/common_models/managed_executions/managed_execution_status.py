@@ -1,5 +1,7 @@
 from enum import Enum
 
+from fianchetto_tradebot.common_models.order.order_status import OrderStatus
+
 
 class ManagedExecutionStatus(str, Enum):
     PRE_SUBMISSION = "PRE_SUBMISSION"
@@ -8,3 +10,13 @@ class ManagedExecutionStatus(str, Enum):
     CANCELLED = "CANCELLED"
     EXECUTED = "EXECUTED"
     FAILED = "FAILED"
+
+
+def managed_execution_status_from_order_status(order_status: OrderStatus) -> ManagedExecutionStatus:
+    if order_status == OrderStatus.EXECUTED:
+        return ManagedExecutionStatus.EXECUTED
+    if order_status in {OrderStatus.EXPIRED, OrderStatus.REJECTED}:
+        return ManagedExecutionStatus.FAILED
+    if order_status == OrderStatus.ANY:
+        raise ValueError("OrderStatus.ANY is a query filter, not a brokerage lifecycle status")
+    return ManagedExecutionStatus.WORKING
