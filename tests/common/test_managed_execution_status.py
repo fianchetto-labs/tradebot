@@ -1,7 +1,9 @@
 import pytest
 
 from fianchetto_tradebot.common_models.managed_executions.managed_execution_status import (
+    TERMINAL_MANAGED_EXECUTION_STATUSES,
     ManagedExecutionStatus,
+    is_terminal_managed_execution_status,
     managed_execution_status_from_order_status,
 )
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
@@ -42,3 +44,18 @@ def test_brokerage_cancellation_does_not_cancel_or_fail_the_managed_execution():
 def test_order_status_any_is_not_a_managed_execution_lifecycle_status():
     with pytest.raises(ValueError, match="query filter"):
         managed_execution_status_from_order_status(OrderStatus.ANY)
+
+
+def test_terminal_managed_execution_statuses_are_explicit():
+    assert TERMINAL_MANAGED_EXECUTION_STATUSES == {
+        ManagedExecutionStatus.CANCELLED,
+        ManagedExecutionStatus.EXECUTED,
+        ManagedExecutionStatus.FAILED,
+    }
+
+
+@pytest.mark.parametrize("status", ManagedExecutionStatus)
+def test_terminal_managed_execution_status_policy(status: ManagedExecutionStatus):
+    assert is_terminal_managed_execution_status(status) == (
+        status in TERMINAL_MANAGED_EXECUTION_STATUSES
+    )

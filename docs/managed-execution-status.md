@@ -46,6 +46,11 @@ Failure flow:
 2. `FAILED`: the worker errored, or the broker reported a terminal adverse
    status such as `EXPIRED` or `REJECTED` that the manager cannot continue from.
 
+Terminal managed executions are immutable through the cancellation API. Once a
+managed execution reaches `EXECUTED`, `CANCELLED`, or `FAILED`, a later cancel
+request must return the existing managed execution state without cancelling the
+underlying brokerage order or rewriting the managed execution status.
+
 ## Brokerage Status Translation
 
 When MOEX observes the current brokerage order, it records the raw brokerage
@@ -67,9 +72,10 @@ managed-execution lifecycle:
 
 Intentional managed cancellation is handled by the cancellation path:
 
-1. `cancel_managed_execution` asks the worker to stop, moving the managed execution to `CANCEL_REQUESTED`.
-2. The order service cancels the current brokerage order.
-3. The managed execution moves to `CANCELLED`.
+1. `cancel_managed_execution` confirms the managed execution is not already terminal.
+2. It asks the worker to stop, moving the managed execution to `CANCEL_REQUESTED`.
+3. The order service cancels the current brokerage order.
+4. The managed execution moves to `CANCELLED`.
 
 ## Creation Readiness
 

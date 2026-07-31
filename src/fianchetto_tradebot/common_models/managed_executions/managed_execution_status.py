@@ -12,6 +12,19 @@ class ManagedExecutionStatus(str, Enum):
     FAILED = "FAILED"
 
 
+TERMINAL_MANAGED_EXECUTION_STATUSES = frozenset(
+    {
+        ManagedExecutionStatus.CANCELLED,
+        ManagedExecutionStatus.EXECUTED,
+        ManagedExecutionStatus.FAILED,
+    }
+)
+
+
+def is_terminal_managed_execution_status(status: ManagedExecutionStatus) -> bool:
+    return status in TERMINAL_MANAGED_EXECUTION_STATUSES
+
+
 def managed_execution_status_from_order_status(order_status: OrderStatus) -> ManagedExecutionStatus:
     if order_status == OrderStatus.EXECUTED:
         return ManagedExecutionStatus.EXECUTED
