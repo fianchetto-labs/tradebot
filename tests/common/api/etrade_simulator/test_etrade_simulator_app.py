@@ -7,6 +7,7 @@ from fianchetto_tradebot.common_models.finance.amount import Amount
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.server.common.api.http_status_code import HttpStatusCode
 from fianchetto_tradebot.server.simulator.etrade import seed_data
+from fianchetto_tradebot.server.simulator.etrade.etrade_simulator_app import OrderLifecycleScenario
 from fianchetto_tradebot.server.simulator.etrade.etrade_simulator_app import create_app
 from tests.fixtures.etrade_simulator_scenario import ETradeSimulatorScenario
 
@@ -69,6 +70,126 @@ def test_etrade_simulator_supports_order_state_lifecycle():
     assert open_order.json()["OrdersResponse"]["Order"][0]["OrderDetail"][0]["status"] == "OPEN"
     assert canceled.json()["CancelOrderResponse"]["orderId"] == seed_data.ORDER_ID
     assert canceled_order.json()["OrdersResponse"]["Order"][0]["OrderDetail"][0]["status"] == "CANCELLED"
+
+
+@pytest.mark.parametrize(
+    ("scenario", "expected_statuses"),
+    [
+        (OrderLifecycleScenario.OPEN, [OrderStatus.OPEN, OrderStatus.OPEN]),
+        (OrderLifecycleScenario.EVENTUALLY_EXECUTED, [OrderStatus.OPEN, OrderStatus.EXECUTED]),
+        (OrderLifecycleScenario.BROKER_CANCELLED, [OrderStatus.OPEN, OrderStatus.CANCELLED]),
+        (OrderLifecycleScenario.REJECTED, [OrderStatus.REJECTED, OrderStatus.REJECTED]),
+    ],
+)
+def test_etrade_simulator_order_lifecycle_scenarios_progress_by_read(scenario, expected_statuses):
+    # Given
+    # A simulator app with an explicit order lifecycle scenario selected.
+    client = TestClient(create_app())
+    scenario_response = client.post("/_simulator/order-lifecycle-scenario", json={"scenario": scenario.value})
+    client.post(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/place.json")
+
+    # When
+    # The caller polls the placed order.
+    observed_statuses = [
+        client.get(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/{seed_data.ORDER_ID}.json").json()[
+            "OrdersResponse"
+        ]["Order"][0]["OrderDetail"][0]["status"]
+        for _ in expected_statuses
+    ]
+
+    # Then
+    # The scenario deterministically drives the brokerage-like order status.
+    assert scenario_response.status_code == HttpStatusCode.OK
+    assert scenario_response.json() == {"scenario": scenario.value}
+    assert observed_statuses == [status.value for status in expected_statuses]
+
+
+def test_etrade_simulator_reset_restores_open_order_scenario_and_seed_routes():
+    # Given
+    # A simulator app after a terminal scenario has advanced.
+    client = TestClient(create_app())
+    client.post(
+        "/_simulator/order-lifecycle-scenario",
+        json={"scenario": OrderLifecycleScenario.EVENTUALLY_EXECUTED.value},
+    )
+    client.post(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/place.json")
+    client.get(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/{seed_data.ORDER_ID}.json")
+    executed_order = client.get(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/{seed_data.ORDER_ID}.json")
+
+    # When
+    # The simulator state is reset and a new seed order is placed.
+    reset_response = client.post("/_simulator/reset")
+    client.post(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/place.json")
+    reset_order = client.get(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/{seed_data.ORDER_ID}.json")
+
+    # Then
+    # The scenario returns to the default OPEN behavior without disturbing seed data routes.
+    assert executed_order.json()["OrdersResponse"]["Order"][0]["OrderDetail"][0]["status"] == OrderStatus.EXECUTED.value
+    assert reset_response.status_code == HttpStatusCode.OK
+    assert reset_response.json() == {"scenario": OrderLifecycleScenario.OPEN.value}
+    assert reset_order.json()["OrdersResponse"]["Order"][0]["OrderDetail"][0]["status"] == OrderStatus.OPEN.value
+    assert client.get(f"/v1/accounts/{seed_data.ACCOUNT_ID}/balance.json").json()["BalanceResponse"]
+
+
+def test_etrade_simulator_rejects_unknown_order_lifecycle_scenario():
+    # Given
+    # A simulator app with a strict scenario control surface.
+    client = TestClient(create_app())
+
+    # When
+    # A caller requests an unsupported simulator scenario.
+    response = client.post("/_simulator/order-lifecycle-scenario", json={"scenario": "fills-by-moonlight"})
+
+    # Then
+    # The simulator fails clearly with the project's explicit bad-request status.
+    assert response.status_code == HttpStatusCode.BAD_REQUEST
+    assert "Supported scenarios" in response.json()["detail"]
+
+
+def test_etrade_simulator_explicit_cancel_wins_over_scenario_progression():
+    # Given
+    # A simulator app whose selected scenario would otherwise execute on the second read.
+    client = TestClient(create_app())
+    client.post(
+        "/_simulator/order-lifecycle-scenario",
+        json={"scenario": OrderLifecycleScenario.EVENTUALLY_EXECUTED.value},
+    )
+    client.post(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/place.json")
+
+    # When
+    # The caller actively cancels before polling the order through scenario progression.
+    client.put(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/cancel.json")
+    first_read = client.get(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/{seed_data.ORDER_ID}.json")
+    second_read = client.get(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/{seed_data.ORDER_ID}.json")
+
+    # Then
+    # The explicit cancellation remains the observed brokerage order state.
+    assert first_read.json()["OrdersResponse"]["Order"][0]["OrderDetail"][0]["status"] == OrderStatus.CANCELLED.value
+    assert second_read.json()["OrdersResponse"]["Order"][0]["OrderDetail"][0]["status"] == OrderStatus.CANCELLED.value
+
+
+def test_etrade_simulator_terminal_order_status_survives_later_commands():
+    # Given
+    # A simulator order that has already reached a terminal brokerage status.
+    client = TestClient(create_app())
+    client.post(
+        "/_simulator/order-lifecycle-scenario",
+        json={"scenario": OrderLifecycleScenario.EVENTUALLY_EXECUTED.value},
+    )
+    client.post(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/place.json")
+    client.get(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/{seed_data.ORDER_ID}.json")
+    executed_order = client.get(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/{seed_data.ORDER_ID}.json")
+
+    # When
+    # Later simulator controls or cancel commands try to move it elsewhere.
+    client.post("/_simulator/order-lifecycle-scenario", json={"scenario": OrderLifecycleScenario.OPEN.value})
+    client.put(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/cancel.json")
+    final_order = client.get(f"/v1/accounts/{seed_data.ACCOUNT_ID}/orders/{seed_data.ORDER_ID}.json")
+
+    # Then
+    # The terminal brokerage status remains terminal until simulator reset.
+    assert executed_order.json()["OrdersResponse"]["Order"][0]["OrderDetail"][0]["status"] == OrderStatus.EXECUTED.value
+    assert final_order.json()["OrdersResponse"]["Order"][0]["OrderDetail"][0]["status"] == OrderStatus.EXECUTED.value
 
 
 def test_etrade_simulator_exposes_retryable_preview_error_scenario():

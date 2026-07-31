@@ -1,28 +1,83 @@
 from dataclasses import dataclass, field
+from enum import Enum
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
+from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.server.common.api.http_status_code import HttpStatusCode
 from fianchetto_tradebot.server.simulator.etrade import seed_data
 
 DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 8090
+TERMINAL_ORDER_STATUSES = {
+    OrderStatus.CANCELLED.value,
+    OrderStatus.EXECUTED.value,
+    OrderStatus.EXPIRED.value,
+    OrderStatus.REJECTED.value,
+}
+
+
+class OrderLifecycleScenario(str, Enum):
+    OPEN = "open"
+    EVENTUALLY_EXECUTED = "eventually-executed"
+    BROKER_CANCELLED = "broker-cancelled"
+    REJECTED = "rejected"
+
+
+class SimulatorScenarioRequest(BaseModel):
+    scenario: str
+
+
+class SimulatorScenarioResponse(BaseModel):
+    scenario: str
 
 
 @dataclass
 class ETradeSimulatorState:
     order_status_by_id: dict[str, str] = field(default_factory=dict)
+    order_read_count_by_id: dict[str, int] = field(default_factory=dict)
+    order_lifecycle_scenario: OrderLifecycleScenario = OrderLifecycleScenario.OPEN
 
     def place_order(self) -> str:
-        self.order_status_by_id[seed_data.ORDER_ID] = "OPEN"
+        self.order_status_by_id[seed_data.ORDER_ID] = OrderStatus.OPEN.value
+        self.order_read_count_by_id[seed_data.ORDER_ID] = 0
         return seed_data.ORDER_ID
 
     def get_order_status(self, order_id: str) -> str:
-        return self.order_status_by_id.get(order_id, "OPEN")
+        current_status = self.order_status_by_id.get(order_id, OrderStatus.OPEN.value)
+        if current_status in TERMINAL_ORDER_STATUSES:
+            return current_status
+
+        read_count = self.order_read_count_by_id.get(order_id, 0) + 1
+        self.order_read_count_by_id[order_id] = read_count
+        next_status = self._scenario_status_for_read(read_count)
+        self.order_status_by_id[order_id] = next_status
+        return next_status
 
     def cancel_order(self, order_id: str) -> None:
-        self.order_status_by_id[order_id] = "CANCELLED"
+        if self.order_status_by_id.get(order_id) in TERMINAL_ORDER_STATUSES:
+            return
+        self.order_status_by_id[order_id] = OrderStatus.CANCELLED.value
+
+    def reset(self) -> None:
+        self.order_status_by_id.clear()
+        self.order_read_count_by_id.clear()
+        self.order_lifecycle_scenario = OrderLifecycleScenario.OPEN
+
+    def set_order_lifecycle_scenario(self, scenario: OrderLifecycleScenario) -> None:
+        self.order_lifecycle_scenario = scenario
+        self.order_read_count_by_id.clear()
+
+    def _scenario_status_for_read(self, read_count: int) -> str:
+        if self.order_lifecycle_scenario == OrderLifecycleScenario.EVENTUALLY_EXECUTED and read_count >= 2:
+            return OrderStatus.EXECUTED.value
+        if self.order_lifecycle_scenario == OrderLifecycleScenario.BROKER_CANCELLED and read_count >= 2:
+            return OrderStatus.CANCELLED.value
+        if self.order_lifecycle_scenario == OrderLifecycleScenario.REJECTED:
+            return OrderStatus.REJECTED.value
+        return OrderStatus.OPEN.value
 
 
 def create_app(state: ETradeSimulatorState | None = None) -> FastAPI:
@@ -36,6 +91,17 @@ def create_app(state: ETradeSimulatorState | None = None) -> FastAPI:
     @app.get("/health-check")
     def health_check():
         return "E*Trade Simulator Up"
+
+    @app.post("/_simulator/reset")
+    def reset_simulator():
+        state.reset()
+        return SimulatorScenarioResponse(scenario=state.order_lifecycle_scenario.value)
+
+    @app.post("/_simulator/order-lifecycle-scenario")
+    def set_order_lifecycle_scenario(request: SimulatorScenarioRequest):
+        scenario = _order_lifecycle_scenario(request.scenario)
+        state.set_order_lifecycle_scenario(scenario)
+        return SimulatorScenarioResponse(scenario=scenario.value)
 
     @app.get("/v1/accounts/list.json")
     def list_accounts():
@@ -103,6 +169,17 @@ def _ensure_demo_account(account_id: str) -> None:
 def _ensure_supported_symbol(symbol: str) -> None:
     if symbol != seed_data.EQUITY_SYMBOL and not symbol.startswith(f"{seed_data.EQUITY_SYMBOL}:"):
         raise HTTPException(status_code=HttpStatusCode.NOT_FOUND, detail=f"Unknown simulator symbol {symbol}")
+
+
+def _order_lifecycle_scenario(scenario: str) -> OrderLifecycleScenario:
+    try:
+        return OrderLifecycleScenario(scenario)
+    except ValueError as exc:
+        supported_scenarios = ", ".join(item.value for item in OrderLifecycleScenario)
+        raise HTTPException(
+            status_code=HttpStatusCode.BAD_REQUEST,
+            detail=f"Unknown order lifecycle scenario {scenario}. Supported scenarios: {supported_scenarios}",
+        ) from exc
 
 
 app = create_app()

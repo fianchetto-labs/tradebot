@@ -44,6 +44,42 @@ The first simulator should support these E*Trade-like routes:
 | `GET` | `/v1/accounts/{account_id}/orders/{order_id}.json` | Return an open placed order. |
 | `PUT` | `/v1/accounts/{account_id}/orders/cancel.json` | Return a successful cancellation. |
 
+## Simulator Control Surface
+
+The simulator also exposes non-E*Trade control routes under `/_simulator`.
+These routes are for tests and local dogfooding only. Production TradeBot
+services should never call them.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/_simulator/reset` | Clear in-memory order state and restore the default `open` scenario. |
+| `POST` | `/_simulator/order-lifecycle-scenario` | Select how subsequent order status reads should progress. |
+
+Set a lifecycle scenario with:
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"scenario":"eventually-executed"}' \
+  "http://127.0.0.1:8090/_simulator/order-lifecycle-scenario"
+```
+
+Supported order lifecycle scenarios:
+
+| Scenario | Behavior |
+| --- | --- |
+| `open` | Order reads remain `OPEN`. |
+| `eventually-executed` | First order read is `OPEN`; later reads are `EXECUTED`. |
+| `broker-cancelled` | First order read is `OPEN`; later reads are `CANCELLED`. |
+| `rejected` | Order reads are `REJECTED`. |
+
+An explicit cancel request still wins over scenario progression: after
+`PUT /v1/accounts/{account_id}/orders/cancel.json`, later reads return
+`CANCELLED`. Once an order reaches a terminal brokerage status such as
+`EXECUTED`, `CANCELLED`, or `REJECTED`, later scenario changes or cancel
+commands do not rewrite that order. Use `/_simulator/reset` to return to seed
+state.
+
 ## Failure Path
 
 The initial representative failure should be an order preview response with an
