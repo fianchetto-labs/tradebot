@@ -35,7 +35,7 @@ from fianchetto_tradebot.common_models.managed_executions.list_managed_execution
     ListManagedExecutionsRequest
 from fianchetto_tradebot.common_models.managed_executions.list_managed_executions_response import \
     ListManagedExecutionsResponse
-from fianchetto_tradebot.common_models.managed_executions.moex_status import MoexStatus
+from fianchetto_tradebot.common_models.managed_executions.managed_execution_status import ManagedExecutionStatus
 from fianchetto_tradebot.common_models.order.action import Action
 from fianchetto_tradebot.common_models.order.expiry.good_until_cancelled import GoodUntilCancelled
 from fianchetto_tradebot.common_models.order.order import Order
@@ -66,6 +66,7 @@ class ManagedExecutionWorker:
 
     def stop(self):
         print(f"Moex_id_thread {self.moex_id}: Received command to stop processing")
+        self.moex.status = ManagedExecutionStatus.CANCEL_REQUESTED
         self.continue_processing = False
 
     def __call__(self, *args, **kwargs):
@@ -92,25 +93,20 @@ class ManagedExecutionWorker:
                 place_order_response = orders_service.preview_and_place_order(place_order_request)
                 order_id = place_order_response.order_id
 
-                if 'event_creation_lock' in kwargs:
-                    event: threading.Event = kwargs['event_creation_lock']
-                    print(f"Brokerage order {order_id} available for MOEX.")
-                    event.set()
-            else:
-                # TODO: There is probably a more elegant way
-                if 'event_creation_lock' in kwargs:
-                    event: threading.Event = kwargs['event_creation_lock']
-                    print(f"Brokerage order {order_id} available for MOEX.")
-                    event.set()
-
             # Get order status
             self.moex.current_brokerage_order_id = order_id
             get_order_request = GetOrderRequest(account_id=account_id, order_id=order_id)
             get_order_response : GetOrderResponse = orders_service.get_order(get_order_request)
 
             current_status = get_order_response.placed_order.placed_order_details.status
-            self.moex.status = MoexStatus(current_status.value)
+            self.moex.current_order_status = current_status
+            self.moex.status = _managed_execution_status_for_order_status(current_status)
             current_price = get_order_response.placed_order.placed_order_details.current_market_price
+
+            if 'event_creation_lock' in kwargs:
+                event: threading.Event = kwargs['event_creation_lock']
+                print(f"Brokerage order {order_id} available for MOEX.")
+                event.set()
 
             order = get_order_response.placed_order.order
             if not order_metadata:
@@ -131,7 +127,7 @@ class ManagedExecutionWorker:
                 order_id = place_order_response.order_id
                 print(f"Successfully placed {place_order_response.order_id} for price {place_order_response.order.order_price}")
                 self.moex.current_brokerage_order_id = order_id
-                self.moex.status = MoexStatus.OPEN
+                self.moex.status = ManagedExecutionStatus.WORKING
 
                 print(f"Sleeping {wait_time} seconds")
                 time.sleep(wait_time)
@@ -140,7 +136,8 @@ class ManagedExecutionWorker:
                 get_order_response : GetOrderResponse = orders_service.get_order(get_order_request)
 
                 current_status = get_order_response.placed_order.placed_order_details.status
-                self.moex.status = MoexStatus(current_status.value)
+                self.moex.current_order_status = current_status
+                self.moex.status = _managed_execution_status_for_order_status(current_status)
                 current_price = get_order_response.placed_order.order.order_price
 
             if not self.continue_processing:
@@ -148,6 +145,7 @@ class ManagedExecutionWorker:
             else:
                 print(f"Moex id {self.moex_id} executed with latest order-id {order_id} at price {current_price}!")
         except Exception as e:
+            self.moex.status = ManagedExecutionStatus.FAILED
             print(f"Error occurred: {e}")
 
         print(f"Moex_id_thread {self.moex_id}: Finished")
@@ -221,7 +219,7 @@ class MoexService:
         creation_request_params = create_managed_execution_request.managed_execution_creation_params
         managed_execution: ManagedExecution = ManagedExecution(brokerage=creation_request_params.brokerage, account_id=creation_request_params.account_id,
                                                                original_order=creation_request_params.creation_order,
-                                                               original_order_id=creation_request_params.creation_order_id, current_brokerage_order_id=creation_request_params.creation_order_id, status=MoexStatus.PRE_SUBMISSION)
+                                                               original_order_id=creation_request_params.creation_order_id, current_brokerage_order_id=creation_request_params.creation_order_id, status=ManagedExecutionStatus.PRE_SUBMISSION)
 
         # TODO: In a cleaner implementation, the wait would be internal to the Worker - FIA-127
         order_creation_event = threading.Event()
@@ -259,9 +257,10 @@ class MoexService:
             if managed_execution.current_brokerage_order_id:
                 cancel_order_request: CancelOrderRequest = CancelOrderRequest(account_id=managed_execution.account_id, order_id=managed_execution.current_brokerage_order_id)
                 cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
-                managed_execution.status = MoexStatus.CANCELLED
+                managed_execution.status = ManagedExecutionStatus.CANCELLED
                 print(f"Moex id: {managed_execution_id} - cancelled order {cancel_order_response.order_id} at {cancel_order_response.cancel_time}")
             else:
+                managed_execution.status = ManagedExecutionStatus.CANCELLED
                 print(f"There is currently no open order for {managed_execution_id}, so nothing to cancel.")
 
             return CancelManagedExecutionResponse(managed_execution=managed_execution)
@@ -271,6 +270,13 @@ class MoexService:
             self.current_id += 1
 
         return self.current_id
+
+def _managed_execution_status_for_order_status(order_status: OrderStatus) -> ManagedExecutionStatus:
+    if order_status == OrderStatus.EXECUTED:
+        return ManagedExecutionStatus.EXECUTED
+    if order_status in {OrderStatus.CANCELLED, OrderStatus.EXPIRED, OrderStatus.REJECTED}:
+        return ManagedExecutionStatus.FAILED
+    return ManagedExecutionStatus.WORKING
 
 def create_moex_with_new_order_list_and_cancel(existing_order_id: str = None):
     connector: ETradeConnector = ETradeConnector()
