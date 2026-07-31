@@ -109,7 +109,7 @@ class ManagedExecutionWorker:
             get_order_response : GetOrderResponse = orders_service.get_order(get_order_request)
 
             current_status = get_order_response.placed_order.placed_order_details.status
-            self.moex.status = current_status
+            self.moex.status = MoexStatus(current_status.value)
             current_price = get_order_response.placed_order.placed_order_details.current_market_price
 
             order = get_order_response.placed_order.order
@@ -131,7 +131,7 @@ class ManagedExecutionWorker:
                 order_id = place_order_response.order_id
                 print(f"Successfully placed {place_order_response.order_id} for price {place_order_response.order.order_price}")
                 self.moex.current_brokerage_order_id = order_id
-                self.moex.status = OrderStatus.OPEN
+                self.moex.status = MoexStatus.OPEN
 
                 print(f"Sleeping {wait_time} seconds")
                 time.sleep(wait_time)
@@ -140,6 +140,7 @@ class ManagedExecutionWorker:
                 get_order_response : GetOrderResponse = orders_service.get_order(get_order_request)
 
                 current_status = get_order_response.placed_order.placed_order_details.status
+                self.moex.status = MoexStatus(current_status.value)
                 current_price = get_order_response.placed_order.order.order_price
 
             if not self.continue_processing:
@@ -258,6 +259,7 @@ class MoexService:
             if managed_execution.current_brokerage_order_id:
                 cancel_order_request: CancelOrderRequest = CancelOrderRequest(account_id=managed_execution.account_id, order_id=managed_execution.current_brokerage_order_id)
                 cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
+                managed_execution.status = MoexStatus.CANCELLED
                 print(f"Moex id: {managed_execution_id} - cancelled order {cancel_order_response.order_id} at {cancel_order_response.cancel_time}")
             else:
                 print(f"There is currently no open order for {managed_execution_id}, so nothing to cancel.")

@@ -100,28 +100,71 @@ curl http://127.0.0.1:8080/health-check
 
 Change the port to match the service under test.
 
-## Run The Simulator-Backed Stack
+## Run The Local Simulator-Backed Stack
 
-Use Nox for the automated Docker integration run:
+Use Nox for the local development stack:
+
+```bash
+python -m nox -s docker_up
+```
+
+That command builds `tradebot:local`, starts the Compose stack in
+`deploy/docker/docker-compose.local.yml`, waits for service health, and leaves
+the containers running until you stop them. This is the normal dogfooding loop
+for local distributed-mode development.
+
+The local Compose stack uses stable service names that mirror the future
+deployment topology:
+
+| Service | Internal name | Host port |
+| --- | --- | --- |
+| E*Trade simulator | `tradebot-etrade-simulator` | `18090` |
+| Orders | `tradebot-orders` | `18080` |
+| Quotes | `tradebot-quotes` | `18081` |
+| MOEX | `tradebot-moex` | `18082` |
+
+MOEX talks to orders and quotes through Docker DNS:
+
+```bash
+TRADEBOT_ORDERS_SERVICE_URL=http://tradebot-orders:8080
+TRADEBOT_QUOTES_SERVICE_URL=http://tradebot-quotes:8081
+```
+
+Run the local acceptance checks after the stack is up:
+
+```bash
+python -m nox -s docker_acceptance
+```
+
+To inspect the stack manually:
+
+```bash
+curl http://127.0.0.1:18090/health-check
+curl http://127.0.0.1:18080/health-check
+curl http://127.0.0.1:18081/api/v1/ETRADE/quotes/tradable/GE
+curl http://127.0.0.1:18082/health-check
+```
+
+Inspect logs:
+
+```bash
+python -m nox -s docker_logs
+python -m nox -s docker_logs -- tradebot-moex
+```
+
+Stop the stack:
+
+```bash
+python -m nox -s docker_down
+```
+
+Use the automated Docker integration session when you want a test-owned stack
+with cleanup behavior:
 
 ```bash
 TRADEBOT_RUN_SERVICE_TESTS=1 python -m nox -s docker_integration
 ```
 
-That command builds `tradebot:local`, starts the Compose stack in
-`deploy/docker/docker-compose.integration.yml`, waits for service health, runs
-the Docker integration tests, and leaves the stack available for 30 minutes on
-local machines. CI runs and local runs with
-`TRADEBOT_INTEGRATION_STACK_TTL_SECONDS=0` tear the stack down immediately.
-
-To inspect the stack manually:
-
-```bash
-docker build --build-arg PYTHON_VERSION=3.14 -t tradebot:local .
-docker compose -f deploy/docker/docker-compose.integration.yml up --detach --wait
-curl http://127.0.0.1:18090/health-check
-curl http://127.0.0.1:18080/health-check
-curl http://127.0.0.1:18081/api/v1/ETRADE/quotes/tradable/GE
-curl http://127.0.0.1:18082/health-check
-docker compose -f deploy/docker/docker-compose.integration.yml down --volumes
-```
+That command uses `deploy/docker/docker-compose.integration.yml`, runs the
+Docker integration tests, and cleans up according to
+`TRADEBOT_INTEGRATION_STACK_TTL_SECONDS`.

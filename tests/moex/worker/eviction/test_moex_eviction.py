@@ -128,6 +128,7 @@ def test_cancel_managed_execution_cancels_current_brokerage_order(
     expected_input_to_cancel_order = CancelOrderRequest(account_id=account_id, order_id=expected_order_id)
     mock_order_service.get_order.assert_called_once_with(GetOrderRequest(account_id=account_id, order_id=expected_order_id))
     mock_order_service.cancel_order.assert_called_once_with(expected_input_to_cancel_order)
+    assert cancel_managed_execution_response.managed_execution.status == MoexStatus.CANCELLED
     captured = capsys.readouterr()
     assert "Error occurred" not in captured.out
     assert captured.err == ""
