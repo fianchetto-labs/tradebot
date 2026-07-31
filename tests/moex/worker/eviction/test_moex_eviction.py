@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 import pytest
 
 from common.api.orders.order_test_util import OrderTestUtil
-from fianchetto_tradebot.common_models.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common_models.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
 from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
@@ -20,6 +19,10 @@ from fianchetto_tradebot.common_models.managed_executions.create_managed_executi
     CreateManagedExecutionRequest
 from fianchetto_tradebot.common_models.managed_executions.create_managed_execution_response import \
     CreateManagedExecutionResponse
+from fianchetto_tradebot.common_models.managed_executions.get_managed_execution_request import \
+    GetManagedExecutionRequest
+from fianchetto_tradebot.common_models.managed_executions.get_managed_execution_response import \
+    GetManagedExecutionResponse
 from fianchetto_tradebot.common_models.managed_executions.managed_execution_status import ManagedExecutionStatus
 from fianchetto_tradebot.common_models.order.order import Order
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
@@ -84,18 +87,54 @@ def test_all_managed_orders_closed_at_eod():
     pass
 
 @pytest.mark.functional
-def test_cancel_managed_execution_cancels_current_brokerage_order(
+def test_managed_execution_succeeds_when_brokerage_order_executes(
     account_id: str,
     order: Order,
     quotes_service_map: dict[Brokerage, QuotesService],
     orders_service_map: dict[Brokerage, OrderService],
     capsys: pytest.CaptureFixture,
 ):
-    # Given
-    # A user wants to cancel a managed execution.
-    # The user has cancelled their order using the API
-    # The request has been passed down into the MoexService
-    # 1. Assume the MOEX is running. There is exactly 1 managed execution in progress
+    mock_order_service = orders_service_map[Brokerage.ETRADE]
+    moex_service = MoexService(quotes_services=quotes_service_map, orders_services=orders_service_map)
+
+    managed_execution_creation_params = ManagedExecutionCreationParams(
+        managed_execution_creation_type=ManagedExecutionCreationType.AS_NEW_ORDER,
+        brokerage=Brokerage.ETRADE,
+        account_id=account_id,
+        creation_order=order,
+    )
+    create_managed_execution_request = CreateManagedExecutionRequest(
+        managed_execution_creation_params=managed_execution_creation_params
+    )
+    try:
+        create_managed_execution_response = moex_service.create_managed_execution(
+            create_managed_execution_request=create_managed_execution_request
+        )
+        get_managed_execution_response: GetManagedExecutionResponse = moex_service.get_managed_execution(
+            GetManagedExecutionRequest(
+                managed_execution_id=create_managed_execution_response.managed_execution_id
+            )
+        )
+    finally:
+        moex_service.thread_pool_executor.shutdown(wait=True)
+
+    managed_execution = get_managed_execution_response.managed_execution
+    assert managed_execution.status == ManagedExecutionStatus.EXECUTED
+    assert managed_execution.current_order_status == OrderStatus.EXECUTED
+    mock_order_service.cancel_order.assert_not_called()
+    captured = capsys.readouterr()
+    assert "Error occurred" not in captured.out
+    assert captured.err == ""
+
+
+@pytest.mark.functional
+def test_cancel_request_does_not_change_executed_managed_execution(
+    account_id: str,
+    order: Order,
+    quotes_service_map: dict[Brokerage, QuotesService],
+    orders_service_map: dict[Brokerage, OrderService],
+    capsys: pytest.CaptureFixture,
+):
     mock_order_service = orders_service_map[Brokerage.ETRADE]
     moex_service = MoexService(quotes_services=quotes_service_map, orders_services=orders_service_map)
 
@@ -107,8 +146,6 @@ def test_cancel_managed_execution_cancels_current_brokerage_order(
     try:
         create_managed_execution_response: CreateManagedExecutionResponse = moex_service.create_managed_execution(create_managed_execution_request=create_managed_execution_request)
 
-        # When
-        # We issue the MOEX cancellation order.
         moex_id = create_managed_execution_response.managed_execution_id
         cancel_managed_execution_request: CancelManagedExecutionRequest = CancelManagedExecutionRequest(managed_execution_id=moex_id)
         cancel_managed_execution_response: CancelManagedExecutionResponse = moex_service.cancel_managed_execution(cancel_managed_executions_request=cancel_managed_execution_request)
@@ -123,12 +160,9 @@ def test_cancel_managed_execution_cancels_current_brokerage_order(
         raise Exception(f"Could not get current_brokerage_order_id from"
                         f"cancel_managed_execution_response.managed_execution: {cancel_managed_execution_response.managed_execution.current_brokerage_order_id}")
 
-    # Then
-    # We see that the Brokerage Order is cancelled (using mocking).
-    expected_input_to_cancel_order = CancelOrderRequest(account_id=account_id, order_id=expected_order_id)
     mock_order_service.get_order.assert_called_once_with(GetOrderRequest(account_id=account_id, order_id=expected_order_id))
-    mock_order_service.cancel_order.assert_called_once_with(expected_input_to_cancel_order)
-    assert cancel_managed_execution_response.managed_execution.status == ManagedExecutionStatus.CANCELLED
+    mock_order_service.cancel_order.assert_not_called()
+    assert cancel_managed_execution_response.managed_execution.status == ManagedExecutionStatus.EXECUTED
     assert cancel_managed_execution_response.managed_execution.current_order_status == OrderStatus.EXECUTED
     captured = capsys.readouterr()
     assert "Error occurred" not in captured.out

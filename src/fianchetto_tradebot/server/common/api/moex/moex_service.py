@@ -37,6 +37,7 @@ from fianchetto_tradebot.common_models.managed_executions.list_managed_execution
     ListManagedExecutionsResponse
 from fianchetto_tradebot.common_models.managed_executions.managed_execution_status import (
     ManagedExecutionStatus,
+    is_terminal_managed_execution_status,
     managed_execution_status_from_order_status,
 )
 from fianchetto_tradebot.common_models.order.action import Action
@@ -69,8 +70,9 @@ class ManagedExecutionWorker:
 
     def stop(self):
         print(f"Moex_id_thread {self.moex_id}: Received command to stop processing")
-        self.moex.status = ManagedExecutionStatus.CANCEL_REQUESTED
         self.continue_processing = False
+        if not is_terminal_managed_execution_status(self.moex.status):
+            self.moex.status = ManagedExecutionStatus.CANCEL_REQUESTED
 
     def __call__(self, *args, **kwargs):
         print(f"Executing order {self.moex_id}")
@@ -249,6 +251,9 @@ class MoexService:
         managed_execution_id: str = cancel_managed_executions_request.managed_execution_id
         with self.managed_executions_lock:
             managed_execution, worker, future = self.managed_executions[managed_execution_id]
+            if is_terminal_managed_execution_status(managed_execution.status):
+                print(f"Moex id: {managed_execution_id} already terminal with status {managed_execution.status}.")
+                return CancelManagedExecutionResponse(managed_execution=managed_execution)
 
             # Cancel the future first so it doesn't create a new order after-the-fact
             worker: ManagedExecutionWorker = worker
