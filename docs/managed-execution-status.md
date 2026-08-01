@@ -27,6 +27,11 @@ even when their values sound similar.
 The managed execution status should describe TradeBot's next orchestration
 decision, not merely repeat the broker's status string.
 
+The enforced transition policy lives in
+`fianchetto_tradebot.common_models.managed_executions.managed_execution_status`.
+Worker and cancellation code should use the named transition helpers there
+instead of assigning managed execution status directly.
+
 Normal managed execution flow:
 
 1. `PRE_SUBMISSION`: the API has accepted the managed execution request.
@@ -51,6 +56,10 @@ Terminal managed executions are immutable through the cancellation API. Once a
 managed execution reaches `EXECUTED`, `CANCELLED`, or `FAILED`, a later cancel
 request must return the existing managed execution state without cancelling the
 underlying brokerage order or rewriting the managed execution status.
+
+Invalid non-idempotent transitions raise `InvalidManagedExecutionTransition`.
+Reapplying the same status is idempotent, which keeps repeated observations of
+an already-recorded state safe.
 
 ## Brokerage Status Translation
 

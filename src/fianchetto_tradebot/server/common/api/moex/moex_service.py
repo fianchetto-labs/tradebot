@@ -40,7 +40,11 @@ from fianchetto_tradebot.common_models.managed_executions.list_managed_execution
 from fianchetto_tradebot.common_models.managed_executions.managed_execution_status import (
     ManagedExecutionStatus,
     is_terminal_managed_execution_status,
-    managed_execution_status_from_order_status,
+    transition_for_brokerage_order_observation,
+    transition_for_cancel_completed,
+    transition_for_cancel_requested,
+    transition_for_management_continuing,
+    transition_for_worker_failed,
 )
 from fianchetto_tradebot.common_models.order.action import Action
 from fianchetto_tradebot.common_models.order.expiry.good_until_cancelled import GoodUntilCancelled
@@ -76,7 +80,7 @@ class ManagedExecutionWorker:
         print(f"Moex_id_thread {self.moex_id}: Received command to stop processing")
         self._stop_requested.set()
         if not is_terminal_managed_execution_status(self.moex.status):
-            self.moex.status = ManagedExecutionStatus.CANCEL_REQUESTED
+            self.moex.status = transition_for_cancel_requested(self.moex.status)
 
     def should_stop_processing(self) -> bool:
         return self._stop_requested.is_set()
@@ -90,7 +94,10 @@ class ManagedExecutionWorker:
     def record_order_snapshot(self, placed_order: PlacedOrder, orders_service: OrderServicePort) -> OrderStatus:
         current_status = self.resolve_order_status(placed_order, orders_service)
         self.moex.current_order_status = current_status
-        self.moex.status = managed_execution_status_from_order_status(current_status)
+        self.moex.status = transition_for_brokerage_order_observation(
+            current_status=self.moex.status,
+            order_status=current_status,
+        )
         return current_status
 
     def resolve_order_status(self, placed_order: PlacedOrder, orders_service: OrderServicePort) -> OrderStatus:
@@ -175,7 +182,7 @@ class ManagedExecutionWorker:
                 if self.should_stop_processing():
                     break
 
-                self.moex.status = ManagedExecutionStatus.WORKING
+                self.moex.status = transition_for_management_continuing(self.moex.status)
 
                 print(f"Sleeping {wait_time} seconds")
                 self.wait_before_next_order_status_check(wait_time)
@@ -194,7 +201,8 @@ class ManagedExecutionWorker:
             else:
                 print(f"Moex id {self.moex_id} completed with status {self.moex.status} for latest order-id {order_id} at price {current_price}!")
         except Exception as e:
-            self.moex.status = ManagedExecutionStatus.FAILED
+            if not is_terminal_managed_execution_status(self.moex.status):
+                self.moex.status = transition_for_worker_failed(self.moex.status)
             print(f"Error occurred: {e}")
 
         print(f"Moex_id_thread {self.moex_id}: Finished")
@@ -320,10 +328,10 @@ class MoexService:
             if managed_execution.current_brokerage_order_id:
                 cancel_order_request: CancelOrderRequest = CancelOrderRequest(account_id=managed_execution.account_id, order_id=managed_execution.current_brokerage_order_id)
                 cancel_order_response: CancelOrderResponse = order_service.cancel_order(cancel_order_request)
-                managed_execution.status = ManagedExecutionStatus.CANCELLED
+                managed_execution.status = transition_for_cancel_completed(managed_execution.status)
                 print(f"Moex id: {managed_execution_id} - cancelled order {cancel_order_response.order_id} at {cancel_order_response.cancel_time}")
             else:
-                managed_execution.status = ManagedExecutionStatus.CANCELLED
+                managed_execution.status = transition_for_cancel_completed(managed_execution.status)
                 print(f"There is currently no open order for {managed_execution_id}, so nothing to cancel.")
 
             return CancelManagedExecutionResponse(managed_execution=managed_execution)
