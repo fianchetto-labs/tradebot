@@ -1,10 +1,11 @@
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 from fastapi import FastAPI, HTTPException
 
 from fianchetto_tradebot.common_models.api.orders.cancel_order_request import CancelOrderRequest
 from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
+from fianchetto_tradebot.common_models.api.orders.order_list_request import ListOrdersRequest
 from fianchetto_tradebot.common_models.api.quotes.get_tradable_request import GetTradableRequest
 from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
 from fianchetto_tradebot.common_models.finance.amount import Amount
@@ -12,6 +13,7 @@ from fianchetto_tradebot.common_models.finance.currency import Currency
 from fianchetto_tradebot.common_models.finance.equity import Equity
 from fianchetto_tradebot.common_models.finance.option import Option
 from fianchetto_tradebot.common_models.finance.option_type import OptionType
+from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.server.common.service.adapters import (
     HttpQuoteServiceAdapter,
     HttpServiceAdapterError,
@@ -39,6 +41,14 @@ def test_order_adapter_contract_preserves_order_lifecycle(
     # When
     # The caller runs the order lifecycle through the adapter.
     place_response = order_adapter.preview_and_place_order(preview_request)
+    list_response = order_adapter.list_orders(
+        ListOrdersRequest(
+            account_id=ACCOUNT_ID,
+            status=OrderStatus.EXECUTED,
+            from_date=datetime(2026, 1, 1),
+            to_date=datetime(2026, 1, 2),
+        )
+    )
     get_response = order_adapter.get_order(GetOrderRequest(account_id=ACCOUNT_ID, order_id=place_response.order_id))
     modify_response = order_adapter.modify_order(preview_modify_order_request(place_response.order_id))
     cancel_response = order_adapter.cancel_order(
@@ -48,6 +58,7 @@ def test_order_adapter_contract_preserves_order_lifecycle(
     # Then
     # The caller receives the same domain responses regardless of adapter mode.
     assert place_response.order_id == INITIAL_ORDER_ID
+    assert list_response.order_list[0].placed_order_details.brokerage_order_id == INITIAL_ORDER_ID
     assert get_response.placed_order.placed_order_details.brokerage_order_id == INITIAL_ORDER_ID
     assert modify_response.order_id == MODIFIED_ORDER_ID
     assert cancel_response.order_id == MODIFIED_ORDER_ID
@@ -56,6 +67,14 @@ def test_order_adapter_contract_preserves_order_lifecycle(
     # The service behind the adapter receives rich Pydantic request models with the expected data.
     call_log = adapter_contract_harness.call_log
     assert call_log.preview_order_requests[0].order_metadata.account_id == ACCOUNT_ID
+    assert call_log.list_order_requests == [
+        ListOrdersRequest(
+            account_id=ACCOUNT_ID,
+            status=OrderStatus.EXECUTED,
+            from_date=datetime(2026, 1, 1),
+            to_date=datetime(2026, 1, 2),
+        )
+    ]
     assert call_log.preview_order_requests[0].order.order_lines[0].tradable.expiry == date(2025, 1, 31)
     assert call_log.get_order_requests == [GetOrderRequest(account_id=ACCOUNT_ID, order_id=INITIAL_ORDER_ID)]
     assert call_log.modify_order_requests[0].order_id_to_modify == INITIAL_ORDER_ID

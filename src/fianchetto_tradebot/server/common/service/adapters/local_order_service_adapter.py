@@ -2,6 +2,8 @@ from fianchetto_tradebot.common_models.api.orders.cancel_order_request import Ca
 from fianchetto_tradebot.common_models.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
 from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
+from fianchetto_tradebot.common_models.api.orders.order_list_request import ListOrdersRequest
+from fianchetto_tradebot.common_models.api.orders.order_list_response import ListOrdersResponse
 from fianchetto_tradebot.common_models.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common_models.api.orders.preview_modify_order_request import PreviewModifyOrderRequest
 from fianchetto_tradebot.common_models.api.orders.preview_order_request import PreviewOrderRequest
@@ -14,6 +16,9 @@ class LocalOrderServiceAdapter(OrderServicePort):
 
     def get_order(self, get_order_request: GetOrderRequest) -> GetOrderResponse:
         return self.service.get_order(get_order_request)
+
+    def list_orders(self, list_orders_request: ListOrdersRequest) -> ListOrdersResponse:
+        return self.service.list_orders(list_orders_request)
 
     def cancel_order(self, cancel_order_request: CancelOrderRequest) -> CancelOrderResponse:
         return self.service.cancel_order(cancel_order_request)

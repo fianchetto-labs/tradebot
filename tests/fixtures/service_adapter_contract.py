@@ -12,6 +12,8 @@ from fianchetto_tradebot.common_models.api.orders.cancel_order_request import Ca
 from fianchetto_tradebot.common_models.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
 from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
+from fianchetto_tradebot.common_models.api.orders.order_list_request import ListOrdersRequest
+from fianchetto_tradebot.common_models.api.orders.order_list_response import ListOrdersResponse
 from fianchetto_tradebot.common_models.api.orders.order_metadata import OrderMetadata
 from fianchetto_tradebot.common_models.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common_models.api.orders.preview_modify_order_request import PreviewModifyOrderRequest
@@ -48,6 +50,7 @@ MODIFIED_ORDER_ID = "order-2"
 @dataclass
 class ContractCallLog:
     preview_order_requests: list[PreviewOrderRequest] = field(default_factory=list)
+    list_order_requests: list[ListOrdersRequest] = field(default_factory=list)
     modify_order_requests: list[PreviewModifyOrderRequest] = field(default_factory=list)
     get_order_requests: list[GetOrderRequest] = field(default_factory=list)
     cancel_order_requests: list[CancelOrderRequest] = field(default_factory=list)
@@ -80,6 +83,10 @@ class ContractOrderService(OrderServicePort):
     def get_order(self, get_order_request: GetOrderRequest) -> GetOrderResponse:
         self.call_log.get_order_requests.append(get_order_request)
         return get_order_response(get_order_request.order_id, OrderStatus.OPEN)
+
+    def list_orders(self, list_orders_request: ListOrdersRequest) -> ListOrdersResponse:
+        self.call_log.list_order_requests.append(list_orders_request)
+        return ListOrdersResponse(order_list=[get_order_response(INITIAL_ORDER_ID, OrderStatus.EXECUTED).placed_order])
 
     def modify_order(self, preview_modify_order_request: PreviewModifyOrderRequest) -> PlaceOrderResponse:
         self.call_log.modify_order_requests.append(preview_modify_order_request)
@@ -146,6 +153,26 @@ def adapter_contract_harness(request) -> AdapterContractHarness:
 
 def orders_app(order_service: OrderServicePort) -> FastAPI:
     app = FastAPI()
+
+    @app.get("/api/v1/{brokerage}/accounts/{account_id}/orders")
+    def _list_orders(
+        brokerage: str,
+        account_id: str,
+        status: OrderStatus,
+        from_date: date,
+        to_date: date,
+        count: int,
+    ):
+        assert Brokerage(brokerage) == Brokerage.ETRADE
+        return order_service.list_orders(
+            ListOrdersRequest(
+                account_id=account_id,
+                status=status,
+                from_date=datetime.combine(from_date, datetime.min.time()),
+                to_date=datetime.combine(to_date, datetime.min.time()),
+                count=count,
+            )
+        )
 
     @app.post("/api/v1/{brokerage}/accounts/{account_id}/orders/preview_and_place")
     def _preview_and_place_order(brokerage: str, account_id: str, preview_order_request: PreviewOrderRequest):

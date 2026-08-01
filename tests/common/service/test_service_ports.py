@@ -9,6 +9,9 @@ class FakeOrderService:
     def get_order(self, get_order_request):
         pass
 
+    def list_orders(self, list_orders_request):
+        pass
+
     def cancel_order(self, cancel_order_request):
         pass
 
