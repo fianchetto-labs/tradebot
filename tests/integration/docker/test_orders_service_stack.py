@@ -1,5 +1,3 @@
-import os
-
 import httpx
 import pytest
 
@@ -12,34 +10,16 @@ from tests.fixtures.etrade_simulator_contract import demo_preview_order_request
 
 pytestmark = [pytest.mark.service, pytest.mark.docker, pytest.mark.integration]
 
-ETRADE_SIMULATOR_BASE_URL_ENV_VAR = "TRADEBOT_TEST_ETRADE_SIMULATOR_BASE_URL"
-ORDERS_BASE_URL_ENV_VAR = "TRADEBOT_TEST_ORDERS_BASE_URL"
-
-
-@pytest.fixture
-def etrade_simulator_base_url() -> str:
-    base_url = os.getenv(ETRADE_SIMULATOR_BASE_URL_ENV_VAR)
-    if not base_url:
-        pytest.skip(f"set {ETRADE_SIMULATOR_BASE_URL_ENV_VAR} to run orders service stack tests")
-    return base_url.rstrip("/")
-
-
-@pytest.fixture
-def orders_base_url() -> str:
-    base_url = os.getenv(ORDERS_BASE_URL_ENV_VAR)
-    if not base_url:
-        pytest.skip(f"set {ORDERS_BASE_URL_ENV_VAR} to run orders service stack tests")
-    return base_url.rstrip("/")
-
 
 def test_orders_service_runs_simulator_backed_order_lifecycle(
+    docker_service_stack,
     etrade_simulator_base_url: str,
     orders_base_url: str,
 ):
     preview_request = demo_preview_order_request()
 
     with httpx.Client(timeout=5) as client:
-        reset_response = client.post(f"{etrade_simulator_base_url}/_simulator/reset")
+        docker_service_stack.reset_etrade_simulator(client, etrade_simulator_base_url)
         health_response = client.get(f"{orders_base_url}/health-check")
         preview_response = client.post(
             f"{orders_base_url}/api/v1/ETRADE/accounts/{ACCOUNT_ID}/orders/preview",
@@ -67,8 +47,6 @@ def test_orders_service_runs_simulator_backed_order_lifecycle(
         cancel_response = client.delete(
             f"{orders_base_url}/api/v1/ETRADE/accounts/{ACCOUNT_ID}/orders/{ORDER_ID}"
         )
-
-    assert reset_response.status_code == HttpStatusCode.OK
 
     assert health_response.status_code == HttpStatusCode.OK
     assert health_response.json() == "ORDERS Service Up"

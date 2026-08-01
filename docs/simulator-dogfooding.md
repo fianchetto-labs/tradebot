@@ -3,6 +3,9 @@
 Use this runbook from the repository root when you want to run the TradeBot
 services as real local Docker processes without live E*Trade credentials.
 
+For the broader deployment-mode map, including what Kubernetes support still
+needs, see `docs/deployment.md`.
+
 The simulator-backed stack starts four containers:
 
 | Service | Host URL | What it proves |
