@@ -1,3 +1,4 @@
+import logging
 import threading
 from datetime import datetime
 from unittest.mock import MagicMock
@@ -34,6 +35,7 @@ from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.common_models.order.order_type import OrderType
 from fianchetto_tradebot.common_models.order.placed_order import PlacedOrder
 from fianchetto_tradebot.common_models.order.placed_order_details import PlacedOrderDetails
+from fianchetto_tradebot.server.common.api.moex import moex_service as moex_service_module
 from fianchetto_tradebot.server.common.api.moex.moex_service import (
     ManagedExecutionWorker,
     MoexService,
@@ -102,10 +104,11 @@ def test_managed_execution_succeeds_when_brokerage_order_executes(
     order: Order,
     quotes_service_map: dict[Brokerage, QuotesService],
     orders_service_map: dict[Brokerage, OrderService],
-    capsys: pytest.CaptureFixture,
+    caplog: pytest.LogCaptureFixture,
 ):
     # Given
     # A new managed execution request whose brokerage order is immediately executed.
+    caplog.set_level(logging.INFO, logger=moex_service_module.__name__)
     mock_order_service = orders_service_map[Brokerage.ETRADE]
     moex_service = MoexService(quotes_services=quotes_service_map, orders_services=orders_service_map)
     managed_execution_creation_params = ManagedExecutionCreationParams(
@@ -139,9 +142,13 @@ def test_managed_execution_succeeds_when_brokerage_order_executes(
     assert managed_execution.current_order_status == OrderStatus.EXECUTED
     assert managed_execution.current_brokerage_order_id == order_id
     mock_order_service.cancel_order.assert_not_called()
-    captured = capsys.readouterr()
-    assert "Error occurred" not in captured.out
-    assert captured.err == ""
+    _assert_no_error_logs(caplog)
+    finished_logs = _logs_for(caplog, "managed_execution_worker_finished")
+    assert finished_logs
+    assert finished_logs[-1].moex_id == create_managed_execution_response.managed_execution_id
+    assert finished_logs[-1].brokerage == Brokerage.ETRADE.value
+    assert finished_logs[-1].account_ref == "account:_123"
+    assert not hasattr(finished_logs[-1], "account_id")
 
 
 @pytest.mark.functional
@@ -151,7 +158,7 @@ def test_worker_signals_initial_order_ready_after_order_state_is_recorded(
     order: Order,
     quotes_service_map: dict[Brokerage, QuotesService],
     orders_service_map: dict[Brokerage, OrderService],
-    capsys: pytest.CaptureFixture,
+    caplog: pytest.LogCaptureFixture,
 ):
     # Given
     # A worker creating the first brokerage order for a managed execution.
@@ -192,9 +199,7 @@ def test_worker_signals_initial_order_ready_after_order_state_is_recorded(
     assert managed_execution.current_brokerage_order_id == order_id
     assert managed_execution.current_order_status == OrderStatus.EXECUTED
     assert managed_execution.status == ManagedExecutionStatus.EXECUTED
-    captured = capsys.readouterr()
-    assert "Error occurred" not in captured.out
-    assert captured.err == ""
+    _assert_no_error_logs(caplog)
 
 
 @pytest.mark.functional
@@ -203,7 +208,7 @@ def test_cancel_request_does_not_change_executed_managed_execution(
     order: Order,
     quotes_service_map: dict[Brokerage, QuotesService],
     orders_service_map: dict[Brokerage, OrderService],
-    capsys: pytest.CaptureFixture,
+    caplog: pytest.LogCaptureFixture,
 ):
     # Given
     # A managed execution that reaches a terminal EXECUTED state before cancellation.
@@ -239,9 +244,7 @@ def test_cancel_request_does_not_change_executed_managed_execution(
     mock_order_service.cancel_order.assert_not_called()
     assert cancel_managed_execution_response.managed_execution.status == ManagedExecutionStatus.EXECUTED
     assert cancel_managed_execution_response.managed_execution.current_order_status == OrderStatus.EXECUTED
-    captured = capsys.readouterr()
-    assert "Error occurred" not in captured.out
-    assert captured.err == ""
+    _assert_no_error_logs(caplog)
 
 
 @pytest.mark.functional
@@ -251,7 +254,7 @@ def test_worker_treats_rejected_order_as_executed_when_it_is_found_in_executed_o
     order: Order,
     quotes_service_map: dict[Brokerage, QuotesService],
     orders_service_map: dict[Brokerage, OrderService],
-    capsys: pytest.CaptureFixture,
+    caplog: pytest.LogCaptureFixture,
 ):
     # Given
     # A brokerage order read that says rejected even though the same order is in the executed list.
@@ -301,9 +304,7 @@ def test_worker_treats_rejected_order_as_executed_when_it_is_found_in_executed_o
     mock_order_service.modify_order.assert_not_called()
     assert managed_execution.status == ManagedExecutionStatus.EXECUTED
     assert managed_execution.current_order_status == OrderStatus.EXECUTED
-    captured = capsys.readouterr()
-    assert "Error occurred" not in captured.out
-    assert captured.err == ""
+    _assert_no_error_logs(caplog)
 
 
 @pytest.mark.functional
@@ -313,7 +314,7 @@ def test_worker_fails_rejected_order_when_it_is_not_found_in_executed_orders(
     order: Order,
     quotes_service_map: dict[Brokerage, QuotesService],
     orders_service_map: dict[Brokerage, OrderService],
-    capsys: pytest.CaptureFixture,
+    caplog: pytest.LogCaptureFixture,
 ):
     # Given
     # A brokerage order that is rejected and absent from the executed order list.
@@ -352,9 +353,55 @@ def test_worker_fails_rejected_order_when_it_is_not_found_in_executed_orders(
     mock_order_service.modify_order.assert_not_called()
     assert managed_execution.status == ManagedExecutionStatus.FAILED
     assert managed_execution.current_order_status == OrderStatus.REJECTED
-    captured = capsys.readouterr()
-    assert "Error occurred" not in captured.out
-    assert captured.err == ""
+    _assert_no_error_logs(caplog)
+
+
+@pytest.mark.functional
+def test_worker_logs_failure_context_when_broker_read_fails(
+    account_id: str,
+    order_id: str,
+    order: Order,
+    quotes_service_map: dict[Brokerage, QuotesService],
+    orders_service_map: dict[Brokerage, OrderService],
+    caplog: pytest.LogCaptureFixture,
+):
+    # Given
+    # A worker whose brokerage order read fails after the initial order is placed.
+    caplog.set_level(logging.INFO, logger=moex_service_module.__name__)
+    managed_execution = ManagedExecution(
+        brokerage=Brokerage.ETRADE,
+        account_id=account_id,
+        original_order=order,
+        status=ManagedExecutionStatus.PRE_SUBMISSION,
+    )
+    worker = ManagedExecutionWorker(
+        moex=managed_execution,
+        moex_id="moex-1",
+        quotes_services=quotes_service_map,
+        orders_services=orders_service_map,
+    )
+    mock_order_service = orders_service_map[Brokerage.ETRADE]
+    mock_order_service.get_order = MagicMock(side_effect=RuntimeError("broker read failed"))
+
+    # When
+    # The worker attempts to read the brokerage order.
+    worker()
+
+    # Then
+    # The managed execution fails and the worker emits one structured failure log.
+    mock_order_service.get_order.assert_called_once_with(
+        GetOrderRequest(account_id=account_id, order_id=order_id)
+    )
+    assert managed_execution.status == ManagedExecutionStatus.FAILED
+    failure_logs = _logs_for(caplog, "managed_execution_worker_failed")
+    assert len(failure_logs) == 1
+    assert failure_logs[0].levelno == logging.ERROR
+    assert failure_logs[0].moex_id == "moex-1"
+    assert failure_logs[0].brokerage_order_id == order_id
+    assert failure_logs[0].managed_execution_status == ManagedExecutionStatus.FAILED.value
+    assert failure_logs[0].error_type == RuntimeError.__name__
+    assert failure_logs[0].account_ref == "account:_123"
+    assert not hasattr(failure_logs[0], "account_id")
 
 
 @pytest.mark.functional
@@ -364,7 +411,7 @@ def test_worker_stops_before_next_broker_poll_after_cancellation(
     order: Order,
     quotes_service_map: dict[Brokerage, QuotesService],
     orders_service_map: dict[Brokerage, OrderService],
-    capsys: pytest.CaptureFixture,
+    caplog: pytest.LogCaptureFixture,
 ):
     # Given
     # A worker that has placed a replacement order and then receives a cancellation request.
@@ -415,9 +462,7 @@ def test_worker_stops_before_next_broker_poll_after_cancellation(
     )
     assert managed_execution.current_brokerage_order_id == replacement_order_id
     assert managed_execution.status == ManagedExecutionStatus.CANCEL_REQUESTED
-    captured = capsys.readouterr()
-    assert "Error occurred" not in captured.out
-    assert captured.err == ""
+    _assert_no_error_logs(caplog)
 
 
 @pytest.mark.functional
@@ -427,7 +472,7 @@ def test_worker_cancellation_interrupts_wait_before_next_broker_poll(
     order: Order,
     quotes_service_map: dict[Brokerage, QuotesService],
     orders_service_map: dict[Brokerage, OrderService],
-    capsys: pytest.CaptureFixture,
+    caplog: pytest.LogCaptureFixture,
 ):
     # Given
     # A worker that would otherwise wait before checking a replacement order again.
@@ -485,9 +530,7 @@ def test_worker_cancellation_interrupts_wait_before_next_broker_poll(
     mock_order_service.modify_order.assert_called_once()
     assert managed_execution.current_brokerage_order_id == replacement_order_id
     assert managed_execution.status == ManagedExecutionStatus.CANCEL_REQUESTED
-    captured = capsys.readouterr()
-    assert "Error occurred" not in captured.out
-    assert captured.err == ""
+    _assert_no_error_logs(caplog)
 
 
 # TODO: Place into a separate class later
@@ -557,3 +600,15 @@ def _assert_executed_orders_were_checked(mock_order_service: OrderService, accou
     list_orders_request = mock_order_service.list_orders.call_args.args[0]
     assert list_orders_request.account_id == account_id
     assert list_orders_request.status == OrderStatus.EXECUTED
+
+
+def _assert_no_error_logs(caplog: pytest.LogCaptureFixture) -> None:
+    assert [record for record in caplog.records if record.levelno >= logging.ERROR] == []
+
+
+def _logs_for(caplog: pytest.LogCaptureFixture, event_name: str) -> list[logging.LogRecord]:
+    return [
+        record
+        for record in caplog.records
+        if record.name == moex_service_module.__name__ and record.getMessage() == event_name
+    ]
