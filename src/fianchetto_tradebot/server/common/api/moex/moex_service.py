@@ -76,6 +76,9 @@ class ManagedExecutionWorker:
         if not is_terminal_managed_execution_status(self.moex.status):
             self.moex.status = ManagedExecutionStatus.CANCEL_REQUESTED
 
+    def should_stop_processing(self) -> bool:
+        return self._stop_requested.is_set()
+
     def __call__(self, *args, **kwargs):
         print(f"Executing order {self.moex_id}")
         orders_service = self.orders_services[self.moex.brokerage]
@@ -123,7 +126,7 @@ class ManagedExecutionWorker:
                 new_client_order_id = ''.join(choice(characters) for _ in range(length))
                 order_metadata: OrderMetadata = OrderMetadata(order_type=order.get_order_type(), account_id=account_id, client_order_id=new_client_order_id)
 
-            while current_status != OrderStatus.EXECUTED and not self._stop_requested.is_set():
+            while current_status != OrderStatus.EXECUTED and not self.should_stop_processing():
                 new_price, wait_time = self.tactic.new_price(placed_order.order, quotes_service)
 
                 # Need to populate this --
@@ -135,7 +138,7 @@ class ManagedExecutionWorker:
                 order_id = place_order_response.order_id
                 print(f"Successfully placed {place_order_response.order_id} for price {place_order_response.order.order_price}")
                 self.moex.current_brokerage_order_id = order_id
-                if self._stop_requested.is_set():
+                if self.should_stop_processing():
                     break
 
                 self.moex.status = ManagedExecutionStatus.WORKING
@@ -153,7 +156,7 @@ class ManagedExecutionWorker:
                 self.moex.status = managed_execution_status_from_order_status(current_status)
                 current_price = placed_order.order.order_price
 
-            if self._stop_requested.is_set():
+            if self.should_stop_processing():
                 print(f"Moex id {self.moex_id} cancelled with latest order-id {order_id} at price {current_price}!")
             else:
                 print(f"Moex id {self.moex_id} executed with latest order-id {order_id} at price {current_price}!")
