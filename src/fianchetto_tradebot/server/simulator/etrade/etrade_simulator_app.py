@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field
 from enum import Enum
+from xml.etree import ElementTree
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
@@ -39,20 +40,25 @@ class ETradeSimulatorState:
     order_status_by_id: dict[str, str] = field(default_factory=dict)
     order_read_count_by_id: dict[str, int] = field(default_factory=dict)
     order_lifecycle_scenario: OrderLifecycleScenario = OrderLifecycleScenario.OPEN
+    order_read_count: int = 0
+    next_order_number: int = 1
 
     def place_order(self) -> str:
-        self.order_status_by_id[seed_data.ORDER_ID] = OrderStatus.OPEN.value
-        self.order_read_count_by_id[seed_data.ORDER_ID] = 0
-        return seed_data.ORDER_ID
+        order_id = f"order-{self.next_order_number}"
+        self.next_order_number += 1
+        self.order_status_by_id[order_id] = OrderStatus.OPEN.value
+        self.order_read_count_by_id[order_id] = 0
+        return order_id
 
     def get_order_status(self, order_id: str) -> str:
         current_status = self.order_status_by_id.get(order_id, OrderStatus.OPEN.value)
         if current_status in TERMINAL_ORDER_STATUSES:
             return current_status
 
+        self.order_read_count += 1
         read_count = self.order_read_count_by_id.get(order_id, 0) + 1
         self.order_read_count_by_id[order_id] = read_count
-        next_status = self._scenario_status_for_read(read_count)
+        next_status = self._scenario_status_for_read()
         self.order_status_by_id[order_id] = next_status
         return next_status
 
@@ -65,15 +71,18 @@ class ETradeSimulatorState:
         self.order_status_by_id.clear()
         self.order_read_count_by_id.clear()
         self.order_lifecycle_scenario = OrderLifecycleScenario.OPEN
+        self.order_read_count = 0
+        self.next_order_number = 1
 
     def set_order_lifecycle_scenario(self, scenario: OrderLifecycleScenario) -> None:
         self.order_lifecycle_scenario = scenario
         self.order_read_count_by_id.clear()
+        self.order_read_count = 0
 
-    def _scenario_status_for_read(self, read_count: int) -> str:
-        if self.order_lifecycle_scenario == OrderLifecycleScenario.EVENTUALLY_EXECUTED and read_count >= 2:
+    def _scenario_status_for_read(self) -> str:
+        if self.order_lifecycle_scenario == OrderLifecycleScenario.EVENTUALLY_EXECUTED and self.order_read_count >= 2:
             return OrderStatus.EXECUTED.value
-        if self.order_lifecycle_scenario == OrderLifecycleScenario.BROKER_CANCELLED and read_count >= 2:
+        if self.order_lifecycle_scenario == OrderLifecycleScenario.BROKER_CANCELLED and self.order_read_count >= 2:
             return OrderStatus.CANCELLED.value
         if self.order_lifecycle_scenario == OrderLifecycleScenario.REJECTED:
             return OrderStatus.REJECTED.value
@@ -153,10 +162,11 @@ def create_app(state: ETradeSimulatorState | None = None) -> FastAPI:
         return seed_data.get_order_response(order_id, status=state.get_order_status(order_id))
 
     @app.put("/v1/accounts/{account_id}/orders/cancel.json")
-    def cancel_order(account_id: str):
+    async def cancel_order(account_id: str, request: Request):
         _ensure_demo_account(account_id)
-        state.cancel_order(seed_data.ORDER_ID)
-        return seed_data.cancel_order_response(seed_data.ORDER_ID)
+        order_id = _order_id_from_cancel_request(await request.body())
+        state.cancel_order(order_id)
+        return seed_data.cancel_order_response(order_id)
 
     return app
 
@@ -180,6 +190,30 @@ def _order_lifecycle_scenario(scenario: str) -> OrderLifecycleScenario:
             status_code=HttpStatusCode.BAD_REQUEST,
             detail=f"Unknown order lifecycle scenario {scenario}. Supported scenarios: {supported_scenarios}",
         ) from exc
+
+
+def _order_id_from_cancel_request(body: bytes) -> str:
+    if not body:
+        raise HTTPException(
+            status_code=HttpStatusCode.BAD_REQUEST,
+            detail="CancelOrderRequest XML body is required",
+        )
+
+    try:
+        root = ElementTree.fromstring(body)
+    except ElementTree.ParseError as exc:
+        raise HTTPException(
+            status_code=HttpStatusCode.BAD_REQUEST,
+            detail="CancelOrderRequest XML body must be valid XML",
+        ) from exc
+
+    order_id_element = root.find("orderId")
+    if order_id_element is None or not order_id_element.text:
+        raise HTTPException(
+            status_code=HttpStatusCode.BAD_REQUEST,
+            detail="CancelOrderRequest XML body must include orderId",
+        )
+    return order_id_element.text.strip()
 
 
 app = create_app()

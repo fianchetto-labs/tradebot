@@ -24,7 +24,7 @@ TradeBot needs in local Docker and future Kubernetes demos.
 - Equity: `GE`
 - Option: `GE 2026-01-16 PUT 25.00`
 - Preview id: `preview-1`
-- Placed order id: `order-1`
+- First placed order id: `order-1`
 - Response timestamp: `2026-01-02T13:30:00Z`
 
 ## Initial Endpoint Surface
@@ -40,7 +40,7 @@ The first simulator should support these E*Trade-like routes:
 | `GET` | `/v1/market/optionexpiredate.json` | Return deterministic option expiries for GE. |
 | `GET` | `/v1/market/optionchains.json` | Return a small call/put option chain for a requested expiry. |
 | `POST` | `/v1/accounts/{account_id}/orders/preview.json` | Return preview id `preview-1`. |
-| `POST` | `/v1/accounts/{account_id}/orders/place.json` | Return placed order id `order-1`. |
+| `POST` | `/v1/accounts/{account_id}/orders/place.json` | Return deterministic placed order ids starting with `order-1`. |
 | `GET` | `/v1/accounts/{account_id}/orders/{order_id}.json` | Return an open placed order. |
 | `PUT` | `/v1/accounts/{account_id}/orders/cancel.json` | Return a successful cancellation. |
 
@@ -69,8 +69,8 @@ Supported order lifecycle scenarios:
 | Scenario | Behavior |
 | --- | --- |
 | `open` | Order reads remain `OPEN`. |
-| `eventually-executed` | First order read is `OPEN`; later reads are `EXECUTED`. |
-| `broker-cancelled` | First order read is `OPEN`; later reads are `CANCELLED`. |
+| `eventually-executed` | First order read in the scenario is `OPEN`; later reads are `EXECUTED`. |
+| `broker-cancelled` | First order read in the scenario is `OPEN`; later reads are `CANCELLED`. |
 | `rejected` | Order reads are `REJECTED`. |
 
 An explicit cancel request still wins over scenario progression: after
@@ -79,6 +79,11 @@ An explicit cancel request still wins over scenario progression: after
 `EXECUTED`, `CANCELLED`, or `REJECTED`, later scenario changes or cancel
 commands do not rewrite that order. Use `/_simulator/reset` to return to seed
 state.
+
+The simulator assigns deterministic order ids in process memory: `order-1`,
+`order-2`, and so on. This lets managed-execution tests observe replacement
+orders without relying on a live broker. `/_simulator/reset` clears the order
+id sequence back to `order-1`.
 
 ## Failure Path
 
