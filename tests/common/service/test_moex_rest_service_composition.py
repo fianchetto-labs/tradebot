@@ -1,4 +1,10 @@
 from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
+from fianchetto_tradebot.common_models.managed_executions.get_managed_execution_request import (
+    GetManagedExecutionRequest,
+)
+from fianchetto_tradebot.common_models.managed_executions.get_managed_execution_response import (
+    GetManagedExecutionResponse,
+)
 from fianchetto_tradebot.server.common.service.adapters import ServiceAdapters
 from fianchetto_tradebot.server.moex.serving import moex_rest_service
 from fianchetto_tradebot.server.moex.serving.moex_rest_service import (
@@ -11,6 +17,16 @@ from fianchetto_tradebot.server.moex.serving.moex_rest_service import (
 
 class _FakeConnector:
     pass
+
+
+class _FakeMoexService:
+    def __init__(self, response):
+        self.response = response
+        self.requests = []
+
+    def get_managed_execution(self, request):
+        self.requests.append(request)
+        return self.response
 
 
 def test_moex_service_uses_local_adapters_by_default(monkeypatch):
@@ -74,3 +90,16 @@ def test_moex_service_rejects_unknown_adapter_mode():
         assert HTTP_SERVICE_ADAPTER_MODE in str(exc)
     else:
         raise AssertionError("Expected unknown MOEX adapter mode to be rejected")
+
+
+def test_moex_rest_get_managed_execution_returns_service_response():
+    service = object.__new__(MoexRestService)
+    expected_response = GetManagedExecutionResponse()
+    service.moex_service = _FakeMoexService(expected_response)
+
+    response = service.get_managed_execution("moex-1")
+
+    assert response is expected_response
+    assert service.moex_service.requests == [
+        GetManagedExecutionRequest(managed_execution_id="moex-1")
+    ]

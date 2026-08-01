@@ -241,6 +241,11 @@ def etrade_order_json(status: str | None = None, include_market_values: bool = F
 
     if status:
         order["status"] = status
+    if status == "EXECUTED":
+        order["orderValue"] = 100.00
+        order["executedTime"] = 1767360660000
+        for instrument in order["Instrument"]:
+            instrument["filledQuantity"] = instrument["orderedQuantity"]
     if include_market_values:
         order.update(
             {

@@ -10,6 +10,7 @@ from fianchetto_tradebot.common_models.api.orders.get_order_response import GetO
 from fianchetto_tradebot.common_models.api.orders.order_metadata import OrderMetadata
 from fianchetto_tradebot.common_models.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
+from fianchetto_tradebot.common_models.finance.amount import Amount
 from fianchetto_tradebot.common_models.finance.price import Price
 from fianchetto_tradebot.common_models.managed_executions.cancel_managed_execution_request import \
     CancelManagedExecutionRequest
@@ -25,6 +26,8 @@ from fianchetto_tradebot.common_models.managed_executions.get_managed_execution_
     GetManagedExecutionResponse
 from fianchetto_tradebot.common_models.managed_executions.managed_execution_status import ManagedExecutionStatus
 from fianchetto_tradebot.common_models.order.order import Order
+from fianchetto_tradebot.common_models.order.executed_order import ExecutedOrder
+from fianchetto_tradebot.common_models.order.executed_order_details import ExecutionOrderDetails
 from fianchetto_tradebot.common_models.order.order_status import OrderStatus
 from fianchetto_tradebot.common_models.order.order_type import OrderType
 from fianchetto_tradebot.common_models.order.placed_order import PlacedOrder
@@ -238,6 +241,69 @@ def test_cancel_request_does_not_change_executed_managed_execution(
     assert captured.err == ""
 
 
+@pytest.mark.functional
+def test_worker_stops_before_next_broker_poll_after_cancellation(
+    account_id: str,
+    order_id: str,
+    order: Order,
+    quotes_service_map: dict[Brokerage, QuotesService],
+    orders_service_map: dict[Brokerage, OrderService],
+    capsys: pytest.CaptureFixture,
+):
+    # Given
+    # A worker that has placed a replacement order and then receives a cancellation request.
+    replacement_order_id = "replacement_order_123"
+    managed_execution = ManagedExecution(
+        brokerage=Brokerage.ETRADE,
+        account_id=account_id,
+        original_order=order,
+        status=ManagedExecutionStatus.PRE_SUBMISSION,
+    )
+    worker = ManagedExecutionWorker(
+        moex=managed_execution,
+        moex_id="moex-1",
+        quotes_services=quotes_service_map,
+        orders_services=orders_service_map,
+    )
+    worker.tactic.new_price = MagicMock(return_value=(order.order_price, 0))
+
+    mock_order_service = orders_service_map[Brokerage.ETRADE]
+    mock_order_service.get_order = MagicMock(
+        return_value=_get_placed_order_response(
+            account_id=account_id,
+            order_id=order_id,
+            order=order,
+            status=OrderStatus.OPEN,
+        )
+    )
+
+    def cancel_after_replacement_order_is_placed(*args, **kwargs):
+        worker.stop()
+        return PlaceOrderResponse(
+            order_metadata=OrderMetadata(order_type=OrderType.SPREADS, account_id=account_id),
+            preview_id="replacement_preview_123",
+            order_id=replacement_order_id,
+            order=order,
+        )
+
+    mock_order_service.modify_order = MagicMock(side_effect=cancel_after_replacement_order_is_placed)
+
+    # When
+    # The cancellation arrives before the worker performs another broker read.
+    worker()
+
+    # Then
+    # The worker does not poll the broker again and leaves the managed execution cancelled.
+    mock_order_service.get_order.assert_called_once_with(
+        GetOrderRequest(account_id=account_id, order_id=order_id)
+    )
+    assert managed_execution.current_brokerage_order_id == replacement_order_id
+    assert managed_execution.status == ManagedExecutionStatus.CANCEL_REQUESTED
+    captured = capsys.readouterr()
+    assert "Error occurred" not in captured.out
+    assert captured.err == ""
+
+
 # TODO: Place into a separate class later
 def test_order_price_competitive():
     # TODO: implement this
@@ -253,13 +319,50 @@ def test_evicted_worker_no_longer_in_thread_pool():
 
 
 def _get_order_response(account_id: str, order_id: str, order: Order) -> GetOrderResponse:
+    placed_order = _placed_order(
+        account_id=account_id,
+        order_id=order_id,
+        order=order,
+        status=OrderStatus.EXECUTED,
+    )
+    return GetOrderResponse(
+        placed_order=ExecutedOrder(
+            order=placed_order,
+            execution_order_details=ExecutionOrderDetails(
+                order_value=Amount.from_float(100.0),
+                executed_time=datetime(2026, 7, 30, 12, 1, 0),
+            ),
+        )
+    )
+
+
+def _get_placed_order_response(
+    account_id: str,
+    order_id: str,
+    order: Order,
+    status: OrderStatus,
+) -> GetOrderResponse:
+    return GetOrderResponse(
+        placed_order=_placed_order(
+            account_id=account_id,
+            order_id=order_id,
+            order=order,
+            status=status,
+        )
+    )
+
+
+def _placed_order(
+    account_id: str,
+    order_id: str,
+    order: Order,
+    status: OrderStatus,
+) -> PlacedOrder:
     placed_order_details = PlacedOrderDetails(
         account_id=account_id,
         brokerage_order_id=order_id,
-        status=OrderStatus.EXECUTED,
+        status=status,
         order_placed_time=datetime(2026, 7, 30, 12, 0, 0),
         current_market_price=Price(bid=1.0, ask=1.2),
     )
-    return GetOrderResponse(
-        placed_order=PlacedOrder(order=order, placed_order_details=placed_order_details)
-    )
+    return PlacedOrder(order=order, placed_order_details=placed_order_details)

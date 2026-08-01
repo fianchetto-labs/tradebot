@@ -103,8 +103,7 @@ class MoexRestService(RestService):
 
     def get_managed_execution(self, managed_execution_id: str)->GetManagedExecutionResponse:
         get_managed_executions_request: GetManagedExecutionRequest = GetManagedExecutionRequest(managed_execution_id=managed_execution_id)
-        self.moex_service.get_managed_execution(get_managed_executions_request)
-        return GetManagedExecutionResponse()
+        return self.moex_service.get_managed_execution(get_managed_executions_request)
 
     def create_managed_execution(self, create_managed_execution_request: CreateManagedExecutionRequest):
         return self.moex_service.create_managed_execution(create_managed_execution_request=create_managed_execution_request)
