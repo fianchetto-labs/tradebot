@@ -40,7 +40,11 @@ The environment variable names are deployment-neutral:
 - `TRADEBOT_ORDERS_SERVICE_URL`
 - `TRADEBOT_QUOTES_SERVICE_URL`
 
-Code defaults point at local development ports. Docker Compose and Kubernetes should override those values with the right service DNS names for that environment.
+Low-level adapter defaults point at local development ports for direct
+construction. MOEX startup is stricter: `TRADEBOT_MOEX_SERVICE_ADAPTER_MODE`
+defaults to `local`, and when it is explicitly set to `http`, both service URL
+environment variables must be set. Docker Compose and Kubernetes should provide
+the right service DNS names for that environment.
 
 HTTP adapters should construct URLs using the route path values required by the target service. FastAPI handlers do not need to accept every path value when the handler only needs the parsed Pydantic request body.
 

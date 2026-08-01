@@ -34,12 +34,14 @@ from fianchetto_tradebot.server.common.service.adapters import (
     DEFAULT_QUOTES_SERVICE_URL,
     ORDERS_SERVICE_URL_ENV_VAR,
     QUOTES_SERVICE_URL_ENV_VAR,
+    HttpServiceAdapterConfigurationError,
     HttpOrderServiceAdapter,
     HttpQuoteServiceAdapter,
     HttpServiceAdapterError,
     ServiceAdapters,
     build_http_service_adapters,
     load_http_service_adapter_config,
+    load_required_http_service_adapter_config,
 )
 
 
@@ -102,6 +104,41 @@ def test_http_adapter_config_defaults_to_local_service_urls():
 
     assert config.orders_base_url == DEFAULT_ORDERS_SERVICE_URL
     assert config.quotes_base_url == DEFAULT_QUOTES_SERVICE_URL
+
+
+def test_required_http_adapter_config_rejects_missing_service_urls():
+    with pytest.raises(HttpServiceAdapterConfigurationError) as exc_info:
+        load_required_http_service_adapter_config({})
+
+    message = str(exc_info.value)
+    assert ORDERS_SERVICE_URL_ENV_VAR in message
+    assert QUOTES_SERVICE_URL_ENV_VAR in message
+
+
+def test_required_http_adapter_config_rejects_blank_service_url():
+    with pytest.raises(HttpServiceAdapterConfigurationError) as exc_info:
+        load_required_http_service_adapter_config(
+            {
+                ORDERS_SERVICE_URL_ENV_VAR: "http://orders:8080",
+                QUOTES_SERVICE_URL_ENV_VAR: " ",
+            }
+        )
+
+    message = str(exc_info.value)
+    assert ORDERS_SERVICE_URL_ENV_VAR not in message
+    assert QUOTES_SERVICE_URL_ENV_VAR in message
+
+
+def test_required_http_adapter_config_uses_explicit_service_urls():
+    config = load_required_http_service_adapter_config(
+        {
+            ORDERS_SERVICE_URL_ENV_VAR: " http://orders:8080 ",
+            QUOTES_SERVICE_URL_ENV_VAR: "http://quotes:8081",
+        }
+    )
+
+    assert config.orders_base_url == "http://orders:8080"
+    assert config.quotes_base_url == "http://quotes:8081"
 
 
 def test_build_http_service_adapters_creates_port_adapters_from_shared_container():

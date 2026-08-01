@@ -8,8 +8,10 @@ from fianchetto_tradebot.server.common.service.adapters.http_service_adapter_con
     DEFAULT_QUOTES_SERVICE_URL,
     ORDERS_SERVICE_URL_ENV_VAR,
     QUOTES_SERVICE_URL_ENV_VAR,
+    HttpServiceAdapterConfigurationError,
     HttpServiceAdapterConfig,
     load_http_service_adapter_config,
+    load_required_http_service_adapter_config,
 )
 from fianchetto_tradebot.server.common.service.adapters.http_service_adapter_error import HttpServiceAdapterError
 from fianchetto_tradebot.server.common.service.adapters.local_brokerage_service_adapters import (
@@ -25,6 +27,7 @@ __all__ = [
     "DEFAULT_QUOTES_SERVICE_URL",
     "HttpOrderServiceAdapter",
     "HttpQuoteServiceAdapter",
+    "HttpServiceAdapterConfigurationError",
     "HttpServiceAdapterConfig",
     "HttpServiceAdapterError",
     "LocalOrderServiceAdapter",
@@ -36,4 +39,5 @@ __all__ = [
     "build_http_service_adapters",
     "build_local_service_adapters",
     "load_http_service_adapter_config",
+    "load_required_http_service_adapter_config",
 ]
