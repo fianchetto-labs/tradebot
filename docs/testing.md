@@ -118,6 +118,7 @@ python -m nox -s docker_acceptance
 
 This reuses the Docker integration tests as an explicit local acceptance pass.
 It does not start or stop containers; run `docker_up` first.
+For a step-by-step local runbook, see `docs/simulator-dogfooding.md`.
 
 Inspect logs:
 
@@ -198,6 +199,8 @@ docker compose -f deploy/docker/docker-compose.integration.yml down --volumes --
 Use `docker_integration` for an automated test-owned stack with TTL cleanup.
 Use `docker_up` / `docker_down` when you want a stable local runtime to inspect
 manually.
+The manual simulator-backed workflow is documented in
+`docs/simulator-dogfooding.md`.
 
 The live paper-account E*Trade session is reserved for FIA-153 and must remain
 separately gated:

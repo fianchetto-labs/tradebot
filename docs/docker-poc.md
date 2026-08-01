@@ -35,11 +35,17 @@ FIANCHETTO_TRADEBOT_STATE_DIR=/app/deploy/docker/demo-state
 ```
 
 The demo state contains fake OAuth-shaped E*Trade values. They are intentionally
-not live brokerage credentials. The simulator-backed Compose profile overrides
-the API endpoint with service DNS:
+not live brokerage credentials. The simulator-backed Compose files override the
+API endpoint with service DNS. The automated integration stack uses:
 
 ```bash
 TRADEBOT_ETRADE_API_BASE_URL=http://etrade-simulator:8090
+```
+
+The local dogfooding stack uses:
+
+```bash
+TRADEBOT_ETRADE_API_BASE_URL=http://tradebot-etrade-simulator:8090
 ```
 
 It also sets a long cache max age for that fake credential document:
@@ -112,6 +118,7 @@ That command builds `tradebot:local`, starts the Compose stack in
 `deploy/docker/docker-compose.local.yml`, waits for service health, and leaves
 the containers running until you stop them. This is the normal dogfooding loop
 for local distributed-mode development.
+For a short command-first runbook, see `docs/simulator-dogfooding.md`.
 
 The local Compose stack uses stable service names that mirror the future
 deployment topology:

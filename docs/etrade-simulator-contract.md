@@ -49,6 +49,7 @@ The first simulator should support these E*Trade-like routes:
 The simulator also exposes non-E*Trade control routes under `/_simulator`.
 These routes are for tests and local dogfooding only. Production TradeBot
 services should never call them.
+For local Docker dogfooding commands, see `docs/simulator-dogfooding.md`.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -217,11 +218,19 @@ deliberately sets:
 TRADEBOT_RUN_SERVICE_TESTS=1
 ```
 
-Run Docker-backed service tests intentionally with:
+Run Docker-backed service checks intentionally with the canonical Nox sessions.
+For a stable local stack that you can inspect manually:
 
 ```bash
-TRADEBOT_RUN_SERVICE_TESTS=1 docker compose up -d
-TRADEBOT_RUN_SERVICE_TESTS=1 python -m nox -s test -- -m docker tests
+python -m nox -s docker_up
+python -m nox -s docker_acceptance
+python -m nox -s docker_down
+```
+
+For a test-owned integration stack with automatic cleanup:
+
+```bash
+TRADEBOT_RUN_SERVICE_TESTS=1 python -m nox -s docker_integration
 ```
 
 This keeps simple unit-test invocations credentials-free and service-free while
