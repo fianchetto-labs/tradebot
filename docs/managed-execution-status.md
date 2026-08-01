@@ -15,8 +15,8 @@ even when their values sound similar.
 
 | Status | Meaning |
 | --- | --- |
-| `PRE_SUBMISSION` | The managed execution exists, but the worker has not yet established and observed the current brokerage order. |
-| `WORKING` | The worker is actively managing the execution, including observing the order, repricing, replacing, or waiting. |
+| `PRE_SUBMISSION` | The managed execution exists, but the worker has not yet established and checked the current brokerage order. |
+| `WORKING` | The worker is actively managing the execution, including checking the order, repricing, replacing, or waiting. |
 | `CANCEL_REQUESTED` | A user or system action has asked the worker to stop managing the execution and cancel the current order. |
 | `CANCELLED` | TradeBot intentionally stopped the managed execution. |
 | `EXECUTED` | The managed execution completed successfully because the underlying order executed. |
@@ -27,12 +27,17 @@ even when their values sound similar.
 The managed execution status should describe TradeBot's next orchestration
 decision, not merely repeat the broker's status string.
 
+The status-change rules live in
+`fianchetto_tradebot.common_models.managed_executions.managed_execution_status`.
+Worker and cancellation code should use the status-change helper there
+instead of assigning managed execution status directly.
+
 Normal managed execution flow:
 
 1. `PRE_SUBMISSION`: the API has accepted the managed execution request.
 2. `WORKING`: the worker has created or found the current brokerage order and
    is responsible for monitoring and repricing it.
-3. `EXECUTED`: the worker observed the brokerage order complete successfully.
+3. `EXECUTED`: the worker checked the brokerage order and found it complete.
 
 Intentional cancellation flow:
 
@@ -52,11 +57,20 @@ managed execution reaches `EXECUTED`, `CANCELLED`, or `FAILED`, a later cancel
 request must return the existing managed execution state without cancelling the
 underlying brokerage order or rewriting the managed execution status.
 
+Invalid non-idempotent status changes raise `InvalidManagedExecutionStatusChange`.
+Reapplying the same status is idempotent, which keeps repeated checks of
+an already-recorded state safe.
+
 ## Brokerage Status Translation
 
-When MOEX observes the current brokerage order, it records the raw brokerage
-status in `current_order_status`. It then translates that observation into the
+When MOEX checks the current brokerage order, it records the raw brokerage
+status in `current_order_status`. It then translates that order status into the
 managed-execution lifecycle:
+
+The default translation is table-driven. Context-specific overrides are only
+used when the current managed execution status matters. Today, the important
+override is cancellation: once a managed execution is `CANCEL_REQUESTED`, a
+later active-looking brokerage order check must not move it back to `WORKING`.
 
 | Brokerage `OrderStatus` | Managed `ManagedExecutionStatus` | Rationale |
 | --- | --- | --- |
