@@ -44,7 +44,8 @@ Failure flow:
 
 1. `WORKING`: the worker is actively managing the current brokerage order.
 2. `FAILED`: the worker errored, or the broker reported a terminal adverse
-   status such as `EXPIRED` or `REJECTED` that the manager cannot continue from.
+   status such as `EXPIRED` or an unreconciled `REJECTED` that the manager
+   cannot continue from.
 
 Terminal managed executions are immutable through the cancellation API. Once a
 managed execution reaches `EXECUTED`, `CANCELLED`, or `FAILED`, a later cancel
@@ -67,7 +68,7 @@ managed-execution lifecycle:
 | `EXECUTED` | `EXECUTED` | The managed execution achieved its goal. |
 | `CANCELLED` | `WORKING` | The manager may cancel one underlying order as part of replacement/re-entry; this is not the same as cancelling the managed execution. |
 | `EXPIRED` | `FAILED` | The order reached a terminal state without execution. |
-| `REJECTED` | `FAILED` | The broker rejected the order, so the manager cannot proceed normally. |
+| `REJECTED` | `FAILED`, or `EXECUTED` after reconciliation | The broker rejected the order, so the manager cannot usually proceed normally. If the same order appears in the executed-order list, TradeBot treats the rejection as a broker race and records the order as executed. |
 | `ANY` | Invalid | `ANY` is a query filter, not a real order lifecycle state. |
 
 Intentional managed cancellation is handled by the cancellation path:
