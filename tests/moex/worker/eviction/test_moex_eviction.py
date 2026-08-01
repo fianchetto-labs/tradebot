@@ -1,3 +1,4 @@
+import threading
 from datetime import datetime
 from unittest.mock import MagicMock
 
@@ -297,6 +298,76 @@ def test_worker_stops_before_next_broker_poll_after_cancellation(
     mock_order_service.get_order.assert_called_once_with(
         GetOrderRequest(account_id=account_id, order_id=order_id)
     )
+    assert managed_execution.current_brokerage_order_id == replacement_order_id
+    assert managed_execution.status == ManagedExecutionStatus.CANCEL_REQUESTED
+    captured = capsys.readouterr()
+    assert "Error occurred" not in captured.out
+    assert captured.err == ""
+
+
+@pytest.mark.functional
+def test_worker_cancellation_interrupts_wait_before_next_broker_poll(
+    account_id: str,
+    order_id: str,
+    order: Order,
+    quotes_service_map: dict[Brokerage, QuotesService],
+    orders_service_map: dict[Brokerage, OrderService],
+    capsys: pytest.CaptureFixture,
+):
+    # Given
+    # A worker that would otherwise wait before checking a replacement order again.
+    replacement_order_id = "replacement_order_123"
+    managed_execution = ManagedExecution(
+        brokerage=Brokerage.ETRADE,
+        account_id=account_id,
+        original_order=order,
+        status=ManagedExecutionStatus.PRE_SUBMISSION,
+    )
+    worker = ManagedExecutionWorker(
+        moex=managed_execution,
+        moex_id="moex-1",
+        quotes_services=quotes_service_map,
+        orders_services=orders_service_map,
+    )
+    worker.tactic.new_price = MagicMock(return_value=(order.order_price, 60))
+
+    mock_order_service = orders_service_map[Brokerage.ETRADE]
+    mock_order_service.get_order = MagicMock(
+        return_value=_get_placed_order_response(
+            account_id=account_id,
+            order_id=order_id,
+            order=order,
+            status=OrderStatus.OPEN,
+        )
+    )
+    replacement_order_placed = threading.Event()
+
+    def mark_replacement_order_placed(*args, **kwargs):
+        replacement_order_placed.set()
+        return PlaceOrderResponse(
+            order_metadata=OrderMetadata(order_type=OrderType.SPREADS, account_id=account_id),
+            preview_id="replacement_preview_123",
+            order_id=replacement_order_id,
+            order=order,
+        )
+
+    mock_order_service.modify_order = MagicMock(side_effect=mark_replacement_order_placed)
+
+    # When
+    # Cancellation is requested while the worker is waiting before the next broker poll.
+    worker_thread = threading.Thread(target=worker)
+    worker_thread.start()
+    assert replacement_order_placed.wait(timeout=1)
+    worker.stop()
+    worker_thread.join(timeout=1)
+
+    # Then
+    # The worker wakes promptly and does not perform the follow-up broker poll.
+    assert not worker_thread.is_alive()
+    mock_order_service.get_order.assert_called_once_with(
+        GetOrderRequest(account_id=account_id, order_id=order_id)
+    )
+    mock_order_service.modify_order.assert_called_once()
     assert managed_execution.current_brokerage_order_id == replacement_order_id
     assert managed_execution.status == ManagedExecutionStatus.CANCEL_REQUESTED
     captured = capsys.readouterr()

@@ -68,11 +68,11 @@ class ManagedExecutionWorker:
         self.tactic: ExecutionTactic = moex.tactic
         self.quotes_services: dict[Brokerage, QuoteServicePort] = quotes_services
         self.orders_services: dict[Brokerage, OrderServicePort] = orders_services
-        self.continue_processing = True
+        self._stop_requested = threading.Event()
 
     def stop(self):
         print(f"Moex_id_thread {self.moex_id}: Received command to stop processing")
-        self.continue_processing = False
+        self._stop_requested.set()
         if not is_terminal_managed_execution_status(self.moex.status):
             self.moex.status = ManagedExecutionStatus.CANCEL_REQUESTED
 
@@ -123,7 +123,7 @@ class ManagedExecutionWorker:
                 new_client_order_id = ''.join(choice(characters) for _ in range(length))
                 order_metadata: OrderMetadata = OrderMetadata(order_type=order.get_order_type(), account_id=account_id, client_order_id=new_client_order_id)
 
-            while current_status != OrderStatus.EXECUTED and self.continue_processing:
+            while current_status != OrderStatus.EXECUTED and not self._stop_requested.is_set():
                 new_price, wait_time = self.tactic.new_price(placed_order.order, quotes_service)
 
                 # Need to populate this --
@@ -135,15 +135,13 @@ class ManagedExecutionWorker:
                 order_id = place_order_response.order_id
                 print(f"Successfully placed {place_order_response.order_id} for price {place_order_response.order.order_price}")
                 self.moex.current_brokerage_order_id = order_id
-                if not self.continue_processing:
+                if self._stop_requested.is_set():
                     break
 
                 self.moex.status = ManagedExecutionStatus.WORKING
 
                 print(f"Sleeping {wait_time} seconds")
-                time.sleep(wait_time)
-
-                if not self.continue_processing:
+                if self._stop_requested.wait(wait_time):
                     break
 
                 get_order_request = GetOrderRequest(account_id=account_id, order_id=order_id)
@@ -155,7 +153,7 @@ class ManagedExecutionWorker:
                 self.moex.status = managed_execution_status_from_order_status(current_status)
                 current_price = placed_order.order.order_price
 
-            if not self.continue_processing:
+            if self._stop_requested.is_set():
                 print(f"Moex id {self.moex_id} cancelled with latest order-id {order_id} at price {current_price}!")
             else:
                 print(f"Moex id {self.moex_id} executed with latest order-id {order_id} at price {current_price}!")
