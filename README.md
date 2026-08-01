@@ -99,6 +99,7 @@ accounts = client.get_accounts()
 For local development setup and related guides, see:
 
 - [`dev_get_started_guides/set_up_local_env.MD`](dev_get_started_guides/set_up_local_env.MD)
+- [`docs/deployment.md`](docs/deployment.md)
 - [`docs/serialization.md`](docs/serialization.md)
 - [`dev_get_started_guides/exchange_setup.MD`](dev_get_started_guides/exchange_setup.MD) only if your
   work explicitly needs real or sandbox brokerage credentials.

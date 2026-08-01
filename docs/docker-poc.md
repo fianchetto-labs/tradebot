@@ -4,6 +4,9 @@ FIA-133 introduces one reusable image for local container startup checks. The
 image can run each current REST service by selecting the Python module at
 container start.
 
+For the broader local, Docker, and future Kubernetes deployment map, see
+`docs/deployment.md`.
+
 The Compose-backed integration slices start the E*Trade simulator plus the
 quotes, orders, and MOEX services. TradeBot services reach the simulator and
 each other through Docker service DNS, so this proves more than container

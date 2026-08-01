@@ -1,7 +1,3 @@
-import os
-import time
-from collections.abc import Callable
-
 import httpx
 import pytest
 
@@ -20,27 +16,9 @@ from tests.fixtures.etrade_simulator_contract import demo_order
 
 pytestmark = [pytest.mark.service, pytest.mark.docker, pytest.mark.integration]
 
-ETRADE_SIMULATOR_BASE_URL_ENV_VAR = "TRADEBOT_TEST_ETRADE_SIMULATOR_BASE_URL"
-MOEX_BASE_URL_ENV_VAR = "TRADEBOT_TEST_MOEX_BASE_URL"
-
-
-@pytest.fixture
-def etrade_simulator_base_url() -> str:
-    base_url = os.getenv(ETRADE_SIMULATOR_BASE_URL_ENV_VAR)
-    if not base_url:
-        pytest.skip(f"set {ETRADE_SIMULATOR_BASE_URL_ENV_VAR} to run MOEX service stack tests")
-    return base_url.rstrip("/")
-
-
-@pytest.fixture
-def moex_base_url() -> str:
-    base_url = os.getenv(MOEX_BASE_URL_ENV_VAR)
-    if not base_url:
-        pytest.skip(f"set {MOEX_BASE_URL_ENV_VAR} to run MOEX service stack tests")
-    return base_url.rstrip("/")
-
 
 def test_moex_service_runs_networked_managed_execution_lifecycle(
+    docker_service_stack,
     etrade_simulator_base_url: str,
     moex_base_url: str,
 ):
@@ -56,7 +34,7 @@ def test_moex_service_runs_networked_managed_execution_lifecycle(
     )
 
     with httpx.Client(timeout=20) as client:
-        _reset_etrade_simulator(client, etrade_simulator_base_url)
+        docker_service_stack.reset_etrade_simulator(client, etrade_simulator_base_url)
         health_response = client.get(f"{moex_base_url}/health-check")
 
         # When
@@ -88,6 +66,7 @@ def test_moex_service_runs_networked_managed_execution_lifecycle(
 
 
 def test_moex_service_observes_networked_managed_execution_success(
+    docker_service_stack,
     etrade_simulator_base_url: str,
     moex_base_url: str,
 ):
@@ -103,8 +82,8 @@ def test_moex_service_observes_networked_managed_execution_success(
     )
 
     with httpx.Client(timeout=20) as client:
-        _reset_etrade_simulator(client, etrade_simulator_base_url)
-        _set_etrade_order_lifecycle_scenario(
+        docker_service_stack.reset_etrade_simulator(client, etrade_simulator_base_url)
+        docker_service_stack.set_etrade_order_lifecycle_scenario(
             client,
             etrade_simulator_base_url,
             "eventually-executed",
@@ -119,7 +98,7 @@ def test_moex_service_observes_networked_managed_execution_success(
 
         assert create_response.status_code == HttpStatusCode.OK, create_response.text
         managed_execution_id = create_response.json()["managed_execution_id"]
-        managed_execution = _wait_for_managed_execution_status(
+        managed_execution = docker_service_stack.wait_for_managed_execution_status(
             client,
             moex_base_url,
             managed_execution_id,
@@ -141,6 +120,7 @@ def test_moex_service_observes_networked_managed_execution_success(
 
 
 def test_moex_service_treats_broker_cancelled_order_as_transient_work(
+    docker_service_stack,
     etrade_simulator_base_url: str,
     moex_base_url: str,
 ):
@@ -156,8 +136,8 @@ def test_moex_service_treats_broker_cancelled_order_as_transient_work(
     )
 
     with httpx.Client(timeout=20) as client:
-        _reset_etrade_simulator(client, etrade_simulator_base_url)
-        _set_etrade_order_lifecycle_scenario(
+        docker_service_stack.reset_etrade_simulator(client, etrade_simulator_base_url)
+        docker_service_stack.set_etrade_order_lifecycle_scenario(
             client,
             etrade_simulator_base_url,
             "broker-cancelled",
@@ -172,7 +152,7 @@ def test_moex_service_treats_broker_cancelled_order_as_transient_work(
 
         assert create_response.status_code == HttpStatusCode.OK, create_response.text
         managed_execution_id = create_response.json()["managed_execution_id"]
-        working_after_broker_cancel = _wait_for_managed_execution(
+        working_after_broker_cancel = docker_service_stack.wait_for_managed_execution(
             client,
             moex_base_url,
             managed_execution_id,
@@ -194,65 +174,3 @@ def test_moex_service_treats_broker_cancelled_order_as_transient_work(
     assert working_after_broker_cancel["current_order_status"] == "CANCELLED"
     assert cancel_response.status_code == HttpStatusCode.OK, cancel_response.text
     assert cancel_response.json()["managed_execution"]["status"] == "CANCELLED"
-
-
-def _reset_etrade_simulator(client: httpx.Client, etrade_simulator_base_url: str) -> None:
-    response = client.post(f"{etrade_simulator_base_url}/_simulator/reset")
-    assert response.status_code == HttpStatusCode.OK, response.text
-
-
-def _set_etrade_order_lifecycle_scenario(
-    client: httpx.Client,
-    etrade_simulator_base_url: str,
-    scenario: str,
-) -> None:
-    response = client.post(
-        f"{etrade_simulator_base_url}/_simulator/order-lifecycle-scenario",
-        json={"scenario": scenario},
-    )
-    assert response.status_code == HttpStatusCode.OK, response.text
-    assert response.json()["scenario"] == scenario
-
-
-def _wait_for_managed_execution_status(
-    client: httpx.Client,
-    moex_base_url: str,
-    managed_execution_id: str,
-    expected_status: str,
-    timeout_seconds: float = 20,
-) -> dict:
-    return _wait_for_managed_execution(
-        client,
-        moex_base_url,
-        managed_execution_id,
-        lambda managed_execution: managed_execution["status"] == expected_status,
-        expected_description=expected_status,
-        timeout_seconds=timeout_seconds,
-    )
-
-
-def _wait_for_managed_execution(
-    client: httpx.Client,
-    moex_base_url: str,
-    managed_execution_id: str,
-    predicate: Callable[[dict], bool],
-    expected_description: str,
-    timeout_seconds: float = 20,
-) -> dict:
-    deadline = time.monotonic() + timeout_seconds
-    last_response_text = ""
-
-    while time.monotonic() < deadline:
-        response = client.get(f"{moex_base_url}/api/v1/managed-executions/{managed_execution_id}")
-        last_response_text = response.text
-        assert response.status_code == HttpStatusCode.OK, response.text
-
-        managed_execution = response.json()["managed_execution"]
-        if predicate(managed_execution):
-            return managed_execution
-        time.sleep(0.25)
-
-    pytest.fail(
-        f"Managed execution {managed_execution_id} did not reach {expected_description} "
-        f"within {timeout_seconds} seconds. Last response: {last_response_text}"
-    )
