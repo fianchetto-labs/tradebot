@@ -68,11 +68,13 @@ class OrdersRestService(RestService):
     def list_orders(self, brokerage: str, account_id: str, status: str = None, from_date: str=None, to_date: str=None, count:int=DEFAULT_COUNT):
         status = OrderStatus.ANY if not status else OrderStatus[status]
 
-        from_date = DEFAULT_START_DATE if not from_date else datetime.datetime.strptime(from_date, '%yyyy-mm-dd').date()
-        to_date = datetime.today().date() if not to_date else datetime.datetime.strptime(to_date, '%yyyy-mm-dd').date()
+        from_date = DEFAULT_START_DATE if not from_date else datetime.strptime(from_date, "%Y-%m-%d").date()
+        to_date = datetime.today().date() if not to_date else datetime.strptime(to_date, "%Y-%m-%d").date()
+        from_datetime = datetime.combine(from_date, datetime.min.time())
+        to_datetime = datetime.combine(to_date, datetime.min.time())
 
         order_service: OrderService = self.order_services[Brokerage[brokerage.upper()]]
-        list_order_request = ListOrdersRequest(account_id=account_id, status=status, from_date=from_date, to_date=to_date, count=count)
+        list_order_request = ListOrdersRequest(account_id=account_id, status=status, from_date=from_datetime, to_date=to_datetime, count=count)
 
         return order_service.list_orders(list_order_request)
 

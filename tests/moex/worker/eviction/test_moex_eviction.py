@@ -8,6 +8,7 @@ from common.api.orders.order_test_util import OrderTestUtil
 from fianchetto_tradebot.common_models.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
 from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
+from fianchetto_tradebot.common_models.api.orders.order_list_response import ListOrdersResponse
 from fianchetto_tradebot.common_models.api.orders.order_metadata import OrderMetadata
 from fianchetto_tradebot.common_models.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
@@ -74,6 +75,7 @@ def orders_service_map(account_id, order_id, order) -> dict[Brokerage, OrderServ
 
     mock_etrade_orders_service.preview_and_place_order = MagicMock(return_value=place_order_response)
     mock_etrade_orders_service.get_order = MagicMock(return_value=get_order_response)
+    mock_etrade_orders_service.list_orders = MagicMock(return_value=ListOrdersResponse(order_list=[]))
     mock_etrade_orders_service.cancel_order = MagicMock(return_value=cancel_order_response)
     order_service_map : dict[Brokerage, OrderService] = dict[Brokerage, OrderService]()
     order_service_map[Brokerage.ETRADE] = mock_etrade_orders_service
@@ -243,6 +245,119 @@ def test_cancel_request_does_not_change_executed_managed_execution(
 
 
 @pytest.mark.functional
+def test_worker_treats_rejected_order_as_executed_when_it_is_found_in_executed_orders(
+    account_id: str,
+    order_id: str,
+    order: Order,
+    quotes_service_map: dict[Brokerage, QuotesService],
+    orders_service_map: dict[Brokerage, OrderService],
+    capsys: pytest.CaptureFixture,
+):
+    # Given
+    # A brokerage order read that says rejected even though the same order is in the executed list.
+    managed_execution = ManagedExecution(
+        brokerage=Brokerage.ETRADE,
+        account_id=account_id,
+        original_order=order,
+        status=ManagedExecutionStatus.PRE_SUBMISSION,
+    )
+    worker = ManagedExecutionWorker(
+        moex=managed_execution,
+        moex_id="moex-1",
+        quotes_services=quotes_service_map,
+        orders_services=orders_service_map,
+    )
+    mock_order_service = orders_service_map[Brokerage.ETRADE]
+    mock_order_service.get_order = MagicMock(
+        return_value=_get_placed_order_response(
+            account_id=account_id,
+            order_id=order_id,
+            order=order,
+            status=OrderStatus.REJECTED,
+        )
+    )
+    mock_order_service.list_orders = MagicMock(
+        return_value=ListOrdersResponse(
+            order_list=[
+                _executed_order(
+                    account_id=account_id,
+                    order_id=order_id,
+                    order=order,
+                )
+            ]
+        )
+    )
+
+    # When
+    # The worker reconciles the rejected read against executed orders.
+    worker()
+
+    # Then
+    # The managed execution records the actual execution and does not reprice a terminal order.
+    mock_order_service.get_order.assert_called_once_with(
+        GetOrderRequest(account_id=account_id, order_id=order_id)
+    )
+    _assert_executed_orders_were_checked(mock_order_service, account_id)
+    mock_order_service.modify_order.assert_not_called()
+    assert managed_execution.status == ManagedExecutionStatus.EXECUTED
+    assert managed_execution.current_order_status == OrderStatus.EXECUTED
+    captured = capsys.readouterr()
+    assert "Error occurred" not in captured.out
+    assert captured.err == ""
+
+
+@pytest.mark.functional
+def test_worker_fails_rejected_order_when_it_is_not_found_in_executed_orders(
+    account_id: str,
+    order_id: str,
+    order: Order,
+    quotes_service_map: dict[Brokerage, QuotesService],
+    orders_service_map: dict[Brokerage, OrderService],
+    capsys: pytest.CaptureFixture,
+):
+    # Given
+    # A brokerage order that is rejected and absent from the executed order list.
+    managed_execution = ManagedExecution(
+        brokerage=Brokerage.ETRADE,
+        account_id=account_id,
+        original_order=order,
+        status=ManagedExecutionStatus.PRE_SUBMISSION,
+    )
+    worker = ManagedExecutionWorker(
+        moex=managed_execution,
+        moex_id="moex-1",
+        quotes_services=quotes_service_map,
+        orders_services=orders_service_map,
+    )
+    mock_order_service = orders_service_map[Brokerage.ETRADE]
+    mock_order_service.get_order = MagicMock(
+        return_value=_get_placed_order_response(
+            account_id=account_id,
+            order_id=order_id,
+            order=order,
+            status=OrderStatus.REJECTED,
+        )
+    )
+
+    # When
+    # The worker records the terminal brokerage status.
+    worker()
+
+    # Then
+    # The managed execution fails without trying to reprice or modify a terminal order.
+    mock_order_service.get_order.assert_called_once_with(
+        GetOrderRequest(account_id=account_id, order_id=order_id)
+    )
+    _assert_executed_orders_were_checked(mock_order_service, account_id)
+    mock_order_service.modify_order.assert_not_called()
+    assert managed_execution.status == ManagedExecutionStatus.FAILED
+    assert managed_execution.current_order_status == OrderStatus.REJECTED
+    captured = capsys.readouterr()
+    assert "Error occurred" not in captured.out
+    assert captured.err == ""
+
+
+@pytest.mark.functional
 def test_worker_stops_before_next_broker_poll_after_cancellation(
     account_id: str,
     order_id: str,
@@ -390,20 +505,8 @@ def test_evicted_worker_no_longer_in_thread_pool():
 
 
 def _get_order_response(account_id: str, order_id: str, order: Order) -> GetOrderResponse:
-    placed_order = _placed_order(
-        account_id=account_id,
-        order_id=order_id,
-        order=order,
-        status=OrderStatus.EXECUTED,
-    )
     return GetOrderResponse(
-        placed_order=ExecutedOrder(
-            order=placed_order,
-            execution_order_details=ExecutionOrderDetails(
-                order_value=Amount.from_float(100.0),
-                executed_time=datetime(2026, 7, 30, 12, 1, 0),
-            ),
-        )
+        placed_order=_executed_order(account_id=account_id, order_id=order_id, order=order)
     )
 
 
@@ -437,3 +540,20 @@ def _placed_order(
         current_market_price=Price(bid=1.0, ask=1.2),
     )
     return PlacedOrder(order=order, placed_order_details=placed_order_details)
+
+
+def _executed_order(account_id: str, order_id: str, order: Order) -> ExecutedOrder:
+    return ExecutedOrder(
+        order=_placed_order(account_id=account_id, order_id=order_id, order=order, status=OrderStatus.EXECUTED),
+        execution_order_details=ExecutionOrderDetails(
+            order_value=Amount.from_float(100.0),
+            executed_time=datetime(2026, 7, 30, 12, 1, 0),
+        ),
+    )
+
+
+def _assert_executed_orders_were_checked(mock_order_service: OrderService, account_id: str) -> None:
+    mock_order_service.list_orders.assert_called_once()
+    list_orders_request = mock_order_service.list_orders.call_args.args[0]
+    assert list_orders_request.account_id == account_id
+    assert list_orders_request.status == OrderStatus.EXECUTED

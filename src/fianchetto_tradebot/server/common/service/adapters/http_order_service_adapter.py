@@ -4,6 +4,8 @@ from fianchetto_tradebot.common_models.api.orders.cancel_order_request import Ca
 from fianchetto_tradebot.common_models.api.orders.cancel_order_response import CancelOrderResponse
 from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
 from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
+from fianchetto_tradebot.common_models.api.orders.order_list_request import ListOrdersRequest
+from fianchetto_tradebot.common_models.api.orders.order_list_response import ListOrdersResponse
 from fianchetto_tradebot.common_models.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common_models.api.orders.preview_modify_order_request import PreviewModifyOrderRequest
 from fianchetto_tradebot.common_models.api.orders.preview_order_request import PreviewOrderRequest
@@ -23,6 +25,19 @@ class HttpOrderServiceAdapter(HttpServiceAdapter, OrderServicePort):
             f"/api/v1/{self.brokerage.value}/accounts/{get_order_request.account_id}/orders/{get_order_request.order_id}",
         )
         return GetOrderResponse.model_validate(response.json())
+
+    def list_orders(self, list_orders_request: ListOrdersRequest) -> ListOrdersResponse:
+        response = self._request(
+            "GET",
+            f"/api/v1/{self.brokerage.value}/accounts/{list_orders_request.account_id}/orders",
+            params={
+                "status": list_orders_request.status.value,
+                "from_date": _iso_date(list_orders_request.from_date),
+                "to_date": _iso_date(list_orders_request.to_date),
+                "count": list_orders_request.count,
+            },
+        )
+        return ListOrdersResponse.model_validate(response.json())
 
     def cancel_order(self, cancel_order_request: CancelOrderRequest) -> CancelOrderResponse:
         response = self._request(
@@ -49,3 +64,9 @@ class HttpOrderServiceAdapter(HttpServiceAdapter, OrderServicePort):
             json=self._json_payload(preview_modify_order_request),
         )
         return PlaceOrderResponse.model_validate(response.json())
+
+
+def _iso_date(value) -> str:
+    if hasattr(value, "date"):
+        return value.date().isoformat()
+    return value.isoformat()

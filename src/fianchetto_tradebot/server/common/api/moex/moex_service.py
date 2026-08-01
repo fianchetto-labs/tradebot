@@ -2,6 +2,7 @@ import string
 import threading
 import time
 from asyncio import Future
+from datetime import datetime
 from random import choice
 from threading import Lock
 from venv import create
@@ -13,6 +14,7 @@ from fianchetto_tradebot.common_models.api.orders.cancel_order_response import C
 from fianchetto_tradebot.common_models.api.orders.get_order_request import GetOrderRequest
 from fianchetto_tradebot.common_models.api.orders.get_order_response import GetOrderResponse
 from fianchetto_tradebot.common_models.api.orders.order_metadata import OrderMetadata
+from fianchetto_tradebot.common_models.api.orders.order_list_request import ListOrdersRequest
 from fianchetto_tradebot.common_models.api.orders.place_order_response import PlaceOrderResponse
 from fianchetto_tradebot.common_models.api.orders.preview_modify_order_request import PreviewModifyOrderRequest
 from fianchetto_tradebot.common_models.api.orders.preview_place_order_request import PreviewPlaceOrderRequest
@@ -76,6 +78,43 @@ class ManagedExecutionWorker:
         if not is_terminal_managed_execution_status(self.moex.status):
             self.moex.status = ManagedExecutionStatus.CANCEL_REQUESTED
 
+    def should_stop_processing(self) -> bool:
+        return self._stop_requested.is_set()
+
+    def should_continue_processing(self) -> bool:
+        return not self.should_stop_processing() and not is_terminal_managed_execution_status(self.moex.status)
+
+    def wait_before_next_order_status_check(self, wait_time: float) -> None:
+        self._stop_requested.wait(wait_time)
+
+    def record_order_snapshot(self, placed_order: PlacedOrder, orders_service: OrderServicePort) -> OrderStatus:
+        current_status = self.resolve_order_status(placed_order, orders_service)
+        self.moex.current_order_status = current_status
+        self.moex.status = managed_execution_status_from_order_status(current_status)
+        return current_status
+
+    def resolve_order_status(self, placed_order: PlacedOrder, orders_service: OrderServicePort) -> OrderStatus:
+        current_status = placed_order.placed_order_details.status
+        if current_status == OrderStatus.REJECTED and self.executed_order_exists_for(placed_order, orders_service):
+            return OrderStatus.EXECUTED
+        return current_status
+
+    def executed_order_exists_for(self, placed_order: PlacedOrder, orders_service: OrderServicePort) -> bool:
+        order_details = placed_order.placed_order_details
+        list_orders_response = orders_service.list_orders(
+            ListOrdersRequest(
+                account_id=order_details.account_id,
+                status=OrderStatus.EXECUTED,
+                from_date=order_details.order_placed_time,
+                to_date=max(datetime.now(), order_details.order_placed_time),
+                count=100,
+            )
+        )
+        return any(
+            _placed_order_snapshot(order).placed_order_details.brokerage_order_id == order_details.brokerage_order_id
+            for order in list_orders_response.order_list
+        )
+
     def __call__(self, *args, **kwargs):
         print(f"Executing order {self.moex_id}")
         orders_service = self.orders_services[self.moex.brokerage]
@@ -106,9 +145,7 @@ class ManagedExecutionWorker:
             get_order_response : GetOrderResponse = orders_service.get_order(get_order_request)
 
             placed_order = _placed_order_snapshot_from_response(get_order_response)
-            current_status = placed_order.placed_order_details.status
-            self.moex.current_order_status = current_status
-            self.moex.status = managed_execution_status_from_order_status(current_status)
+            current_status = self.record_order_snapshot(placed_order, orders_service)
             current_price = placed_order.placed_order_details.current_market_price
 
             if 'event_creation_lock' in kwargs:
@@ -123,7 +160,7 @@ class ManagedExecutionWorker:
                 new_client_order_id = ''.join(choice(characters) for _ in range(length))
                 order_metadata: OrderMetadata = OrderMetadata(order_type=order.get_order_type(), account_id=account_id, client_order_id=new_client_order_id)
 
-            while current_status != OrderStatus.EXECUTED and not self._stop_requested.is_set():
+            while self.should_continue_processing():
                 new_price, wait_time = self.tactic.new_price(placed_order.order, quotes_service)
 
                 # Need to populate this --
@@ -135,28 +172,27 @@ class ManagedExecutionWorker:
                 order_id = place_order_response.order_id
                 print(f"Successfully placed {place_order_response.order_id} for price {place_order_response.order.order_price}")
                 self.moex.current_brokerage_order_id = order_id
-                if self._stop_requested.is_set():
+                if self.should_stop_processing():
                     break
 
                 self.moex.status = ManagedExecutionStatus.WORKING
 
                 print(f"Sleeping {wait_time} seconds")
-                if self._stop_requested.wait(wait_time):
+                self.wait_before_next_order_status_check(wait_time)
+                if self.should_stop_processing():
                     break
 
                 get_order_request = GetOrderRequest(account_id=account_id, order_id=order_id)
                 get_order_response : GetOrderResponse = orders_service.get_order(get_order_request)
 
                 placed_order = _placed_order_snapshot_from_response(get_order_response)
-                current_status = placed_order.placed_order_details.status
-                self.moex.current_order_status = current_status
-                self.moex.status = managed_execution_status_from_order_status(current_status)
+                current_status = self.record_order_snapshot(placed_order, orders_service)
                 current_price = placed_order.order.order_price
 
-            if self._stop_requested.is_set():
+            if self.should_stop_processing():
                 print(f"Moex id {self.moex_id} cancelled with latest order-id {order_id} at price {current_price}!")
             else:
-                print(f"Moex id {self.moex_id} executed with latest order-id {order_id} at price {current_price}!")
+                print(f"Moex id {self.moex_id} completed with status {self.moex.status} for latest order-id {order_id} at price {current_price}!")
         except Exception as e:
             self.moex.status = ManagedExecutionStatus.FAILED
             print(f"Error occurred: {e}")
@@ -170,7 +206,10 @@ class ManagedExecutionWorker:
 
 
 def _placed_order_snapshot_from_response(response: GetOrderResponse) -> PlacedOrder:
-    order_snapshot = response.placed_order
+    return _placed_order_snapshot(response.placed_order)
+
+
+def _placed_order_snapshot(order_snapshot: PlacedOrder | ExecutedOrder) -> PlacedOrder:
     if isinstance(order_snapshot, ExecutedOrder):
         return order_snapshot.order
     return order_snapshot
