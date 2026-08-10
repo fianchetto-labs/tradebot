@@ -89,6 +89,13 @@ Important runtime configuration:
 | `TRADEBOT_ORDERS_SERVICE_URL` | Tells MOEX where the orders service lives in HTTP mode. |
 | `TRADEBOT_QUOTES_SERVICE_URL` | Tells MOEX where the quotes service lives in HTTP mode. |
 
+Hosted AWS deployments can use
+`ETradeAwsSecretsManagerCredentialProvider` to load a validated E*Trade
+credential document from an existing AWS Secrets Manager secret. The service
+role should be limited to the intended secret and the required read/write
+operations; KMS/IAM policy details are tracked separately from local Docker
+configuration.
+
 `TRADEBOT_MOEX_SERVICE_ADAPTER_MODE` defaults to `local` for simple developer
 startup. When it is set to `http`, both `TRADEBOT_ORDERS_SERVICE_URL` and
 `TRADEBOT_QUOTES_SERVICE_URL` must be set explicitly so containerized startup

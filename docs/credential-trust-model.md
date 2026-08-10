@@ -103,6 +103,32 @@ This mode can support a careful live demo, but it is still weaker than
 third-party custody because the system operator owns both the infrastructure and
 the brokerage account.
 
+### AWS Secrets Manager Provider
+
+The E*Trade AWS Secrets Manager provider reads and writes the same validated
+credential document as local development, but stores it as one JSON
+`SecretString` in an existing AWS Secrets Manager secret. The provider does not
+create secrets; secret creation, KMS key choice, IAM policy, and rotation policy
+belong to the infrastructure custody tickets.
+
+Expected secret document shape:
+
+```json
+{
+  "consumer_key": "example-consumer-key",
+  "consumer_secret": "example-consumer-secret",
+  "access_token": "example-access-token",
+  "access_token_secret": "example-access-token-secret",
+  "request_token": "example-request-token",
+  "request_token_secret": "example-request-token-secret",
+  "base_url": "https://api.etrade.com"
+}
+```
+
+The credential provider treats `ResourceNotFoundException` as absent credential
+state. Other AWS, JSON, and validation failures are surfaced without printing
+secret values.
+
 ## Third-Party Client Mode
 
 Third-party client mode is the long-term trust target. A client grants TradeBot
