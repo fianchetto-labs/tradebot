@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import stat
@@ -12,6 +13,10 @@ from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import 
     ETRADE_API_BASE_URL_ENV_VAR,
     ETRADE_CACHE_MAX_AGE_SECONDS_ENV_VAR,
     ETradeConnector,
+)
+from fianchetto_tradebot.server.common.brokerage.etrade.credentials import (
+    ETradeConnectionCredentials,
+    ETradeFileCredentialProvider,
 )
 
 
@@ -37,6 +42,101 @@ def test_connector_uses_sensible_fake_credentials_with_simulator_endpoint(tmp_pa
     assert connector.load_base_url() == "http://etrade-sim:8090"
     assert isinstance(connector.session, OAuth1Session)
     assert isinstance(connector.async_session, OAuth1Client)
+
+
+def test_connector_can_load_credentials_from_provider(tmp_path):
+    # Given
+    # A credential provider that does not depend on local files.
+    provider = _StaticCredentialProvider(
+        ETradeConnectionCredentials.from_mapping(
+            _credentials_dict(base_url="http://etrade-provider:8090/")
+        )
+    )
+
+    # When
+    # The connector is constructed with that provider.
+    connector = ETradeConnector(
+        config_file=str(tmp_path / "missing-config.ini"),
+        session_file=str(tmp_path / "missing-connection.json"),
+        async_session_file=str(tmp_path / "missing-connection.json"),
+        base_url_file=str(tmp_path / "missing-base-url.json"),
+        env={},
+        credential_provider=provider,
+    )
+
+    # Then
+    # It builds the normal OAuth-shaped sessions from the provider's credential document.
+    assert connector.base_url == "http://etrade-provider:8090"
+    assert connector.session.consumer_key == "simulator-consumer-key"
+    assert connector.async_session.oauth_token == "simulator-access-token"
+
+
+def test_connector_env_base_url_overrides_provider_endpoint(tmp_path):
+    # Given
+    # Provider credentials and a runtime endpoint override.
+    provider = _StaticCredentialProvider(
+        ETradeConnectionCredentials.from_mapping(
+            _credentials_dict(base_url="https://credential-cache.example.test")
+        )
+    )
+
+    # When
+    # The connector is created with both sources.
+    connector = ETradeConnector(
+        config_file=str(tmp_path / "missing-config.ini"),
+        session_file=str(tmp_path / "missing-connection.json"),
+        async_session_file=str(tmp_path / "missing-connection.json"),
+        base_url_file=str(tmp_path / "missing-base-url.json"),
+        env={ETRADE_API_BASE_URL_ENV_VAR: "http://etrade-sim:8090/"},
+        credential_provider=provider,
+    )
+
+    # Then
+    # Runtime configuration still wins over provider-supplied endpoint metadata.
+    assert connector.base_url == "http://etrade-sim:8090"
+    assert connector.async_session.base_url == "http://etrade-sim:8090"
+
+
+def test_file_credential_provider_round_trips_valid_credentials(tmp_path):
+    # Given
+    # A file-backed provider and structurally valid fake credentials.
+    credentials_file = tmp_path / "connection.json"
+    base_url_file = tmp_path / "base-url.json"
+    provider = ETradeFileCredentialProvider(
+        credentials_file=credentials_file,
+        base_url_file=base_url_file,
+        max_age=datetime.timedelta(hours=1),
+    )
+    credentials = ETradeConnectionCredentials.from_mapping(_credentials_dict())
+
+    # When
+    # The provider stores and reloads both the credential document and standalone base URL.
+    provider.store(credentials)
+    provider.store_base_url("http://etrade-sim:8090/")
+
+    # Then
+    # The loaded values are normalized and the local files are private.
+    assert provider.load() == credentials
+    assert provider.load_base_url() == "http://etrade-sim:8090"
+    assert stat.S_IMODE(credentials_file.stat().st_mode) == 0o600
+    assert stat.S_IMODE(base_url_file.stat().st_mode) == 0o600
+
+
+def test_connection_credentials_repr_redacts_secret_values():
+    # Given
+    # A validated credential document with OAuth-shaped fake values.
+    credentials = ETradeConnectionCredentials.from_mapping(_credentials_dict())
+
+    # When
+    # The value is represented in assertion output or debugging text.
+    representation = repr(credentials)
+
+    # Then
+    # The endpoint remains visible, but secret material is redacted.
+    assert "http://etrade-sim:8090" in representation
+    assert "simulator-consumer-secret" not in representation
+    assert "simulator-access-token" not in representation
+    assert "<redacted>" in representation
 
 
 def test_connector_accepts_serialized_session_credentials_without_request_tokens(tmp_path):
@@ -277,3 +377,20 @@ def _credentials_dict(**overrides) -> dict:
 def _make_old(path) -> None:
     old_timestamp = time.time() - (2 * 60 * 60)
     os.utime(path, (old_timestamp, old_timestamp))
+
+
+class _StaticCredentialProvider:
+    def __init__(self, credentials: ETradeConnectionCredentials):
+        self.credentials = credentials
+
+    def load(self) -> ETradeConnectionCredentials:
+        return self.credentials
+
+    def store(self, credentials: ETradeConnectionCredentials) -> None:
+        self.credentials = credentials
+
+    def load_base_url(self) -> None:
+        return None
+
+    def store_base_url(self, base_url: str) -> None:
+        return None
