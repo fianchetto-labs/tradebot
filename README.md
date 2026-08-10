@@ -100,6 +100,7 @@ For local development setup and related guides, see:
 
 - [`dev_get_started_guides/set_up_local_env.MD`](dev_get_started_guides/set_up_local_env.MD)
 - [`docs/deployment.md`](docs/deployment.md)
+- [`docs/credential-trust-model.md`](docs/credential-trust-model.md)
 - [`docs/serialization.md`](docs/serialization.md)
 - [`dev_get_started_guides/exchange_setup.MD`](dev_get_started_guides/exchange_setup.MD) only if your
   work explicitly needs real or sandbox brokerage credentials.
@@ -135,6 +136,9 @@ See [`docs/testing.md`](docs/testing.md) for the test pyramid, Docker-backed
 test commands, and live brokerage safety gates. Brokerage integration tests
 require separate credentials and configuration. Do not commit access tokens,
 private keys, account identifiers, or other secrets.
+
+See [`docs/credential-trust-model.md`](docs/credential-trust-model.md) for how
+local, simulator, hosted, and future third-party credential modes differ.
 
 ## Contributing
 

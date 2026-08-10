@@ -75,6 +75,10 @@ Live brokerage credentials should stay out of Git. Do not commit OAuth tokens,
 account identifiers, generated credential caches, private keys, or local state
 directories containing real account data.
 
+For the broader credential trust model across local development, simulator
+demos, hosted services, and future third-party client access, see
+`docs/credential-trust-model.md`.
+
 Important runtime configuration:
 
 | Variable | Purpose |
@@ -119,3 +123,5 @@ than introduce a separate service model.
 - `docs/testing.md` lists the test pyramid and Nox commands.
 - `docs/docker-poc.md` explains the Docker image and Compose topology.
 - `docs/simulator-dogfooding.md` is the command-first local demo runbook.
+- `docs/credential-trust-model.md` defines credential trust modes and live
+  brokerage safety expectations.
