@@ -11,10 +11,11 @@ from fianchetto_tradebot.server.common.brokerage.connector import Connector
 from fianchetto_tradebot.server.common.brokerage.etrade.credentials import (
     ETradeConnectionCredentials,
     ETradeCredentialProvider,
-    ETradeFileCredentialProvider,
+    ETradeLocalCredentialProvider,
     deserialize_connection_credentials,
     deserialize_json_value,
     is_file_still_valid,
+    local_credential_files,
     normalize_etrade_base_url,
     serialize_connection_credentials,
     serialize_json_value,
@@ -25,24 +26,21 @@ config = configparser.ConfigParser()
 DEFAULT_CONFIG_FILE = os.path.join(os.path.dirname(__file__), './config.ini')
 
 BROKERAGE_NAME = "ETRADE"
-BROKERAGE_DIR = "etrade"
-DEFAULT_STATE_DIR = os.path.join(os.path.expanduser("~"), ".fianchetto_tradebot")
-STATE_DIR = os.environ.get("FIANCHETTO_TRADEBOT_STATE_DIR", DEFAULT_STATE_DIR)
-BROKERAGE_STATE_DIR = os.path.join(STATE_DIR, BROKERAGE_DIR)
+DEFAULT_LOCAL_CREDENTIAL_FILES = local_credential_files()
 
 # TODO: Generalize this across all exchanges
-DEFAULT_CREDENTIALS_FILE = os.path.join(BROKERAGE_STATE_DIR, "connection.json")
+DEFAULT_CREDENTIALS_FILE = str(DEFAULT_LOCAL_CREDENTIAL_FILES.credentials_file)
 DEFAULT_SESSION_FILE = DEFAULT_CREDENTIALS_FILE
 DEFAULT_ASYNC_SESSION_FILE = DEFAULT_CREDENTIALS_FILE
-DEFAULT_ETRADE_BASE_URL_FILE = os.path.join(BROKERAGE_STATE_DIR, "base_url.json")
+DEFAULT_ETRADE_BASE_URL_FILE = str(DEFAULT_LOCAL_CREDENTIAL_FILES.base_url_file)
 ETRADE_API_BASE_URL_ENV_VAR = "TRADEBOT_ETRADE_API_BASE_URL"
 ETRADE_CACHE_MAX_AGE_SECONDS_ENV_VAR = "TRADEBOT_ETRADE_CACHE_MAX_AGE_SECONDS"
 DEFAULT_CACHE_MAX_AGE_SECONDS = 60 * 60
 # For debugging
-REQUEST_TOKEN_FILE = os.path.join(BROKERAGE_STATE_DIR, "request_token.json")
-REQUEST_TOKEN_SECRET_FILE = os.path.join(BROKERAGE_STATE_DIR, "request_token_secret.json")
-OAUTH_TOKEN_FILE = os.path.join(BROKERAGE_STATE_DIR, "oauth_token.json")
-OAUTH_TOKEN_SECRET_FILE = os.path.join(BROKERAGE_STATE_DIR, "oauth_token_secret.json")
+REQUEST_TOKEN_FILE = str(DEFAULT_LOCAL_CREDENTIAL_FILES.request_token_file)
+REQUEST_TOKEN_SECRET_FILE = str(DEFAULT_LOCAL_CREDENTIAL_FILES.request_token_secret_file)
+OAUTH_TOKEN_FILE = str(DEFAULT_LOCAL_CREDENTIAL_FILES.oauth_token_file)
+OAUTH_TOKEN_SECRET_FILE = str(DEFAULT_LOCAL_CREDENTIAL_FILES.oauth_token_secret_file)
 
 
 class ETradeConnector(Connector):
@@ -111,10 +109,10 @@ class ETradeConnector(Connector):
             self.credential_provider = self._default_credential_provider()
         return self.credential_provider
 
-    def _default_credential_provider(self) -> ETradeFileCredentialProvider:
-        return ETradeFileCredentialProvider(
-            credentials_file=self.credentials_file,
-            base_url_file=self.base_url_file,
+    def _default_credential_provider(self) -> ETradeLocalCredentialProvider:
+        return ETradeLocalCredentialProvider(
+            credentials_file=getattr(self, "credentials_file", DEFAULT_CREDENTIALS_FILE),
+            base_url_file=getattr(self, "base_url_file", DEFAULT_ETRADE_BASE_URL_FILE),
             max_age=self._cache_max_age(),
         )
 
@@ -125,7 +123,8 @@ class ETradeConnector(Connector):
         return ETradeConnector._normalize_base_url(raw_base_url, ETRADE_API_BASE_URL_ENV_VAR)
 
     def _cache_max_age(self) -> datetime.timedelta:
-        raw_max_age = self.env.get(ETRADE_CACHE_MAX_AGE_SECONDS_ENV_VAR)
+        env = getattr(self, "env", os.environ)
+        raw_max_age = env.get(ETRADE_CACHE_MAX_AGE_SECONDS_ENV_VAR)
         if raw_max_age is None:
             return datetime.timedelta(seconds=DEFAULT_CACHE_MAX_AGE_SECONDS)
         try:
@@ -246,33 +245,24 @@ class ETradeConnector(Connector):
         })
 
     def serialize_request_token(self, token: str):
-        ETradeConnector._serialize_json_value(token, REQUEST_TOKEN_FILE)
+        self._credential_provider().store_request_token(token)
 
     def serialize_request_token_secret(self, token_secret: str):
-        ETradeConnector._serialize_json_value(token_secret, REQUEST_TOKEN_SECRET_FILE)
+        self._credential_provider().store_request_token_secret(token_secret)
 
     def serialize_oauth_token(self, token: str):
-        ETradeConnector._serialize_json_value(token, OAUTH_TOKEN_FILE)
+        self._credential_provider().store_oauth_token(token)
 
     def serialize_oauth_token_secret(self, token_secret: str):
-        ETradeConnector._serialize_json_value(token_secret, OAUTH_TOKEN_SECRET_FILE)
+        self._credential_provider().store_oauth_token_secret(token_secret)
 
     def serialize_base_url(self, base_url: str):
         base_url = ETradeConnector._normalize_base_url(base_url, "base_url")
-        if hasattr(self, "credential_provider"):
-            self.credential_provider.store_base_url(base_url)
-            return
-        ETradeConnector._serialize_json_value(base_url, self.base_url_file)
+        self._credential_provider().store_base_url(base_url)
 
     def _store_connection_credentials(self, credentials: Mapping[str, object]) -> None:
         credential_document = ETradeConnectionCredentials.from_mapping(credentials)
-        if hasattr(self, "credential_provider"):
-            self.credential_provider.store(credential_document)
-            return
-        ETradeConnector._serialize_connection_credentials(
-            credential_document.to_mapping(),
-            self.credentials_file,
-        )
+        self._credential_provider().store(credential_document)
 
     @staticmethod
     def deserialize_session(input=DEFAULT_SESSION_FILE) -> OAuth1Session:
@@ -284,19 +274,31 @@ class ETradeConnector(Connector):
 
     @staticmethod
     def deserialize_request_token(input=REQUEST_TOKEN_FILE) -> str:
-        return ETradeConnector._deserialize_json_value(input)
+        return ETradeLocalCredentialProvider(
+            request_token_file=input,
+            max_age=datetime.timedelta.max,
+        ).load_request_token()
 
     @staticmethod
     def deserialize_request_token_secret(input=REQUEST_TOKEN_SECRET_FILE) -> str:
-        return ETradeConnector._deserialize_json_value(input)
+        return ETradeLocalCredentialProvider(
+            request_token_secret_file=input,
+            max_age=datetime.timedelta.max,
+        ).load_request_token_secret()
 
     @staticmethod
     def deserialize_oauth_token(input=OAUTH_TOKEN_FILE) -> str:
-        return ETradeConnector._deserialize_json_value(input)
+        return ETradeLocalCredentialProvider(
+            oauth_token_file=input,
+            max_age=datetime.timedelta.max,
+        ).load_oauth_token()
 
     @staticmethod
     def deserialize_oauth_token_secret(input=OAUTH_TOKEN_SECRET_FILE) -> str:
-        return ETradeConnector._deserialize_json_value(input)
+        return ETradeLocalCredentialProvider(
+            oauth_token_secret_file=input,
+            max_age=datetime.timedelta.max,
+        ).load_oauth_token_secret()
 
     @staticmethod
     def deserialize_base_url(input=DEFAULT_ETRADE_BASE_URL_FILE) -> str:
