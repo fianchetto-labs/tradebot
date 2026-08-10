@@ -1,17 +1,24 @@
 import configparser
 import datetime
-import json
-import logging
 import os
 import webbrowser
-from pathlib import Path
 from typing import Mapping
-from urllib.parse import urlparse
 
 from aioauth_client import OAuth1Client
 from rauth import OAuth1Service, OAuth1Session
 
 from fianchetto_tradebot.server.common.brokerage.connector import Connector
+from fianchetto_tradebot.server.common.brokerage.etrade.credentials import (
+    ETradeConnectionCredentials,
+    ETradeCredentialProvider,
+    ETradeFileCredentialProvider,
+    deserialize_connection_credentials,
+    deserialize_json_value,
+    is_file_still_valid,
+    normalize_etrade_base_url,
+    serialize_connection_credentials,
+    serialize_json_value,
+)
 
 config = configparser.ConfigParser()
 
@@ -31,25 +38,11 @@ DEFAULT_ETRADE_BASE_URL_FILE = os.path.join(BROKERAGE_STATE_DIR, "base_url.json"
 ETRADE_API_BASE_URL_ENV_VAR = "TRADEBOT_ETRADE_API_BASE_URL"
 ETRADE_CACHE_MAX_AGE_SECONDS_ENV_VAR = "TRADEBOT_ETRADE_CACHE_MAX_AGE_SECONDS"
 DEFAULT_CACHE_MAX_AGE_SECONDS = 60 * 60
-REQUIRED_CREDENTIAL_FIELDS = (
-    "consumer_key",
-    "consumer_secret",
-    "access_token",
-    "access_token_secret",
-    "base_url",
-)
-OPTIONAL_CREDENTIAL_FIELDS = (
-    "request_token",
-    "request_token_secret",
-)
-
 # For debugging
 REQUEST_TOKEN_FILE = os.path.join(BROKERAGE_STATE_DIR, "request_token.json")
 REQUEST_TOKEN_SECRET_FILE = os.path.join(BROKERAGE_STATE_DIR, "request_token_secret.json")
 OAUTH_TOKEN_FILE = os.path.join(BROKERAGE_STATE_DIR, "oauth_token.json")
 OAUTH_TOKEN_SECRET_FILE = os.path.join(BROKERAGE_STATE_DIR, "oauth_token_secret.json")
-
-logger = logging.getLogger(__name__)
 
 
 class ETradeConnector(Connector):
@@ -59,7 +52,8 @@ class ETradeConnector(Connector):
             session_file=DEFAULT_SESSION_FILE,
             async_session_file=DEFAULT_ASYNC_SESSION_FILE,
             base_url_file=DEFAULT_ETRADE_BASE_URL_FILE,
-            env: Mapping[str, str] | None = None):
+            env: Mapping[str, str] | None = None,
+            credential_provider: ETradeCredentialProvider | None = None):
         self.brokerage = BROKERAGE_NAME
         self.config_file = config_file
         self.env = env if env is not None else os.environ
@@ -68,12 +62,13 @@ class ETradeConnector(Connector):
         self.session_file = session_file
         self.async_session_file = async_session_file
         self.base_url_file = base_url_file
+        self.credential_provider = credential_provider or self._default_credential_provider()
         self.session, self.async_session, self.base_url = self.load_connection()
 
     def load_base_url(self) -> str:
         credentials = self._load_valid_connection_credentials()
         if credentials:
-            return self._resolve_base_url(credentials_base_url=credentials["base_url"])
+            return self._resolve_base_url(credentials_base_url=credentials.base_url)
 
         standalone_base_url = self._load_valid_standalone_base_url()
         if standalone_base_url:
@@ -85,7 +80,7 @@ class ETradeConnector(Connector):
         credentials = self._load_valid_connection_credentials()
         if credentials:
             base_url = self._resolve_base_url(
-                credentials_base_url=credentials["base_url"],
+                credentials_base_url=credentials.base_url,
             )
             return ETradeConnector._build_connection_from_credentials(credentials, base_url)
 
@@ -105,21 +100,23 @@ class ETradeConnector(Connector):
             return ETradeConnector._normalize_base_url(standalone_base_url, "base_url")
         return None
 
-    def _load_valid_connection_credentials(self) -> dict | None:
-        if not ETradeConnector.is_file_still_valid(
-                self.credentials_file,
-                max_age=self._cache_max_age()):
-            return None
-        return ETradeConnector._validate_connection_credentials(
-            ETradeConnector._deserialize_connection_credentials(self.credentials_file)
-        )
+    def _load_valid_connection_credentials(self) -> ETradeConnectionCredentials | None:
+        return self._credential_provider().load()
 
     def _load_valid_standalone_base_url(self) -> str | None:
-        if not ETradeConnector.is_file_still_valid(
-                self.base_url_file,
-                max_age=self._cache_max_age()):
-            return None
-        return ETradeConnector.deserialize_base_url(self.base_url_file)
+        return self._credential_provider().load_base_url()
+
+    def _credential_provider(self) -> ETradeCredentialProvider:
+        if not hasattr(self, "credential_provider"):
+            self.credential_provider = self._default_credential_provider()
+        return self.credential_provider
+
+    def _default_credential_provider(self) -> ETradeFileCredentialProvider:
+        return ETradeFileCredentialProvider(
+            credentials_file=self.credentials_file,
+            base_url_file=self.base_url_file,
+            max_age=self._cache_max_age(),
+        )
 
     def _configured_base_url(self) -> str | None:
         raw_base_url = self.env.get(ETRADE_API_BASE_URL_ENV_VAR)
@@ -221,7 +218,7 @@ class ETradeConnector(Connector):
         return session, async_session, base_url
 
     def serialize_session(self, session: OAuth1Session):
-        ETradeConnector._serialize_connection_credentials({
+        self._store_connection_credentials({
             "consumer_key": session.consumer_key,
             "consumer_secret": session.consumer_secret,
             "access_token": session.access_token,
@@ -229,7 +226,7 @@ class ETradeConnector(Connector):
             "request_token": None,
             "request_token_secret": None,
             "base_url": self.base_url,
-        }, self.credentials_file)
+        })
 
     def serialize_async_session(self, async_session: OAuth1Client):
         # Async sessions are reconstructed from the same credential document as sync sessions.
@@ -238,7 +235,7 @@ class ETradeConnector(Connector):
     def serialize_connection_credentials(self, consumer_key: str, consumer_secret: str, access_token: str,
                                          access_token_secret: str, request_token: str,
                                          request_token_secret: str, base_url: str):
-        ETradeConnector._serialize_connection_credentials({
+        self._store_connection_credentials({
             "consumer_key": consumer_key,
             "consumer_secret": consumer_secret,
             "access_token": access_token,
@@ -246,7 +243,7 @@ class ETradeConnector(Connector):
             "request_token": request_token,
             "request_token_secret": request_token_secret,
             "base_url": base_url,
-        }, self.credentials_file)
+        })
 
     def serialize_request_token(self, token: str):
         ETradeConnector._serialize_json_value(token, REQUEST_TOKEN_FILE)
@@ -262,7 +259,20 @@ class ETradeConnector(Connector):
 
     def serialize_base_url(self, base_url: str):
         base_url = ETradeConnector._normalize_base_url(base_url, "base_url")
+        if hasattr(self, "credential_provider"):
+            self.credential_provider.store_base_url(base_url)
+            return
         ETradeConnector._serialize_json_value(base_url, self.base_url_file)
+
+    def _store_connection_credentials(self, credentials: Mapping[str, object]) -> None:
+        credential_document = ETradeConnectionCredentials.from_mapping(credentials)
+        if hasattr(self, "credential_provider"):
+            self.credential_provider.store(credential_document)
+            return
+        ETradeConnector._serialize_connection_credentials(
+            credential_document.to_mapping(),
+            self.credentials_file,
+        )
 
     @staticmethod
     def deserialize_session(input=DEFAULT_SESSION_FILE) -> OAuth1Session:
@@ -297,83 +307,67 @@ class ETradeConnector(Connector):
 
     @staticmethod
     def is_file_still_valid(input, max_age=datetime.timedelta(hours=1)):
-        input_file = Path(input)
-        if not input_file.exists():
-            logger.info(f"File {input_file} does not exist")
-            return False
-
-        last_modified_unix_timestamp = os.path.getmtime(input_file)
-        last_modified = datetime.datetime.fromtimestamp(last_modified_unix_timestamp)
-        now = datetime.datetime.now()
-
-        if now - last_modified > max_age:
-            return False
-
-        return True
+        return is_file_still_valid(input, max_age=max_age)
 
     @staticmethod
     def _serialize_json_value(value, output_file):
-        ETradeConnector._ensure_private_parent(output_file)
-        with open(output_file, "w") as f:
-            json.dump({"value": value}, f)
-        ETradeConnector._chmod_private(output_file)
+        serialize_json_value(value, output_file)
 
     @staticmethod
     def _deserialize_json_value(input_file) -> str:
-        with open(Path(input_file)) as f:
-            return json.load(f)["value"]
+        return deserialize_json_value(input_file)
 
     @staticmethod
     def _serialize_connection_credentials(credentials: dict, output_file):
-        credentials = ETradeConnector._validate_connection_credentials(credentials)
-        ETradeConnector._ensure_private_parent(output_file)
-        with open(output_file, "w") as f:
-            json.dump(credentials, f)
-        ETradeConnector._chmod_private(output_file)
+        serialize_connection_credentials(credentials, output_file)
 
     @staticmethod
     def _deserialize_connection_credentials(input_file) -> dict:
-        with open(Path(input_file)) as f:
-            return json.load(f)
+        return deserialize_connection_credentials(input_file)
 
     @staticmethod
     def _build_connection_from_credentials_file(input_file, base_url_override: str | None = None) -> (OAuth1Session, OAuth1Client, str):
-        credentials = ETradeConnector._validate_connection_credentials(
+        credentials = ETradeConnectionCredentials.from_mapping(
             ETradeConnector._deserialize_connection_credentials(input_file)
         )
         base_url = (
             ETradeConnector._normalize_base_url(base_url_override, ETRADE_API_BASE_URL_ENV_VAR)
             if base_url_override
-            else credentials["base_url"]
+            else credentials.base_url
         )
         return ETradeConnector._build_connection_from_credentials(credentials, base_url)
 
     @staticmethod
-    def _build_connection_from_credentials(credentials: dict, base_url: str) -> (OAuth1Session, OAuth1Client, str):
+    def _build_connection_from_credentials(
+            credentials: ETradeConnectionCredentials | Mapping[str, object],
+            base_url: str) -> (OAuth1Session, OAuth1Client, str):
+        if not isinstance(credentials, ETradeConnectionCredentials):
+            credentials = ETradeConnectionCredentials.from_mapping(credentials)
+
         service = OAuth1Service(
             name="etrade",
-            consumer_key=credentials["consumer_key"],
-            consumer_secret=credentials["consumer_secret"],
+            consumer_key=credentials.consumer_key,
+            consumer_secret=credentials.consumer_secret,
             request_token_url="https://api.etrade.com/oauth/request_token",
             access_token_url="https://api.etrade.com/oauth/access_token",
             authorize_url="https://us.etrade.com/e/t/etws/authorize?key={}&token={}",
             base_url="https://api.etrade.com")
 
         session = OAuth1Session(
-            consumer_key=credentials["consumer_key"],
-            consumer_secret=credentials["consumer_secret"],
-            access_token=credentials["access_token"],
-            access_token_secret=credentials["access_token_secret"],
+            consumer_key=credentials.consumer_key,
+            consumer_secret=credentials.consumer_secret,
+            access_token=credentials.access_token,
+            access_token_secret=credentials.access_token_secret,
             service=service)
 
         async_session = OAuth1Client(
-            consumer_key=credentials["consumer_key"],
-            consumer_secret=credentials["consumer_secret"],
-            resource_owner_key=credentials["request_token"],
-            resource_owner_secret=credentials["request_token_secret"],
-            access_token_key=credentials["access_token"],
-            oauth_token=credentials["access_token"],
-            oauth_token_secret=credentials["access_token_secret"],
+            consumer_key=credentials.consumer_key,
+            consumer_secret=credentials.consumer_secret,
+            resource_owner_key=credentials.request_token,
+            resource_owner_secret=credentials.request_token_secret,
+            access_token_key=credentials.access_token,
+            oauth_token=credentials.access_token,
+            oauth_token_secret=credentials.access_token_secret,
             base_url=base_url,
             signature_method='HMAC-SHA1',
             signature_type="query")
@@ -382,52 +376,8 @@ class ETradeConnector(Connector):
 
     @staticmethod
     def _validate_connection_credentials(credentials: dict) -> dict:
-        if not isinstance(credentials, dict):
-            raise ValueError("E*Trade connection credentials must be a JSON object")
-
-        normalized_credentials = dict(credentials)
-        for field in REQUIRED_CREDENTIAL_FIELDS:
-            ETradeConnector._require_non_empty_string(normalized_credentials, field)
-
-        for field in OPTIONAL_CREDENTIAL_FIELDS:
-            if field not in normalized_credentials:
-                raise ValueError(f"E*Trade connection credentials must include {field}")
-            value = normalized_credentials[field]
-            if value is not None:
-                ETradeConnector._require_non_empty_string(normalized_credentials, field)
-
-        normalized_credentials["base_url"] = ETradeConnector._normalize_base_url(
-            normalized_credentials["base_url"],
-            "base_url",
-        )
-        return normalized_credentials
-
-    @staticmethod
-    def _require_non_empty_string(credentials: dict, field: str) -> None:
-        if field not in credentials:
-            raise ValueError(f"E*Trade connection credentials must include {field}")
-        value = credentials[field]
-        if not isinstance(value, str) or not value.strip():
-            raise ValueError(f"E*Trade connection credential {field} must be a non-empty string")
+        return ETradeConnectionCredentials.from_mapping(credentials).to_mapping()
 
     @staticmethod
     def _normalize_base_url(raw_base_url: str, source: str) -> str:
-        if not isinstance(raw_base_url, str) or not raw_base_url.strip():
-            raise ValueError(f"E*Trade {source} must be a non-empty URL")
-
-        base_url = raw_base_url.strip().rstrip("/")
-        parsed_url = urlparse(base_url)
-        if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
-            raise ValueError(f"E*Trade {source} must be an http(s) URL")
-
-        return base_url
-
-    @staticmethod
-    def _ensure_private_parent(output_file):
-        parent_dir = os.path.dirname(output_file)
-        os.makedirs(parent_dir, mode=0o700, exist_ok=True)
-        os.chmod(parent_dir, 0o700)
-
-    @staticmethod
-    def _chmod_private(output_file):
-        os.chmod(output_file, 0o600)
+        return normalize_etrade_base_url(raw_base_url, source)
