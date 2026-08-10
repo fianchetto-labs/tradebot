@@ -231,3 +231,6 @@ TRADEBOT_RUN_LIVE_E2E_TESTS=1
 Do not commit brokerage credentials, access tokens, private keys, account
 identifiers, or generated credential files. Test failures should report which
 configuration is missing without printing secret values.
+
+For the credential trust modes behind these gates, see
+`docs/credential-trust-model.md`.
