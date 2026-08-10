@@ -17,6 +17,8 @@ from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import 
 from fianchetto_tradebot.server.common.brokerage.etrade.credentials import (
     ETradeConnectionCredentials,
     ETradeFileCredentialProvider,
+    ETradeLocalCredentialProvider,
+    local_credential_files,
 )
 
 
@@ -113,13 +115,95 @@ def test_file_credential_provider_round_trips_valid_credentials(tmp_path):
     # The provider stores and reloads both the credential document and standalone base URL.
     provider.store(credentials)
     provider.store_base_url("http://etrade-sim:8090/")
+    provider.store_request_token("simulator-request-token")
 
     # Then
     # The loaded values are normalized and the local files are private.
     assert provider.load() == credentials
     assert provider.load_base_url() == "http://etrade-sim:8090"
+    assert provider.load_request_token() == "simulator-request-token"
+    assert provider.request_token_file.parent == credentials_file.parent
     assert stat.S_IMODE(credentials_file.stat().st_mode) == 0o600
     assert stat.S_IMODE(base_url_file.stat().st_mode) == 0o600
+
+
+def test_local_credential_provider_owns_state_dir_layout(tmp_path):
+    # Given
+    # A local state directory that should contain all E*Trade credential artifacts.
+    provider = ETradeLocalCredentialProvider(
+        state_dir=tmp_path,
+        max_age=datetime.timedelta(hours=1),
+    )
+    files = local_credential_files(state_dir=tmp_path)
+    credentials = ETradeConnectionCredentials.from_mapping(_credentials_dict())
+
+    # When
+    # The provider persists connection, base URL, and legacy token sidecar values.
+    provider.store(credentials)
+    provider.store_base_url("http://etrade-sim:8090/")
+    provider.store_request_token("simulator-request-token")
+    provider.store_request_token_secret("simulator-request-token-secret")
+    provider.store_oauth_token("simulator-oauth-token")
+    provider.store_oauth_token_secret("simulator-oauth-token-secret")
+
+    # Then
+    # The files live under the expected local brokerage state directory with private permissions.
+    assert provider.credentials_file == files.credentials_file
+    assert provider.base_url_file == files.base_url_file
+    assert provider.load() == credentials
+    assert provider.load_base_url() == "http://etrade-sim:8090"
+    assert provider.load_request_token() == "simulator-request-token"
+    assert provider.load_request_token_secret() == "simulator-request-token-secret"
+    assert provider.load_oauth_token() == "simulator-oauth-token"
+    assert provider.load_oauth_token_secret() == "simulator-oauth-token-secret"
+    assert stat.S_IMODE(files.credentials_file.parent.stat().st_mode) == 0o700
+    assert stat.S_IMODE(files.request_token_file.stat().st_mode) == 0o600
+
+
+def test_connector_serializes_token_sidecars_through_provider(tmp_path):
+    # Given
+    # A connector with an injected provider rather than the default local files.
+    provider = _StaticCredentialProvider(
+        ETradeConnectionCredentials.from_mapping(_credentials_dict())
+    )
+    connector = ETradeConnector(
+        config_file=str(tmp_path / "missing-config.ini"),
+        session_file=str(tmp_path / "missing-connection.json"),
+        async_session_file=str(tmp_path / "missing-connection.json"),
+        base_url_file=str(tmp_path / "missing-base-url.json"),
+        env={},
+        credential_provider=provider,
+    )
+
+    # When
+    # Legacy token sidecar methods are called.
+    connector.serialize_request_token("request-token")
+    connector.serialize_request_token_secret("request-token-secret")
+    connector.serialize_oauth_token("oauth-token")
+    connector.serialize_oauth_token_secret("oauth-token-secret")
+
+    # Then
+    # The provider receives those values instead of the connector writing direct local files.
+    assert provider.request_token == "request-token"
+    assert provider.request_token_secret == "request-token-secret"
+    assert provider.oauth_token == "oauth-token"
+    assert provider.oauth_token_secret == "oauth-token-secret"
+
+
+def test_local_credential_provider_rejects_non_string_token_sidecar(tmp_path):
+    # Given
+    # A malformed local token sidecar file.
+    provider = ETradeLocalCredentialProvider(
+        state_dir=tmp_path,
+        max_age=datetime.timedelta(hours=1),
+    )
+    provider.request_token_file.parent.mkdir(parents=True)
+    provider.request_token_file.write_text(json.dumps({"value": {"not": "a string"}}))
+
+    # When / Then
+    # Loading the sidecar fails without printing the malformed value.
+    with pytest.raises(ValueError, match="request_token"):
+        provider.load_request_token()
 
 
 def test_connection_credentials_repr_redacts_secret_values():
@@ -382,6 +466,10 @@ def _make_old(path) -> None:
 class _StaticCredentialProvider:
     def __init__(self, credentials: ETradeConnectionCredentials):
         self.credentials = credentials
+        self.request_token = None
+        self.request_token_secret = None
+        self.oauth_token = None
+        self.oauth_token_secret = None
 
     def load(self) -> ETradeConnectionCredentials:
         return self.credentials
@@ -394,3 +482,27 @@ class _StaticCredentialProvider:
 
     def store_base_url(self, base_url: str) -> None:
         return None
+
+    def load_request_token(self) -> str | None:
+        return self.request_token
+
+    def store_request_token(self, token: str) -> None:
+        self.request_token = token
+
+    def load_request_token_secret(self) -> str | None:
+        return self.request_token_secret
+
+    def store_request_token_secret(self, token_secret: str) -> None:
+        self.request_token_secret = token_secret
+
+    def load_oauth_token(self) -> str | None:
+        return self.oauth_token
+
+    def store_oauth_token(self, token: str) -> None:
+        self.oauth_token = token
+
+    def load_oauth_token_secret(self) -> str | None:
+        return self.oauth_token_secret
+
+    def store_oauth_token_secret(self, token_secret: str) -> None:
+        self.oauth_token_secret = token_secret

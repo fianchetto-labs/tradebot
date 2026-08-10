@@ -20,6 +20,15 @@ OPTIONAL_CREDENTIAL_FIELDS = (
     "request_token",
     "request_token_secret",
 )
+STATE_DIR_ENV_VAR = "FIANCHETTO_TRADEBOT_STATE_DIR"
+DEFAULT_STATE_DIR = Path.home() / ".fianchetto_tradebot"
+BROKERAGE_DIR = "etrade"
+CONNECTION_CREDENTIALS_FILE_NAME = "connection.json"
+BASE_URL_FILE_NAME = "base_url.json"
+REQUEST_TOKEN_FILE_NAME = "request_token.json"
+REQUEST_TOKEN_SECRET_FILE_NAME = "request_token_secret.json"
+OAUTH_TOKEN_FILE_NAME = "oauth_token.json"
+OAUTH_TOKEN_SECRET_FILE_NAME = "oauth_token_secret.json"
 
 
 @dataclass(frozen=True, repr=False)
@@ -95,15 +104,90 @@ class ETradeCredentialProvider(Protocol):
     def store_base_url(self, base_url: str) -> None:
         """Persist a standalone base URL fallback."""
 
+    def load_request_token(self) -> str:
+        """Return the locally cached OAuth request token."""
 
-class ETradeFileCredentialProvider:
+    def store_request_token(self, token: str) -> None:
+        """Persist the OAuth request token."""
+
+    def load_request_token_secret(self) -> str:
+        """Return the locally cached OAuth request token secret."""
+
+    def store_request_token_secret(self, token_secret: str) -> None:
+        """Persist the OAuth request token secret."""
+
+    def load_oauth_token(self) -> str:
+        """Return the locally cached OAuth token."""
+
+    def store_oauth_token(self, token: str) -> None:
+        """Persist the OAuth token."""
+
+    def load_oauth_token_secret(self) -> str:
+        """Return the locally cached OAuth token secret."""
+
+    def store_oauth_token_secret(self, token_secret: str) -> None:
+        """Persist the OAuth token secret."""
+
+
+@dataclass(frozen=True)
+class ETradeLocalCredentialFiles:
+    credentials_file: Path
+    base_url_file: Path
+    request_token_file: Path
+    request_token_secret_file: Path
+    oauth_token_file: Path
+    oauth_token_secret_file: Path
+
+
+def local_credential_files(
+        state_dir: str | os.PathLike[str] | None = None,
+        brokerage_dir: str = BROKERAGE_DIR) -> ETradeLocalCredentialFiles:
+    root = Path(state_dir or os.environ.get(STATE_DIR_ENV_VAR, DEFAULT_STATE_DIR))
+    brokerage_state_dir = root / brokerage_dir
+    return ETradeLocalCredentialFiles(
+        credentials_file=brokerage_state_dir / CONNECTION_CREDENTIALS_FILE_NAME,
+        base_url_file=brokerage_state_dir / BASE_URL_FILE_NAME,
+        request_token_file=brokerage_state_dir / REQUEST_TOKEN_FILE_NAME,
+        request_token_secret_file=brokerage_state_dir / REQUEST_TOKEN_SECRET_FILE_NAME,
+        oauth_token_file=brokerage_state_dir / OAUTH_TOKEN_FILE_NAME,
+        oauth_token_secret_file=brokerage_state_dir / OAUTH_TOKEN_SECRET_FILE_NAME,
+    )
+
+
+class ETradeLocalCredentialProvider:
     def __init__(
             self,
-            credentials_file: str | os.PathLike[str],
-            base_url_file: str | os.PathLike[str],
-            max_age: datetime.timedelta):
-        self.credentials_file = Path(credentials_file)
-        self.base_url_file = Path(base_url_file)
+            max_age: datetime.timedelta,
+            state_dir: str | os.PathLike[str] | None = None,
+            credentials_file: str | os.PathLike[str] | None = None,
+            base_url_file: str | os.PathLike[str] | None = None,
+            request_token_file: str | os.PathLike[str] | None = None,
+            request_token_secret_file: str | os.PathLike[str] | None = None,
+            oauth_token_file: str | os.PathLike[str] | None = None,
+            oauth_token_secret_file: str | os.PathLike[str] | None = None):
+        files = local_credential_files(state_dir=state_dir)
+        self.credentials_file = (
+            Path(credentials_file) if credentials_file is not None else files.credentials_file
+        )
+        self.base_url_file = (
+            Path(base_url_file) if base_url_file is not None else files.base_url_file
+        )
+        self.request_token_file = (
+            Path(request_token_file) if request_token_file is not None else files.request_token_file
+        )
+        self.request_token_secret_file = (
+            Path(request_token_secret_file)
+            if request_token_secret_file is not None
+            else files.request_token_secret_file
+        )
+        self.oauth_token_file = (
+            Path(oauth_token_file) if oauth_token_file is not None else files.oauth_token_file
+        )
+        self.oauth_token_secret_file = (
+            Path(oauth_token_secret_file)
+            if oauth_token_secret_file is not None
+            else files.oauth_token_secret_file
+        )
         self.max_age = max_age
 
     def load(self) -> ETradeConnectionCredentials | None:
@@ -121,6 +205,48 @@ class ETradeFileCredentialProvider:
 
     def store_base_url(self, base_url: str) -> None:
         _serialize_json_value(normalize_etrade_base_url(base_url, "base_url"), self.base_url_file)
+
+    def load_request_token(self) -> str:
+        return _deserialize_string_value(self.request_token_file, "request_token")
+
+    def store_request_token(self, token: str) -> None:
+        _serialize_json_value(token, self.request_token_file)
+
+    def load_request_token_secret(self) -> str:
+        return _deserialize_string_value(self.request_token_secret_file, "request_token_secret")
+
+    def store_request_token_secret(self, token_secret: str) -> None:
+        _serialize_json_value(token_secret, self.request_token_secret_file)
+
+    def load_oauth_token(self) -> str:
+        return _deserialize_string_value(self.oauth_token_file, "oauth_token")
+
+    def store_oauth_token(self, token: str) -> None:
+        _serialize_json_value(token, self.oauth_token_file)
+
+    def load_oauth_token_secret(self) -> str:
+        return _deserialize_string_value(self.oauth_token_secret_file, "oauth_token_secret")
+
+    def store_oauth_token_secret(self, token_secret: str) -> None:
+        _serialize_json_value(token_secret, self.oauth_token_secret_file)
+
+
+class ETradeFileCredentialProvider(ETradeLocalCredentialProvider):
+    def __init__(
+            self,
+            credentials_file: str | os.PathLike[str],
+            base_url_file: str | os.PathLike[str],
+            max_age: datetime.timedelta):
+        sidecar_dir = Path(credentials_file).parent
+        super().__init__(
+            credentials_file=credentials_file,
+            base_url_file=base_url_file,
+            request_token_file=sidecar_dir / REQUEST_TOKEN_FILE_NAME,
+            request_token_secret_file=sidecar_dir / REQUEST_TOKEN_SECRET_FILE_NAME,
+            oauth_token_file=sidecar_dir / OAUTH_TOKEN_FILE_NAME,
+            oauth_token_secret_file=sidecar_dir / OAUTH_TOKEN_SECRET_FILE_NAME,
+            max_age=max_age,
+        )
 
 
 def is_file_still_valid(input_file: str | os.PathLike[str], max_age: datetime.timedelta) -> bool:
@@ -185,6 +311,13 @@ def _serialize_json_value(value: object, output_file: str | os.PathLike[str]) ->
 def _deserialize_json_value(input_file: str | os.PathLike[str]) -> object:
     with open(Path(input_file)) as f:
         return json.load(f)["value"]
+
+
+def _deserialize_string_value(input_file: str | os.PathLike[str], field: str) -> str:
+    value = _deserialize_json_value(input_file)
+    if not isinstance(value, str):
+        raise ValueError(f"E*Trade credential {field} must be a string")
+    return value
 
 
 def _serialize_json_object(value: Mapping[str, object], output_file: str | os.PathLike[str]) -> None:
