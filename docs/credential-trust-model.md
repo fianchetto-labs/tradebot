@@ -111,6 +111,11 @@ credential document as local development, but stores it as one JSON
 create secrets; secret creation, KMS key choice, IAM policy, and rotation policy
 belong to the infrastructure custody tickets.
 
+The starter AWS policies live under `deploy/aws/credential-custody/`. They are
+templates for one runtime role, one existing secret, and one customer-managed
+KMS key. The runtime role policy grants only `DescribeSecret`, `GetSecretValue`,
+`PutSecretValue`, and KMS key use through Secrets Manager for that secret.
+
 Expected secret document shape:
 
 ```json
