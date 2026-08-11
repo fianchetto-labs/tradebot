@@ -25,9 +25,11 @@ TradeBot is organized into modular services with shared financial models and bro
 
 ```mermaid
 flowchart TD
-    Strategy["User strategy"] --> Trident["Trident: opportunity research"]
-    Trident --> Quotes["Quotes: market data"]
-    Trident --> OEX["OEX: order execution"]
+    Trident["Trident: opportunity research"] --> Strategy["Strategy runtime (planned)"]
+    Quotes["Quotes: market data"] --> Trident
+    Quotes --> Strategy
+    Strategy --> Objective["Trade objective (planned)"]
+    Objective --> OEX["OEX: order execution"]
     Quotes --> Adapters["Brokerage adapters"]
     OEX --> Adapters
     Adapters --> Brokers["E*Trade / Schwab"]
@@ -36,7 +38,17 @@ flowchart TD
 
 ### Trident
 
-The Trade Identifier Service scans market data using user-supplied research or strategy logic. Its components include option analysis and construction of candidate trades such as calendar spreads.
+The Trade Identifier Service scans market data and constructs research
+candidates such as calendar spreads. It is not the home for durable active
+strategy intent or broker-facing execution control.
+
+### Strategy Runtime
+
+The planned strategy runtime will evaluate durable portfolio intent, create or
+revise higher-order trade objectives, and surface explainable proposals. It
+will use Trident research and Quotes market data without taking over
+broker-facing managed execution. See
+[`docs/strategy-execution-architecture.md`](docs/strategy-execution-architecture.md).
 
 ### Quotes
 
@@ -103,6 +115,7 @@ For local development setup and related guides, see:
 - [`docs/credential-trust-model.md`](docs/credential-trust-model.md)
 - [`docs/security-readiness.md`](docs/security-readiness.md)
 - [`docs/serialization.md`](docs/serialization.md)
+- [`docs/strategy-execution-architecture.md`](docs/strategy-execution-architecture.md)
 - [`dev_get_started_guides/exchange_setup.MD`](dev_get_started_guides/exchange_setup.MD) only if your
   work explicitly needs real or sandbox brokerage credentials.
 
