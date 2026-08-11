@@ -177,6 +177,12 @@ Live placement, cancellation, and modification should require explicit runtime
 gates and account/operation authorization. They should never be enabled merely
 because credentials are present.
 
+The current E*Trade live-write gate is intentionally small and fail-closed:
+`ETradeOrderService` blocks placement, cancellation, and modification against
+`https://api.etrade.com` unless `TRADEBOT_ALLOW_LIVE_ETRADE_WRITES=true` is set
+in the runtime environment. Preview, read-only, and simulator-backed endpoints
+do not require this flag.
+
 ## Logging And Display Rules
 
 Safe logs should answer what happened without becoming a credential leak.
