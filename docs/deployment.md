@@ -94,7 +94,8 @@ Hosted AWS deployments can use
 credential document from an existing AWS Secrets Manager secret. The service
 role should be limited to the intended secret and the required read/write
 operations; KMS/IAM policy details are tracked separately from local Docker
-configuration.
+configuration. Starter policy templates live in
+`deploy/aws/credential-custody/`.
 
 `TRADEBOT_MOEX_SERVICE_ADAPTER_MODE` defaults to `local` for simple developer
 startup. When it is set to `http`, both `TRADEBOT_ORDERS_SERVICE_URL` and
