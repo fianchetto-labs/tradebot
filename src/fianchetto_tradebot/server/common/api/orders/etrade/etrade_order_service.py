@@ -27,6 +27,7 @@ from fianchetto_tradebot.common_models.api.orders.preview_order_response import 
 from fianchetto_tradebot.common_models.api.request_status import RequestStatus
 from fianchetto_tradebot.server.common.api.http_status_code import HttpStatusCode
 from fianchetto_tradebot.server.common.api.orders.order_util import OrderUtil
+from fianchetto_tradebot.server.common.api.orders.etrade.live_trading_gate import require_live_etrade_write_enabled
 from fianchetto_tradebot.server.common.brokerage.etrade.etrade_connector import ETradeConnector
 from fianchetto_tradebot.common_models.finance.amount import Amount
 from fianchetto_tradebot.common_models.order.order import Order
@@ -84,6 +85,8 @@ class ETradeOrderService(OrderService):
         return ETradeOrderService._parse_get_order_response(response, account_id, order_id)
 
     def cancel_order(self, cancel_order_request: CancelOrderRequest) -> CancelOrderResponse:
+        require_live_etrade_write_enabled(self.base_url, "cancel_order")
+
         account_id = cancel_order_request.account_id
         order_id = cancel_order_request.order_id
 
@@ -159,6 +162,8 @@ class ETradeOrderService(OrderService):
         return preview_order_response
 
     def place_modify_order(self, place_modify_order_request: PlaceModifyOrderRequest) -> PlaceModifyOrderResponse:
+        require_live_etrade_write_enabled(self.base_url, "place_modify_order")
+
         order_metadata = place_modify_order_request.order_metadata
         order_type = order_metadata.order_type
         account_id = order_metadata.account_id
@@ -196,6 +201,8 @@ class ETradeOrderService(OrderService):
         return ETradeOrderService._parse_place_order_response(response, order_metadata, preview_id)
 
     def place_order(self, place_order_request: PlaceOrderRequest) -> PlaceOrderResponse:
+        require_live_etrade_write_enabled(self.base_url, "place_order")
+
         order_metadata = place_order_request.order_metadata
         order_type = order_metadata.order_type
         account_id = order_metadata.account_id
@@ -231,6 +238,8 @@ class ETradeOrderService(OrderService):
         return ETradeOrderService._parse_place_order_response(response, order_metadata, preview_id)
 
     def preview_and_place_order(self, preview_order_request: PreviewOrderRequest) -> PlaceOrderResponse:
+        require_live_etrade_write_enabled(self.base_url, "preview_and_place_order")
+
         order_metadata = preview_order_request.order_metadata
         preview_order_response: PreviewOrderResponse = self.preview_order(preview_order_request)
 
@@ -241,6 +250,8 @@ class ETradeOrderService(OrderService):
         return place_order_response
 
     def modify_order(self, preview_modify_order_request: PreviewModifyOrderRequest) -> PlaceOrderResponse:
+        require_live_etrade_write_enabled(self.base_url, "modify_order")
+
         # Cancel
         account_id = preview_modify_order_request.order_metadata.account_id
         order_id = preview_modify_order_request.order_id_to_modify

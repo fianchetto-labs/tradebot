@@ -85,6 +85,7 @@ Important runtime configuration:
 | --- | --- |
 | `FIANCHETTO_TRADEBOT_STATE_DIR` | Points a service at its credential/state directory. |
 | `TRADEBOT_ETRADE_API_BASE_URL` | Overrides the E*Trade-compatible API endpoint, commonly to the simulator service in Docker. |
+| `TRADEBOT_ALLOW_LIVE_ETRADE_WRITES` | Must be `true` before live E*Trade place/cancel/modify calls are allowed against `https://api.etrade.com`. |
 | `TRADEBOT_MOEX_SERVICE_ADAPTER_MODE` | Selects local vs HTTP-backed MOEX dependencies. |
 | `TRADEBOT_ORDERS_SERVICE_URL` | Tells MOEX where the orders service lives in HTTP mode. |
 | `TRADEBOT_QUOTES_SERVICE_URL` | Tells MOEX where the quotes service lives in HTTP mode. |
