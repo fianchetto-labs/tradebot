@@ -1,4 +1,6 @@
+import hashlib
 import json
+import logging
 
 import pytest
 
@@ -12,6 +14,7 @@ from tests.fixtures.aws_secrets_manager import FakeSecretsManagerClient
 
 
 SECRET_ID = "tradebot/etrade/live/operator"
+AUDIT_LOGGER_NAME = "fianchetto_tradebot.audit.credentials"
 
 
 def test_aws_provider_loads_connection_credentials_from_secret_string():
@@ -195,6 +198,111 @@ def test_aws_provider_builds_secrets_manager_client_from_boto3_session():
     }
 
 
+def test_aws_provider_logs_safe_secret_read_audit_metadata(caplog):
+    # Given
+    # An AWS credential provider with a secret containing fake credential material.
+    caplog.set_level(logging.INFO, logger=AUDIT_LOGGER_NAME)
+    client = FakeSecretsManagerClient({SECRET_ID: json.dumps(_credentials_dict())})
+    provider = ETradeAwsSecretsManagerCredentialProvider(secret_id=SECRET_ID, client=client)
+
+    # When
+    # The provider reads the secret document.
+    provider.load()
+
+    # Then
+    # The audit log identifies the operation without printing the secret id or values.
+    assert "operation=GetSecretValue" in caplog.text
+    assert "outcome=success" in caplog.text
+    assert f"secret_ref={_expected_secret_reference(SECRET_ID)}" in caplog.text
+    _assert_no_secret_material_was_logged(caplog.text)
+
+
+def test_aws_provider_logs_safe_secret_write_audit_metadata(caplog):
+    # Given
+    # An AWS credential provider with a pre-created secret.
+    caplog.set_level(logging.INFO, logger=AUDIT_LOGGER_NAME)
+    client = FakeSecretsManagerClient({SECRET_ID: json.dumps(_credentials_dict())})
+    provider = ETradeAwsSecretsManagerCredentialProvider(secret_id=SECRET_ID, client=client)
+
+    # When
+    # The provider writes a new secret version.
+    provider.store(ETradeConnectionCredentials.from_mapping(_credentials_dict()))
+
+    # Then
+    # The audit log records the write without printing the secret id or payload.
+    assert "operation=PutSecretValue" in caplog.text
+    assert "outcome=success" in caplog.text
+    assert f"secret_ref={_expected_secret_reference(SECRET_ID)}" in caplog.text
+    _assert_no_secret_material_was_logged(caplog.text)
+
+
+def test_aws_provider_logs_missing_secret_without_leaking_secret_id(caplog):
+    # Given
+    # An AWS credential provider pointing at absent cloud state.
+    caplog.set_level(logging.INFO, logger=AUDIT_LOGGER_NAME)
+    provider = ETradeAwsSecretsManagerCredentialProvider(
+        secret_id=SECRET_ID,
+        client=FakeSecretsManagerClient(),
+    )
+
+    # When
+    # The provider checks for credentials.
+    assert provider.load() is None
+
+    # Then
+    # Missing state is auditable without exposing the configured secret name.
+    assert "operation=GetSecretValue" in caplog.text
+    assert "outcome=missing" in caplog.text
+    assert f"secret_ref={_expected_secret_reference(SECRET_ID)}" in caplog.text
+    _assert_no_secret_material_was_logged(caplog.text)
+
+
+def test_aws_provider_logs_secret_read_failure_without_exception_payload(caplog):
+    # Given
+    # A Secrets Manager client that fails with a non-missing upstream error.
+    class FailingReadClient(FakeSecretsManagerClient):
+        def get_secret_value(self, *, SecretId: str) -> dict[str, object]:
+            raise RuntimeError("upstream included simulator-consumer-secret")
+
+    caplog.set_level(logging.INFO, logger=AUDIT_LOGGER_NAME)
+    provider = ETradeAwsSecretsManagerCredentialProvider(
+        secret_id=SECRET_ID,
+        client=FailingReadClient(),
+    )
+
+    # When / Then
+    # The provider raises a scrubbed operation-level failure and keeps the audit line clean.
+    with pytest.raises(RuntimeError) as exc_info:
+        provider.load()
+    assert str(exc_info.value) == "E*Trade AWS credential secret read failed"
+    assert "simulator-consumer-secret" not in str(exc_info.value)
+    assert "operation=GetSecretValue" in caplog.text
+    assert "outcome=failure" in caplog.text
+    _assert_no_secret_material_was_logged(caplog.text)
+
+
+def test_aws_provider_logs_secret_write_failure_without_secret_payload(caplog):
+    # Given
+    # A Secrets Manager client that rejects writes after seeing the payload.
+    class FailingWriteClient(FakeSecretsManagerClient):
+        def put_secret_value(self, *, SecretId: str, SecretString: str) -> dict[str, object]:
+            raise RuntimeError("write failed for secret payload")
+
+    caplog.set_level(logging.INFO, logger=AUDIT_LOGGER_NAME)
+    client = FailingWriteClient({SECRET_ID: json.dumps(_credentials_dict())})
+    provider = ETradeAwsSecretsManagerCredentialProvider(secret_id=SECRET_ID, client=client)
+
+    # When / Then
+    # The write failure is auditable without logging the credential payload.
+    with pytest.raises(RuntimeError) as exc_info:
+        provider.store(ETradeConnectionCredentials.from_mapping(_credentials_dict()))
+    assert str(exc_info.value) == "E*Trade AWS credential secret write failed"
+    assert "simulator-consumer-secret" not in str(exc_info.value)
+    assert "operation=PutSecretValue" in caplog.text
+    assert "outcome=failure" in caplog.text
+    _assert_no_secret_material_was_logged(caplog.text)
+
+
 def _credentials_dict(**overrides) -> dict[str, object]:
     credentials = {
         "consumer_key": "simulator-consumer-key",
@@ -207,3 +315,17 @@ def _credentials_dict(**overrides) -> dict[str, object]:
     }
     credentials.update(overrides)
     return credentials
+
+
+def _assert_no_secret_material_was_logged(log_text: str) -> None:
+    assert SECRET_ID not in log_text
+    assert "simulator-consumer-key" not in log_text
+    assert "simulator-consumer-secret" not in log_text
+    assert "simulator-access-token" not in log_text
+    assert "simulator-access-token-secret" not in log_text
+    assert "simulator-request-token" not in log_text
+    assert "simulator-request-token-secret" not in log_text
+
+
+def _expected_secret_reference(secret_id: str) -> str:
+    return hashlib.sha256(secret_id.encode("utf-8")).hexdigest()[:12]

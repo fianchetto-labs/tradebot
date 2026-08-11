@@ -1,4 +1,6 @@
+import hashlib
 import json
+import logging
 from json import JSONDecodeError
 from typing import Mapping, Protocol
 
@@ -6,6 +8,9 @@ from fianchetto_tradebot.server.common.brokerage.etrade.credentials import (
     ETradeConnectionCredentials,
     normalize_etrade_base_url,
 )
+
+
+audit_logger = logging.getLogger("fianchetto_tradebot.audit.credentials")
 
 
 class SecretsManagerClient(Protocol):
@@ -117,17 +122,27 @@ class ETradeAwsSecretsManagerCredentialProvider:
 
     def _get_secret_value(self) -> Mapping[str, object] | None:
         try:
-            return self._client.get_secret_value(SecretId=self.secret_id)
+            response = self._client.get_secret_value(SecretId=self.secret_id)
+            _log_secret_access("GetSecretValue", "success", self.secret_id)
+            return response
         except Exception as exc:
             if _is_resource_not_found_error(exc):
+                _log_secret_access("GetSecretValue", "missing", self.secret_id)
                 return None
-            raise
+            _log_secret_access("GetSecretValue", "failure", self.secret_id)
+            raise RuntimeError("E*Trade AWS credential secret read failed") from None
 
     def _store_secret_document(self, secret: Mapping[str, object]) -> None:
-        self._client.put_secret_value(
-            SecretId=self.secret_id,
-            SecretString=json.dumps(secret),
-        )
+        try:
+            self._client.put_secret_value(
+                SecretId=self.secret_id,
+                SecretString=json.dumps(secret),
+            )
+        except Exception:
+            _log_secret_access("PutSecretValue", "failure", self.secret_id)
+            raise RuntimeError("E*Trade AWS credential secret write failed") from None
+        else:
+            _log_secret_access("PutSecretValue", "success", self.secret_id)
 
 
 def _build_secrets_manager_client(
@@ -152,3 +167,17 @@ def _is_resource_not_found_error(exc: Exception) -> bool:
     if not isinstance(error, Mapping):
         return False
     return error.get("Code") == "ResourceNotFoundException"
+
+
+def _log_secret_access(operation: str, outcome: str, secret_id: str) -> None:
+    audit_logger.info(
+        "E*Trade credential secret access provider=aws_secrets_manager "
+        "operation=%s outcome=%s secret_ref=%s",
+        operation,
+        outcome,
+        _secret_reference(secret_id),
+    )
+
+
+def _secret_reference(secret_id: str) -> str:
+    return hashlib.sha256(secret_id.encode("utf-8")).hexdigest()[:12]
