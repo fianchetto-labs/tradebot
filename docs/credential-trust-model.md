@@ -188,6 +188,8 @@ Allowed:
 - Environment/mode.
 - Request or correlation id.
 - Secret reference or version id when it is not itself sensitive.
+- Stable non-reversible secret fingerprints when the raw secret id could expose
+  account, client, environment, or naming details.
 - Redacted account reference, such as a stable alias or last-four style hint.
 - Result status, failure category, retry count, and upstream service name.
 
@@ -202,6 +204,13 @@ Forbidden:
 
 Error messages should explain the missing or invalid configuration field without
 printing the value.
+
+The E*Trade AWS Secrets Manager provider emits standard Python audit log lines
+to `fianchetto_tradebot.audit.credentials` for `GetSecretValue` and
+`PutSecretValue` calls. Those log lines include provider, operation, outcome,
+and a short SHA-256-based secret fingerprint. They do not include raw secret ids
+or credential payloads. Unexpected AWS read/write failures are raised as
+scrubbed operation-level errors for the same reason.
 
 ## Documentation And Demo Checklist
 
