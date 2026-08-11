@@ -133,3 +133,5 @@ than introduce a separate service model.
 - `docs/simulator-dogfooding.md` is the command-first local demo runbook.
 - `docs/credential-trust-model.md` defines credential trust modes and live
   brokerage safety expectations.
+- `docs/security-readiness.md` lists the current security checkpoint before a
+  hosted or live-account demo.

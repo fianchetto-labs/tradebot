@@ -230,6 +230,7 @@ Minimum checklist:
    documented stop/rollback path.
 
 `FIA-180` owns the fuller production credential security readiness checklist.
+See `docs/security-readiness.md` for the current readiness checkpoint.
 
 ## Related Work
 
